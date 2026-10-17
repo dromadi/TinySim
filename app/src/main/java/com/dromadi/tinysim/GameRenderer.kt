@@ -49,10 +49,11 @@ class GameRenderer {
         }
         // Large targets with room for imprecise touches.
         rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
-        button(c,20f,170f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,105f,615f)
-        button(c,205f,170f,g.selected==GameState.Vehicle.TRUCK);truck(c,292f,620f,.5f,2,0f)
-        button(c,390f,170f,g.selected==GameState.Vehicle.DOZER);dozer(c,477f,622f,.5f,1)
-        if(advanced) { rect(c,710f,557f,110f,98f,white,24f);rect(c,748f,585f,34f,34f,ink,6f) }
+        button(c,20f,160f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,cardCenter(GameState.Vehicle.EXCAVATOR),615f)
+        button(c,192f,160f,g.selected==GameState.Vehicle.TRUCK);truck(c,cardCenter(GameState.Vehicle.TRUCK)+2f,620f,.46f,2,0f)
+        button(c,364f,160f,g.selected==GameState.Vehicle.DOZER);dozer(c,cardCenter(GameState.Vehicle.DOZER)+2f,622f,.46f,1)
+        button(c,536f,160f,g.selected==GameState.Vehicle.CRANE);crane(c,cardCenter(GameState.Vehicle.CRANE),640f,.9f,false)
+        if(advanced) { rect(c,712f,557f,100f,98f,white,24f);rect(c,745f,585f,34f,34f,ink,6f) }
         rect(c,840f,556f,340f,104f,teal,28f)
         actionIcon(c,g,1010f,608f)
         if(g.celebrating>0) {
@@ -106,7 +107,26 @@ class GameRenderer {
                 dozer(c,x-30f,y+38f,.5f,1)
                 poly(c,floatArrayOf(x+40f,y+30f,x+70f,y-2f,x+100f,y+30f),col("#F7D583"))
             }
+            GameState.Vehicle.CRANE -> when {
+                // Bridge ready: the crane lifts the next piece over the water.
+                g.bridgeReady -> { crane(c,x-50f,y+40f,1f,false);bridgeIcon(c,x+80f,y+4f,.9f) }
+                g.craneCargo>0 -> { crane(c,x-30f,y+40f,1f,true);arrowDown(c,x+70f,y-10f,white) }
+                else -> { crane(c,x-30f,y+40f,1f,false);poly(c,floatArrayOf(x+50f,y+34f,x+80f,y+4f,x+110f,y+34f),col("#F7D583")) }
+            }
         }
+    }
+    /** Mobile crane pictogram: wheeled carrier, angled boom, cable and clamshell grab. */
+    private fun crane(c:Canvas,x:Float,y:Float,s:Float,loaded:Boolean) {
+        c.save();c.translate(x,y);c.scale(s,s)
+        // Dark outline keeps the yellow crane readable on the yellow selected card.
+        rect(c,-51f,-33f,102f,24f,ink,8f);rect(c,-49f,-53f,36f,28f,ink,7f);line(c,-8f,-36f,42f,-88f,ink,16f)
+        rect(c,-48f,-30f,96f,18f,yellow,6f);rect(c,-46f,-50f,30f,22f,yellow,5f);rect(c,-42f,-46f,20f,13f,col("#A5DFE2"),3f)
+        wheel(c,-30f,-10f,10f);wheel(c,30f,-10f,10f)
+        line(c,-8f,-36f,42f,-88f,yellow,10f);line(c,-8f,-36f,42f,-88f,ink,2f)
+        line(c,42f,-88f,42f,-56f,ink,2f)
+        poly(c,floatArrayOf(32f,-56f,52f,-56f,48f,-44f,36f,-44f),ink)
+        if(loaded)poly(c,floatArrayOf(34f,-56f,42f,-64f,50f,-56f),col("#F7D583"))
+        c.restore()
     }
     private fun arrowDown(c:Canvas,x:Float,y:Float,color:Int) { line(c,x,y-24f,x,y+14f,color,10f);poly(c,floatArrayOf(x-18f,y+8f,x+18f,y+8f,x,y+30f),color) }
     /** A bobbing pointing hand with a tap ripple; visible pictorial help for non-readers. */
@@ -147,7 +167,11 @@ class GameRenderer {
         p.style=Paint.Style.STROKE;p.strokeWidth=2f;p.color=white;c.drawCircle(fx,fz,9f,p);p.style=Paint.Style.FILL
         text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
     }
-    companion object { const val PARENT_TOP=160f;const val PARENT_STEP=70f }
+    companion object {
+        const val PARENT_TOP=160f;const val PARENT_STEP=70f
+        /** Horizontal centre of each vehicle card in the bottom bar (1200-wide HUD space). */
+        fun cardCenter(vehicle:GameState.Vehicle)=100f+vehicle.ordinal*172f
+    }
     /** Arched bridge over blue water, as a pictogram. */
     private fun bridgeIcon(c:Canvas,x:Float,y:Float,s:Float) {
         rect(c,x-30f*s,y+10f*s,60f*s,12f*s,col("#5DA9D6"),4f)

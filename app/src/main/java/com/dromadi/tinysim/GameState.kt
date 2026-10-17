@@ -4,7 +4,7 @@ import kotlin.math.*
 
 /** Deterministic, bounded simulation. Sand units are conserved, including the source. */
 class GameState {
-    enum class Vehicle { EXCAVATOR, TRUCK, DOZER }
+    enum class Vehicle { EXCAVATOR, TRUCK, DOZER, CRANE }
     var selected = Vehicle.EXCAVATOR
     // Arm coordinates stay local to the excavator; its pose moves/rotates the rig in 3D.
     var excavatorX=200f
@@ -34,12 +34,131 @@ class GameState {
         private set
     val bridgeOpen get()=bridgeStage>=3
     private val driveMaxX get()=if(bridgeOpen)WorldMap.EAST_MAX_X else WorldMap.DRIVE_MAX_X
+    // Mobile crane with a clamshell grab. Angle is the boom's world direction in degrees
+    // (atan2 of the z/x offset), reach is the horizontal hook distance, hookY its height above ground.
+    var craneX=WorldMap.gameX(CRANE_SPOT_X)
+    var craneZ=CRANE_SPOT_Z
+    var craneHeading=0f
+    var craneTravel=0f
+    var craneGoal:DriveGoal?=null
+        private set
+    var craneAngle=-90f
+    var craneReach=4.7f
+    var hookY=HOOK_REST
+        private set
+    var craneCargo=0
+    private class CraneTask(val x:Float,val z:Float,val drop:Boolean) { var lowered=false }
+    private var craneTask:CraneTask?=null
+    private var pendingCrane:Pair<Float,Float>?=null
+    private var pendingBridge=false
+    val craneBusy get()=craneTask!=null
+    /** Where the hook currently hangs over the ground (world metres). */
+    val hookPoint get()=craneWorldX+cos(craneAngle*PI.toFloat()/180f)*craneReach to craneZ+sin(craneAngle*PI.toFloat()/180f)*craneReach
+    val craneWorldX get()=WorldMap.worldX(craneX)
+    private val craneAtSpot get()=hypot(craneWorldX-CRANE_SPOT_X,craneZ-CRANE_SPOT_Z)<1f
+    /**
+     * A touch on the ground for the crane: within reach the boom swings there and the grab picks
+     * up sand (or drops its cargo); further away the crane first drives within reach.
+     */
+    fun craneTap(x:Float,z:Float):Boolean {
+        if(!x.isFinite() || !z.isFinite() || bridgeClock>0f)return false
+        val d=hypot(x-craneWorldX,z-craneZ)
+        if(d in CRANE_MIN_REACH..CRANE_MAX_REACH) { craneGoal=null;pendingCrane=null;craneTask=CraneTask(x,z,craneCargo>0);return true }
+        // Park on the line toward the target, comfortably inside the reach.
+        val ux=if(d<1e-3f)1f else (craneWorldX-x)/d;val uz=if(d<1e-3f)0f else (craneZ-z)/d
+        driveTo(Vehicle.CRANE,WorldMap.gameX(x+ux*6f),z+uz*6f)
+        pendingCrane=x to z;return true
+    }
+    /** The crane lifts the next bridge piece from the yard; it drives to its work spot first. */
+    private fun craneBuildsBridge():Boolean {
+        if(!bridgeReady || bridgeClock>0f)return false
+        if(!craneAtSpot) { driveTo(Vehicle.CRANE,WorldMap.gameX(CRANE_SPOT_X),CRANE_SPOT_Z);pendingBridge=true;return true }
+        return buildBridge()
+    }
+    private fun craneAction() {
+        if(craneTask!=null || craneGoal!=null)return
+        if(craneBuildsBridge())return
+        if(craneCargo>0) {
+            val truck=WorldMap.worldX(truckX) to truckZ
+            if(hypot(truck.first-craneWorldX,truck.second-craneZ)<=CRANE_MAX_REACH)craneTap(truck.first,truck.second)
+            else { val (hx,hz)=hookPoint;craneTap(hx,hz) }
+            return
+        }
+        val reachable=sand.indices.filter { sand[it]>0 && !WorldMap.river(it) && (bridgeOpen || !WorldMap.east(WorldMap.cellX(it))) }
+        val pile=reachable.minByOrNull { hypot(WorldMap.cellX(it)-craneWorldX,WorldMap.cellZ(it)-craneZ) }
+        when {
+            pile!=null -> craneTap(WorldMap.cellX(pile),WorldMap.cellZ(pile))
+            source>0 -> craneTap(WorldMap.worldX(365f),0f)
+        }
+    }
+    private fun advanceCrane(dt:Float) {
+        val goal=craneGoal
+        if(goal!=null) {
+            val dx=(goal.x-craneX)/60f;val dz=goal.z-craneZ;val distance=hypot(dx,dz)
+            if(distance<.025f) {
+                craneX=goal.x;craneZ=goal.z;craneGoal=nextLeg(Vehicle.CRANE)
+                if(craneGoal==null) {
+                    pendingCrane?.let { (x,z)->pendingCrane=null;if(hypot(x-craneWorldX,z-craneZ) in CRANE_MIN_REACH..CRANE_MAX_REACH)craneTask=CraneTask(x,z,craneCargo>0) }
+                    if(pendingBridge) { pendingBridge=false;buildBridge() }
+                }
+                return
+            }
+            craneHeading=heading(craneHeading,dx,dz,dt)
+            val step=min(distance,2.6f*dt)
+            craneX+=dx/distance*step*60f;craneZ+=dz/distance*step;craneTravel+=step
+            return
+        }
+        val task=craneTask
+        if(task==null) { hookY+=(HOOK_REST-hookY)*min(1f,dt*3f);return }
+        val dx=task.x-craneWorldX;val dz=task.z-craneZ
+        val wantAngle=atan2(dz,dx)*180f/PI.toFloat()
+        val wantReach=hypot(dx,dz).coerceIn(CRANE_MIN_REACH,CRANE_MAX_REACH)
+        val turn=((wantAngle-craneAngle+540f)%360f)-180f
+        if(abs(turn)>.5f || abs(wantReach-craneReach)>.03f) {
+            craneAngle+=turn.coerceIn(-75f*dt,75f*dt);craneReach+=(wantReach-craneReach).coerceIn(-3f*dt,3f*dt)
+            hookY+=(HOOK_SWING-hookY)*min(1f,dt*4f);return
+        }
+        craneAngle=wantAngle;craneReach=wantReach
+        val ground=surface(task.x,task.z)+.45f
+        if(!task.lowered) {
+            hookY=max(ground,hookY-3f*dt)
+            if(hookY<=ground+1e-3f) { task.lowered=true;craneTransfer(task) }
+        } else {
+            hookY=min(HOOK_REST,hookY+3f*dt)
+            if(hookY>=HOOK_REST-1e-3f)craneTask=null
+        }
+    }
+    /** At the bottom of the drop: the grab closes on sand, or opens over the truck/yard/ground. */
+    private fun craneTransfer(task:CraneTask) {
+        if(!task.drop) {
+            val pile=nearbyPile(task.x,task.z)
+            when {
+                pile!=null -> { craneCargo=min(2,sand[pile]);sand[pile]-=craneCargo }
+                source>0 && hypot(task.x-WorldMap.worldX(365f),task.z)<1.8f -> { craneCargo=min(2,source);source-=craneCargo }
+                else -> return
+            }
+        } else {
+            if(craneCargo==0)return
+            if(hypot(task.x-WorldMap.worldX(truckX),task.z-truckZ)<1.8f && load<8 && !tipping) {
+                val n=min(craneCargo,8-load);load+=n;craneCargo-=n
+            }
+            val cell=WorldMap.cell(task.x,task.z)
+            while(craneCargo>0) {
+                craneCargo--
+                if(Terrain.foundation(cell) && houseReady && houseFill<8)houseFill++
+                else if(WorldMap.bridgeYard(cell) && bridgeStage==0 && bridgeFill<8)bridgeFill++
+                else sand[if(WorldMap.river(cell))WorldMap.cell(if(WorldMap.east(task.x))WorldMap.EAST_BANK_X+.6f else WorldMap.WEST_BANK_X-.6f,task.z) else cell]++
+            }
+        }
+        transferKind=5;transferSerial++;checkMission()
+    }
     val bridgeReady get()=bridgeFill>=8 && bridgeStage<3
     private fun insideBridgeSite(x:Float,z:Float)=WorldMap.worldX(x) in 43.5f..55.5f && z in 1.5f..7.5f
     private val bridgeSiteOccupied get()=insideBridgeSite(truckX,truckZ) || insideBridgeSite(excavatorX,excavatorZ) || insideBridgeSite(dozerX,dozerZ)
     /** Starts the crane on the next bridge stage, after moving machines out of the work area. */
     fun buildBridge():Boolean {
-        if(!bridgeReady || bridgeClock>0f)return false
+        if(!bridgeReady || bridgeClock>0f || !craneAtSpot)return false
+        craneTask=null;pendingCrane=null
         if(insideBridgeSite(truckX,truckZ))driveTo(Vehicle.TRUCK,WorldMap.gameX(41f),9.5f)
         if(insideBridgeSite(dozerX,dozerZ))driveTo(Vehicle.DOZER,WorldMap.gameX(41f),0f)
         if(insideBridgeSite(excavatorX,excavatorZ)) { moveArm(365f,340f);driveTo(Vehicle.EXCAVATOR,WorldMap.gameX(40f),3f) }
@@ -47,13 +166,14 @@ class GameState {
     }
     val excavatorHeight get()=surface(WorldMap.worldX(excavatorX),excavatorZ)-.07f
     private fun insideHouse(x:Float,z:Float)=WorldMap.worldX(x) in 31f..41f && z in 3f..11f
-    private val siteOccupied get()=insideHouse(truckX,truckZ) || insideHouse(excavatorX,excavatorZ) || insideHouse(dozerX,dozerZ)
+    private val siteOccupied get()=insideHouse(truckX,truckZ) || insideHouse(excavatorX,excavatorZ) || insideHouse(dozerX,dozerZ) || insideHouse(craneX,craneZ)
     fun buildHouse():Boolean {
         if(!houseReady || houseFill<8 || houseStage>=3 || buildClock>0)return false
         // Empty the working footprint before any structure appears.
         if(insideHouse(truckX,truckZ))driveTo(Vehicle.TRUCK,WorldMap.gameX(44f),11.5f)
         if(insideHouse(dozerX,dozerZ))driveTo(Vehicle.DOZER,WorldMap.gameX(44f),3f)
         if(insideHouse(excavatorX,excavatorZ)) { moveArm(365f,340f);driveTo(Vehicle.EXCAVATOR,WorldMap.gameX(29f),3f) }
+        if(insideHouse(craneX,craneZ))driveTo(Vehicle.CRANE,WorldMap.gameX(43f),10f)
         buildClock=1.4f;return true
     }
     val road=IntArray(4)
@@ -101,7 +221,7 @@ class GameState {
     var dozerGoal:DriveGoal?=null
         private set
     /** Remaining waypoints after the current goal, per vehicle (excavator, truck, dozer). */
-    private val routes=Array(3) { ArrayDeque<DriveGoal>() }
+    private val routes=Array(4) { ArrayDeque<DriveGoal>() }
     /**
      * Drives toward (x, z). The river can only be crossed over the finished bridge: routes to the
      * other bank go via both bridge ends; before it opens, goals stay on the west bank.
@@ -109,7 +229,7 @@ class GameState {
     fun driveTo(vehicle:Vehicle,x:Float,z:Float) {
         if(!x.isFinite() || !z.isFinite())return
         if(vehicle==Vehicle.EXCAVATOR)digTarget=null
-        val currentX=WorldMap.worldX(when(vehicle) { Vehicle.EXCAVATOR->excavatorX;Vehicle.TRUCK->truckX;Vehicle.DOZER->dozerX })
+        val currentX=WorldMap.worldX(when(vehicle) { Vehicle.EXCAVATOR->excavatorX;Vehicle.TRUCK->truckX;Vehicle.DOZER->dozerX;Vehicle.CRANE->craneX })
         var gx=x.coerceIn(if(vehicle==Vehicle.EXCAVATOR)90f else WorldMap.DRIVE_MIN_X,if(bridgeOpen)WorldMap.EAST_MAX_X else WorldMap.DRIVE_MAX_X)
         val gz=z.coerceIn(WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z)
         // Off the deck, the water is never a destination: stop at the nearer bank.
@@ -130,12 +250,13 @@ class GameState {
             Vehicle.TRUCK -> { truckGoal=goal;tipping=false }
             Vehicle.DOZER -> dozerGoal=goal
             Vehicle.EXCAVATOR -> excavatorGoal=goal
+            Vehicle.CRANE -> { craneGoal=goal;craneTask=null }
         }
     }
     /** The next waypoint once the current one is reached, or null at the destination. */
     private fun nextLeg(vehicle:Vehicle)=routes[vehicle.ordinal].removeFirstOrNull()
-    fun stopMovement() { truckGoal=null;dozerGoal=null;excavatorGoal=null;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() } }
-    val driving get()=truckGoal!=null || dozerGoal!=null || excavatorGoal!=null
+    fun stopMovement() { truckGoal=null;dozerGoal=null;excavatorGoal=null;craneGoal=null;craneTask=null;pendingCrane=null;pendingBridge=false;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() } }
+    val driving get()=truckGoal!=null || dozerGoal!=null || excavatorGoal!=null || craneGoal!=null || craneTask!=null
     var bladeDown = true
     var dozerFacing = 1
     var rewardSerial = 0
@@ -149,7 +270,7 @@ class GameState {
     var transferKind=0
     private var tipClock = 0f
     private var pendingReward = false
-    val totalSand get() = source + bucket + load + sand.sum() + road.sum() + houseFill + bridgeFill
+    val totalSand get() = source + bucket + load + sand.sum() + road.sum() + houseFill + bridgeFill + craneCargo
     val missionProgress get() = when(mission) { 0 -> load.coerceAtMost(4); 1 -> delivered.coerceAtMost(4); 2 -> flattened.coerceAtMost(4); 3 -> roadProgress; else -> houseStage.coerceAtMost(3)+if(houseReady)1 else 0 }
     fun moveArm(x: Float, y: Float) {
         if(!x.isFinite() || !y.isFinite())return
@@ -220,6 +341,7 @@ class GameState {
             }
             Vehicle.TRUCK -> { truckGoal=null;tipping=!tipping }
             Vehicle.DOZER -> if(!pushNearestPile())bladeDown=!bladeDown
+            Vehicle.CRANE -> craneAction()
         }
     }
     /** One-touch bulldozing: lower the blade and drive straight through the nearest tall pile. */
@@ -243,13 +365,17 @@ class GameState {
         }
         if(bridgeClock>0f && !bridgeSiteOccupied) {
             bridgeClock=max(0f,bridgeClock-dt)
-            if(bridgeClock==0f) { bridgeStage++;if(bridgeStage==3) { celebrating=2.5f;rewardSerial++ } }
+            if(bridgeClock==0f) {
+                bridgeStage++;if(bridgeStage==3) { celebrating=2.5f;rewardSerial++ }
+                craneAngle=atan2(WorldMap.BRIDGE_Z-craneZ,52f-craneWorldX)*180f/PI.toFloat();craneReach=hypot(52f-craneWorldX,WorldMap.BRIDGE_Z-craneZ).coerceIn(CRANE_MIN_REACH,CRANE_MAX_REACH)
+            }
         }
         val smoothing = 1f-exp(-8f*dt)
         armX += (targetX-armX)*smoothing; armY += (targetY-armY)*smoothing
         advanceExcavator(dt)
         advanceTruck(dt)
         advanceDozer(dt)
+        advanceCrane(dt)
         bedAngle += ((if(tipping) -42f else 0f)-bedAngle)*smoothing
         if(tipping && bedAngle < -28 && load > 0) {
             tipClock += dt
@@ -335,18 +461,19 @@ class GameState {
         }
     }
     fun toggleMode() { missionMode=!missionMode; mission=0; delivered=0; flattened=0; pendingReward=false; celebrating=0f; checkMission() }
-    fun reset() { earth.fill(Terrain.INITIAL_EARTH);houseFill=0;houseStage=0;buildClock=0f;bridgeFill=0;bridgeStage=0;bridgeClock=0f; excavatorX=200f;excavatorZ=0f;excavatorHeading=0f;excavatorTravel=0f;road.fill(0);dug.fill(0);truckX=620f; dozerX=1000f; armX=365f; armY=340f; targetX=armX; targetY=armY
+    fun reset() { earth.fill(Terrain.INITIAL_EARTH);houseFill=0;houseStage=0;buildClock=0f;bridgeFill=0;bridgeStage=0;bridgeClock=0f;craneX=WorldMap.gameX(CRANE_SPOT_X);craneZ=CRANE_SPOT_Z;craneHeading=0f;craneTravel=0f;craneAngle=-90f;craneReach=4.7f;hookY=HOOK_REST;craneCargo=0; excavatorX=200f;excavatorZ=0f;excavatorHeading=0f;excavatorTravel=0f;road.fill(0);dug.fill(0);truckX=620f; dozerX=1000f; armX=365f; armY=340f; targetX=armX; targetY=armY
         bucket=0; load=0; source=36; sand.fill(0); Terrain.QUARRY.forEach { sand[it]=Terrain.QUARRY_SAND }; delivered=0; flattened=0; mission=0
         tipping=false;stopMovement();truckZ=0f;dozerZ=2.25f;truckHeading=0f;dozerHeading=0f;truckTravel=0f;dozerTravel=0f; bladeDown=true; dozerFacing=1; bedAngle=0f; celebrating=0f; tipClock=0f; pendingReward=false }
-    fun snapshot():String="8|"+listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal,if(bladeDown)1 else 0,if(tipping)1 else 0,dozerFacing,bedAngle,truckZ,dozerZ,truckHeading,dozerHeading,excavatorX,excavatorZ,excavatorHeading).joinToString(",")+";"+sand.joinToString(",")+";"+road.joinToString(",")+";"+dug.joinToString(",")+";"+earth.joinToString(",")+";"+listOf(houseFill,houseStage).joinToString(",")+";"+listOf(bridgeFill,bridgeStage).joinToString(",")
+    fun snapshot():String="9|"+listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal,if(bladeDown)1 else 0,if(tipping)1 else 0,dozerFacing,bedAngle,truckZ,dozerZ,truckHeading,dozerHeading,excavatorX,excavatorZ,excavatorHeading).joinToString(",")+";"+sand.joinToString(",")+";"+road.joinToString(",")+";"+dug.joinToString(",")+";"+earth.joinToString(",")+";"+listOf(houseFill,houseStage).joinToString(",")+";"+listOf(bridgeFill,bridgeStage).joinToString(",")+";"+listOf(craneX,craneZ,craneHeading,craneAngle,craneReach,craneCargo).joinToString(",")
     fun restore(value:String?) {
         if(value==null)return
         runCatching {
-            val alpha8=value.startsWith("8|")
+            val alpha9=value.startsWith("9|")
+            val alpha8=alpha9 || value.startsWith("8|")
             val alpha7=alpha8 || value.startsWith("7|")
             val alpha6=alpha7 || value.startsWith("6|")
             val modern=alpha6 || value.startsWith("5|")
-            val parts=value.removePrefix("8|").removePrefix("7|").removePrefix("6|").removePrefix("5|").split(';');require(parts.size==if(alpha8)7 else if(alpha7)6 else if(alpha6)4 else 2)
+            val parts=value.removePrefix("9|").removePrefix("8|").removePrefix("7|").removePrefix("6|").removePrefix("5|").split(';');require(parts.size==if(alpha9)8 else if(alpha8)7 else if(alpha7)6 else if(alpha6)4 else 2)
             // Saves before alpha.12 hold the 62-column map; widen them, east-bank cells start fresh.
             val cells=if(alpha8)WorldMap.CELL_COUNT else WorldMap.LEGACY_COLUMNS*WorldMap.ROWS
             fun widen(index:Int)=if(alpha8)index else index/WorldMap.LEGACY_COLUMNS*WorldMap.COLUMNS+index%WorldMap.LEGACY_COLUMNS
@@ -358,7 +485,7 @@ class GameState {
             val end=ArmRig.limit(finite(2,285f,825f),finite(3,220f,550f));armX=end.first;armY=end.second;targetX=armX;targetY=armY
             bucket=v[4].toInt().coerceIn(0,2);load=v[5].toInt().coerceIn(0,8);source=v[6].toInt().coerceIn(0,36)
             delivered=v[7].toInt().coerceAtLeast(0);flattened=v[8].toInt().coerceAtLeast(0);mission=v[9].toInt().coerceIn(0,if(alpha7)4 else if(alpha6)3 else 2)
-            missionMode=v[10]=="1";selected=Vehicle.entries[v[11].toInt().coerceIn(0,2)]
+            missionMode=v[10]=="1";selected=Vehicle.entries[v[11].toInt().coerceIn(0,if(alpha9)3 else 2)]
             if(v.size>=16) { bladeDown=v[12]=="1";tipping=v[13]=="1";dozerFacing=if(v[14].toInt()<0)-1 else 1;bedAngle=finite(15,-42f,0f) }
             if(modern) {
                 truckZ=finite(16,WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z);dozerZ=finite(17,WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z)
@@ -385,13 +512,24 @@ class GameState {
                 val bridge=parts[6].split(',');require(bridge.size==2)
                 bridgeFill=bridge[0].toInt();bridgeStage=bridge[1].toInt();require(bridgeFill in 0..8 && bridgeStage in 0..3 && (bridgeStage==0 || bridgeFill==8))
                 // Vehicles may only be on the east bank when the bridge is open.
-                if(!bridgeOpen)require(listOf(truckX,dozerX,excavatorX).all { it<=WorldMap.DRIVE_MAX_X })
+                if(alpha9) {
+                    val c=parts[7].split(',');require(c.size==6)
+                    fun cf(i:Int)=c[i].toFloat().also { require(it.isFinite()) }
+                    craneX=cf(0).coerceIn(WorldMap.DRIVE_MIN_X,WorldMap.EAST_MAX_X);craneZ=cf(1).coerceIn(WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z)
+                    craneHeading=cf(2).coerceIn(0f,360f);craneAngle=cf(3).coerceIn(-360f,360f);craneReach=cf(4).coerceIn(CRANE_MIN_REACH,CRANE_MAX_REACH)
+                    craneCargo=c[5].toInt();require(craneCargo in 0..2)
+                }
+                if(!bridgeOpen)require(listOf(truckX,dozerX,excavatorX,craneX).all { it<=WorldMap.DRIVE_MAX_X })
             } else Terrain.QUARRY.forEach { sand[it]=Terrain.QUARRY_SAND }
             require(totalMaterial==Terrain.INITIAL_MASS);checkMission()
         }.onFailure { reset() }
     }
     companion object {
         const val BRIDGE_STAGE_SECONDS=3.2f
+        /** Crane work spot beside the bridge yard, and its reach and hook heights in metres. */
+        const val CRANE_SPOT_X=46.5f;const val CRANE_SPOT_Z=9.2f
+        const val CRANE_MIN_REACH=2.5f;const val CRANE_MAX_REACH=9f
+        const val HOOK_REST=2.6f;const val HOOK_SWING=3.1f
         /** Loose sand in a new world: the 36-unit source plus the east-bank quarry. */
         const val START_SAND=36+6*Terrain.QUARRY_SAND
     }

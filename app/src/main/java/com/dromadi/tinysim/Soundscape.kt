@@ -39,21 +39,21 @@ class Soundscape(val zone:Int) {
  * Parameters are written by the UI thread; synthesis runs on the audio thread.
  */
 class MachineSounds {
-    /** Engine effort per vehicle (excavator, truck, dozer): 0 off, ~.2 idle, 1 full. */
-    val engine=FloatArray(3)
+    /** Engine effort per vehicle (excavator, truck, dozer, crane): 0 off, ~.2 idle, 1 full. */
+    val engine=FloatArray(4)
     @Volatile var hydraulic=0f
     @Volatile var pourSerial=0
     @Volatile var hornSerial=0
     @Volatile var hornVehicle=0
     private val random=Random(911)
-    private val phase=DoubleArray(3);private val level=DoubleArray(3);private val rumble=DoubleArray(3)
+    private val phase=DoubleArray(4);private val level=DoubleArray(4);private val rumble=DoubleArray(4)
     private var whinePhase=0.0;private var whine=0.0;private var hissLow=0.0;private var hissBand=0.0
     private var pourSeen=0;private var pourLeft=0.0
     private var hornSeen=0;private var hornAge=10.0;private var hornKind=0;private var hornPhase=0.0;private var hornPhase2=0.0
     /** Mono sample for this instant, roughly within ±0.3. */
     fun next(step:Double):Double {
         var out=0.0
-        for(v in 0..2) {
+        for(v in 0..3) {
             val target=engine[v].toDouble().coerceIn(0.0,1.0)
             level[v]+=(target-level[v])*step*6
             if(level[v]<1e-4)continue

@@ -52,7 +52,7 @@ class ConstructionTest {
     }
     @Test fun alpha5SaveMigratesAndMalformedRoadOrMarksResetSafely() {
         val g=GameState();g.load=4;g.source=32
-        val parts=g.snapshot().removePrefix("8|").split(';')
+        val parts=g.snapshot().removePrefix("9|").split(';')
         // A real alpha.5 save holds the 62-column map without the east-bank quarry.
         val old="5|"+parts[0].split(',').take(20).joinToString(",")+";"+IntArray(WorldMap.LEGACY_COLUMNS*WorldMap.ROWS).joinToString(",")
         val copy=GameState();copy.restore(old);assertEquals(4,copy.load);assertEquals(200f,copy.excavatorX,0f);assertEquals(GameState.START_SAND,copy.totalSand)

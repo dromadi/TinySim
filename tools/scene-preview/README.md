@@ -29,3 +29,5 @@ Alpha.10 adds `vehicle-life`: 36 warm-up frames let the truck drive (dust, smoke
 Alpha.11 loads the real CC0 material textures: the JVM side records `texImageAsset` with each asset path and the replay page decodes those JPGs (`--allow-file-access-from-files`) before replaying. The preview build needs `org.json` from Maven Central.
 
 Alpha.12 adds `bridge-crane` (the crane mid-swing carrying a steel girder over the river) and `bridge-open` (finished bridge with the truck crossing toward the east-bank quarry).
+
+Alpha.13 adds `crane-grab`: the child-controlled crane right after its grab closed on a sand pile, with the truck waiting in reach and the crane card selected.

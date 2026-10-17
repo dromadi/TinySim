@@ -17,7 +17,6 @@ class GuideTest {
         arrive(g);settle(g)
         if(g.selected==GameState.Vehicle.EXCAVATOR) { g.scoop();g.pour() }
         if(g.houseReady && g.houseFill>=8 && g.houseStage<3 && g.buildClock==0f)g.buildHouse()
-        if(g.bridgeReady && g.bridgeClock==0f && g.buildBridge()) { arrive(g);settle(g) }
     }
     @Test fun firstHintsWalkThroughTheSandLoop() {
         val g=GameState()

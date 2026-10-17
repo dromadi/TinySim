@@ -34,6 +34,7 @@ class GameView(context: Context): FrameLayout(context) {
     private var lastTouch=SystemClock.uptimeMillis()
     private var assisted=false
     private var hint:Hint?=null
+    private var bridgeFramed=false
     /** Scripted device tests turn idle help off so the assist never races their touches. */
     var helpEnabled=true
     private var yaw=settings.yaw
@@ -57,7 +58,7 @@ class GameView(context: Context): FrameLayout(context) {
     fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus;game.greet(vehicle) }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
-        val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,WorldMap.worldX(game.excavatorX),game.excavatorZ),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ))
+        val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,WorldMap.worldX(game.excavatorX),game.excavatorZ),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ),Triple(GameState.Vehicle.CRANE,game.craneWorldX,game.craneZ))
         return candidates.mapNotNull { (unit,wx,wz)->
             val p=runCatching { camera.project(com.dromadi.tinysim.scene.Vec3(wx,1.1f,wz)) }.getOrNull() ?: return@mapNotNull null
             val distance=kotlin.math.hypot(x-p.first,y-p.second)
@@ -76,6 +77,11 @@ class GameView(context: Context): FrameLayout(context) {
         val ground=groundAt(x,y)
         if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
         val unit=vehicleAt(x,y)
+        // The crane works wherever the child touches: grab, drop (also into the truck) or drive closer.
+        if(game.selected==GameState.Vehicle.CRANE && unit!=GameState.Vehicle.CRANE) {
+            if(unit==GameState.Vehicle.TRUCK && game.craneCargo>0) { game.craneTap(WorldMap.worldX(game.truckX),game.truckZ);return }
+            if(unit==null && ground!=null) { game.craneTap(ground.x,ground.z);return }
+        }
         if(unit!=null) {
             if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket>0 && unit==GameState.Vehicle.TRUCK)game.action()
             else if(unit==game.selected && unit!=GameState.Vehicle.EXCAVATOR) {
@@ -103,7 +109,7 @@ class GameView(context: Context): FrameLayout(context) {
     private var lastTransfer=0
     private var lastGreet=0
     private var lastArmX=Float.NaN;private var lastArmY=Float.NaN
-    private val motion=Array(3) { VehicleMotion() }
+    private val motion=Array(4) { VehicleMotion() }
     private var lastReward=0
     private var scale=1f
     private var offsetX=0f
@@ -159,8 +165,8 @@ class GameView(context: Context): FrameLayout(context) {
             machineSounds(dt)
         }
         if(following && !parents) {
-            val targetX=when(game.selected) { GameState.Vehicle.EXCAVATOR -> WorldMap.worldX(game.excavatorX)+3.3f;GameState.Vehicle.TRUCK->WorldMap.worldX(game.truckX)+.3f;GameState.Vehicle.DOZER->WorldMap.worldX(game.dozerX)+.3f }
-            val targetZ=when(game.selected) { GameState.Vehicle.EXCAVATOR->game.excavatorZ;GameState.Vehicle.TRUCK->game.truckZ;GameState.Vehicle.DOZER->game.dozerZ }
+            val targetX=when(game.selected) { GameState.Vehicle.EXCAVATOR -> WorldMap.worldX(game.excavatorX)+3.3f;GameState.Vehicle.TRUCK->WorldMap.worldX(game.truckX)+.3f;GameState.Vehicle.DOZER->WorldMap.worldX(game.dozerX)+.3f;GameState.Vehicle.CRANE->game.craneWorldX+.3f }
+            val targetZ=when(game.selected) { GameState.Vehicle.EXCAVATOR->game.excavatorZ;GameState.Vehicle.TRUCK->game.truckZ;GameState.Vehicle.DOZER->game.dozerZ;GameState.Vehicle.CRANE->game.craneZ }
             val dt=if(previous==0L)0f else ((now-previous)/1000f).coerceIn(0f,.04f)
             val ease=1f-kotlin.math.exp(-4f*dt)
             panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,11f)-panZ)*ease
@@ -193,12 +199,13 @@ class GameView(context: Context): FrameLayout(context) {
             if(x in 20f..100f && y in 198f..274f)return "zoomOut"
             if(x in 20f..236f && y in 298f..420f)return "map"
             if(x in 1098f..1178f && y in 282f..358f)return "focus"
-            if(x in 710f..820f && y in 557f..655f)return "stop"
+            if(x in 712f..812f && y in 557f..655f)return "stop"
         }
         if(y in 556f..660f)return when(x) {
-            in 20f..190f -> "excavator"
-            in 205f..375f -> "truck"
-            in 390f..560f -> "dozer"
+            in 20f..180f -> "excavator"
+            in 192f..352f -> "truck"
+            in 364f..524f -> "dozer"
+            in 536f..696f -> "crane"
             in 840f..1180f -> "action"
             else -> null
         }
@@ -214,8 +221,8 @@ class GameView(context: Context): FrameLayout(context) {
     }
     /** Engines follow each vehicle's real speed; the selected one idles; arm motion drives hydraulics. */
     private fun machineSounds(dt:Float) {
-        val travel=floatArrayOf(game.excavatorTravel,game.truckTravel,game.dozerTravel)
-        for(v in 0..2) {
+        val travel=floatArrayOf(game.excavatorTravel,game.truckTravel,game.dozerTravel,game.craneTravel)
+        for(v in 0..3) {
             motion[v].update(travel[v],dt)
             audio.machines.engine[v]=when {
                 motion[v].moving -> .35f+.65f*motion[v].effort
@@ -225,7 +232,8 @@ class GameView(context: Context): FrameLayout(context) {
         }
         val arm=if(lastArmX.isNaN() || dt<=0f)0f else kotlin.math.hypot(game.armX-lastArmX,game.armY-lastArmY)/dt
         lastArmX=game.armX;lastArmY=game.armY
-        audio.machines.hydraulic=(arm/240f).coerceIn(0f,1f)
+        // The crane's slewing and hoisting also run on hydraulics.
+        audio.machines.hydraulic=maxOf((arm/240f).coerceIn(0f,1f),if(game.craneBusy || game.bridgeClock>0f).7f else 0f)
         if(game.greetSerial!=lastGreet) { lastGreet=game.greetSerial;audio.machines.hornVehicle=game.greetVehicle.ordinal;audio.machines.hornSerial++ }
     }
     /** House stages assemble by themselves once the foundation and materials are ready. */
@@ -234,7 +242,9 @@ class GameView(context: Context): FrameLayout(context) {
             following=false;panX=36.3f;panZ=7f
         }
         // The crane builds the bridge stage by stage once the yard holds all eight units.
-        if(game.bridgeReady && game.bridgeClock==0f && game.buildBridge()) { following=false;panX=50f;panZ=5f }
+        // The child's crane builds the bridge; frame the river while a stage goes up.
+        if(game.bridgeClock>0f && !bridgeFramed) { bridgeFramed=true;following=false;panX=50f;panZ=5f }
+        if(game.bridgeClock==0f)bridgeFramed=false
         val idle=now-lastTouch
         val quiet=game.celebrating<=0f && !game.driving && game.buildClock==0f && game.bridgeClock==0f
         hint=if(helpEnabled && quiet && idle>HINT_AFTER_MS)Guide.next(game) else null
@@ -254,7 +264,7 @@ class GameView(context: Context): FrameLayout(context) {
     }
     private fun hintPoint():Pair<Float,Float>? = when(val next=hint) {
         null -> null
-        is Hint.Card -> when(next.vehicle) { GameState.Vehicle.EXCAVATOR->105f to 590f;GameState.Vehicle.TRUCK->290f to 590f;GameState.Vehicle.DOZER->475f to 590f }
+        is Hint.Card -> GameRenderer.cardCenter(next.vehicle) to 590f
         Hint.Action -> 1010f to 590f
         is Hint.Ground -> runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(next.x,game.surface(next.x,next.z),next.z)) }.getOrNull()
             ?.takeIf { it.first in 40f..1160f && it.second in 110f..520f }
@@ -273,6 +283,7 @@ class GameView(context: Context): FrameLayout(context) {
             "excavator" -> selectUnit(GameState.Vehicle.EXCAVATOR)
             "truck" -> selectUnit(GameState.Vehicle.TRUCK)
             "dozer" -> selectUnit(GameState.Vehicle.DOZER)
+            "crane" -> selectUnit(GameState.Vehicle.CRANE)
             "action" -> game.action()
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")
@@ -282,7 +293,7 @@ class GameView(context: Context): FrameLayout(context) {
             "close" -> parents=false
         }
         // Vehicle cards honk instead of beeping.
-        if(action !in listOf("sound","excavator","truck","dozer"))audio.play(settings.sound)
+        if(action !in listOf("sound","excavator","truck","dozer","crane"))audio.play(settings.sound)
     }
     override fun onInterceptTouchEvent(event: MotionEvent)=true
     override fun onTouchEvent(event: MotionEvent): Boolean {

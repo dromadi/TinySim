@@ -37,6 +37,9 @@ object Guide {
             // A full truck while the foundation is still open empties at the spare spot.
             digging && g.load>=8 -> driveTruck(SPARE_X,SPARE_Z)
             g.bucket>0 -> use(GameState.Vehicle.EXCAVATOR)
+            g.craneCargo>0 -> use(GameState.Vehicle.CRANE)
+            // The child's crane lifts each bridge piece once the yard is full.
+            g.bridgeReady && g.bridgeClock==0f -> use(GameState.Vehicle.CRANE)
             house && g.houseReady && g.houseFill<8 && g.load>0 -> driveTruck(HOUSE_X,HOUSE_Z)
             bridge && g.load>0 -> driveTruck(YARD_X,YARD_Z)
             !house && !bridge && g.load>=4 -> use(GameState.Vehicle.TRUCK)

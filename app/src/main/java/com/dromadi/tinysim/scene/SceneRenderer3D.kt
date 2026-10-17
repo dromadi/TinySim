@@ -52,12 +52,12 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private var streamZ=0f;private var streamGround=0f
     private var lastDozerZ=Float.NaN
     // Vehicle life: per-vehicle motion (excavator, truck, dozer), driver wave and tyre/track marks.
-    private val motion=Array(3) { com.dromadi.tinysim.VehicleMotion() }
+    private val motion=Array(4) { com.dromadi.tinysim.VehicleMotion() }
     private var lastSeconds=Float.NaN
     private var greetSeen=-1;private var waveStart=-10f;private var waveVehicle=0
-    private val marks=Array(3) { FloatArray(MARKS*4) }
-    private val markCount=IntArray(3);private val markNext=IntArray(3)
-    private val lastStamp=Array(3) { floatArrayOf(Float.NaN,0f) }
+    private val marks=Array(4) { FloatArray(MARKS*4) }
+    private val markCount=IntArray(4);private val markNext=IntArray(4)
+    private val lastStamp=Array(4) { floatArrayOf(Float.NaN,0f) }
     private val tint=FloatArray(4)
     private var lastDozerX=Float.NaN;private var dustUntil=-10f;private var dustX=0f
     private var drawCalls=0
@@ -265,11 +265,11 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private fun updateEffects(f:SceneFrame) {
         val dt=if(lastSeconds.isNaN())0f else (f.seconds-lastSeconds).coerceIn(0f,.1f)
         lastSeconds=f.seconds
-        val travel=floatArrayOf(f.excavatorTravel,f.truckTravel,f.dozerTravel)
-        val px=floatArrayOf(WorldMap.worldX(f.excavatorX),WorldMap.worldX(f.truckX),WorldMap.worldX(f.dozerX))
-        val pz=floatArrayOf(f.excavatorZ,f.truckZ,f.dozerZ)
-        val heading=floatArrayOf(f.excavatorHeading,f.truckHeading,f.dozerHeading)
-        for(v in 0..2) {
+        val travel=floatArrayOf(f.excavatorTravel,f.truckTravel,f.dozerTravel,f.craneTravel)
+        val px=floatArrayOf(WorldMap.worldX(f.excavatorX),WorldMap.worldX(f.truckX),WorldMap.worldX(f.dozerX),WorldMap.worldX(f.craneX))
+        val pz=floatArrayOf(f.excavatorZ,f.truckZ,f.dozerZ,f.craneZ)
+        val heading=floatArrayOf(f.excavatorHeading,f.truckHeading,f.dozerHeading,f.craneHeading)
+        for(v in 0..3) {
             motion[v].update(travel[v],dt)
             val last=lastStamp[v]
             if(last[0].isNaN() || hypot(px[v]-last[0],pz[v]-last[1])>.45f) {
@@ -394,10 +394,10 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         if(shadowPass)return
         noCast {
             GL.glDepthMask(false)
-            val sx=when(f.selected) { GameState.Vehicle.EXCAVATOR->WorldMap.worldX(f.excavatorX);GameState.Vehicle.TRUCK->WorldMap.worldX(f.truckX);GameState.Vehicle.DOZER->WorldMap.worldX(f.dozerX) }
-            val sz=when(f.selected) { GameState.Vehicle.EXCAVATOR->f.excavatorZ;GameState.Vehicle.TRUCK->f.truckZ;GameState.Vehicle.DOZER->f.dozerZ }
+            val sx=when(f.selected) { GameState.Vehicle.EXCAVATOR->WorldMap.worldX(f.excavatorX);GameState.Vehicle.TRUCK->WorldMap.worldX(f.truckX);GameState.Vehicle.DOZER->WorldMap.worldX(f.dozerX);GameState.Vehicle.CRANE->WorldMap.worldX(f.craneX) }
+            val sz=when(f.selected) { GameState.Vehicle.EXCAVATOR->f.excavatorZ;GameState.Vehicle.TRUCK->f.truckZ;GameState.Vehicle.DOZER->f.dozerZ;GameState.Vehicle.CRANE->f.craneZ }
             disk(sx,.092f,sz,4.5f,3f,rgba(53,196,180,.16f),DECAL)
-            val goal=when(f.selected) { GameState.Vehicle.TRUCK->f.truckGoal;GameState.Vehicle.DOZER->f.dozerGoal;else->f.excavatorGoal }
+            val goal=when(f.selected) { GameState.Vehicle.TRUCK->f.truckGoal;GameState.Vehicle.DOZER->f.dozerGoal;GameState.Vehicle.CRANE->f.craneGoal;else->f.excavatorGoal }
             if(goal!=null) {
                 val gx=WorldMap.worldX(goal.x)
                 disk(gx,.105f,goal.z,1.1f,1.1f,rgba(24,178,163,.85f),DECAL)
@@ -723,32 +723,43 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
             }
         }
     }
-    /** Mobile crane on the west bank; while a stage builds it lifts the next piece from the yard. */
+    /**
+     * The child's mobile crane, posed from the game state: carrier, slewing turret, two-stage boom,
+     * cable and clamshell grab. While a bridge stage builds, the hook follows the lift-swing-lower
+     * timeline from the yard to the span instead.
+     */
     private fun crane(f:SceneFrame) {
-        val cx=46.5f;val cz=9.2f
-        push();translate(cx,support(f,cx,cz),cz);beginTexFrame()
+        val cx=WorldMap.worldX(f.craneX);val cz=f.craneZ;val base=support(f,cx,cz)
+        push();translate(cx,base,cz);rotate(f.craneHeading,0f,1f,0f);beginTexFrame()
+        for(x in floatArrayOf(-1.5f,1.5f))for(z in floatArrayOf(-.85f,.85f))wheel(x,.48f,z,-f.craneTravel/.47f*180f/PI.toFloat())
+        wheelDust(f,3,4.4f)
+        translate(0f,bob(f,3),0f)
         panel(0f,.75f,0f,4.4f,.5f,1.9f,yellow)
-        for(x in floatArrayOf(-1.5f,1.5f))for(z in floatArrayOf(-.85f,.85f))wheel(x,.48f,z,0f)
+        val parked=!motion[3].moving
         for(x in floatArrayOf(-1.9f,1.9f))for(z in floatArrayOf(-1.4f,1.4f)) {
-            box(x,.62f,z*.8f,.14f,.14f,.9f,darkSteel,METAL);surface(x,.07f,z,.5f,.08f,.5f,darkSteel,CONCRETE)
+            box(x,.62f,z*.8f,.14f,.14f,.9f,darkSteel,METAL)
+            if(parked)surface(x,.07f,z,.5f,.08f,.5f,darkSteel,CONCRETE)
         }
-        panel(1.75f,1.45f,.55f,.9f,.95f,.8f,yellow)
-        box(2.21f,1.55f,.55f,.02f,.55f,.6f,glass,GLASS)
+        cab(1.75f,1f,2f,1.2f,1.9f,.9f,.8f,yellow) { driver(1.65f,1.3f,0f,wave(f,3),f.seconds) }
+        exhaust(-1.6f,1.6f,-.7f,f,3)
+        beaconLight(-1.2f,1.12f,.7f,f.seconds+.7f)
         endTexFrame();pop()
-        // Hook path: lift at the yard, slew over the river, lower onto the bridge.
-        val yardX=46f;val yardZ=4.5f;val spanX=52f;val spanZ=WorldMap.BRIDGE_Z
         val building=f.bridgeClock>0f
-        val p=if(building)1f-f.bridgeClock/com.dromadi.tinysim.GameState.BRIDGE_STAGE_SECONDS else 0f
-        val lift=(p/.3f).coerceIn(0f,1f);val swing=((p-.3f)/.4f).coerceIn(0f,1f);val lower=((p-.7f)/.3f).coerceIn(0f,1f)
-        val ease={ t:Float-> t*t*(3f-2f*t) }
-        val pivotX=cx-.4f;val pivotY=support(f,cx,cz)+1.55f;val pivotZ=cz
-        val a0=atan2(yardZ-pivotZ,yardX-pivotX);val a1=atan2(spanZ-pivotZ,spanX-pivotX)
-        val r0=hypot(yardX-pivotX,yardZ-pivotZ);val r1=hypot(spanX-pivotX,spanZ-pivotZ)
-        val s=ease(swing);val angle=a0+(a1-a0)*s;val radius=r0+(r1-r0)*s
+        var angle=f.craneAngle*PI.toFloat()/180f;var radius=f.craneReach;var hy=f.hookY
+        if(building) {
+            // Lift at the yard, slew over the river, lower onto the bridge.
+            val yardX=46f;val yardZ=4.5f;val spanX=52f;val spanZ=WorldMap.BRIDGE_Z
+            val p=1f-f.bridgeClock/com.dromadi.tinysim.GameState.BRIDGE_STAGE_SECONDS
+            val lift=(p/.3f).coerceIn(0f,1f);val swing=((p-.3f)/.4f).coerceIn(0f,1f);val lower=((p-.7f)/.3f).coerceIn(0f,1f)
+            val ease={ t:Float-> t*t*(3f-2f*t) }
+            val a0=atan2(yardZ-cz,yardX-cx);val a1=atan2(spanZ-cz,spanX-cx)
+            val e=ease(swing);angle=a0+(a1-a0)*e;radius=hypot(yardX-cx,yardZ-cz)*(1-e)+hypot(spanX-cx,spanZ-cz)*e
+            hy=if(swing<=0f).5f+2.6f*ease(lift) else if(lower<=0f)3.1f else 3.1f-2.7f*ease(lower)
+        } else hy-=base
+        val pivotX=cx;val pivotY=base+1.55f;val pivotZ=cz
         val hx=pivotX+cos(angle)*radius;val hz=pivotZ+sin(angle)*radius
-        val hy=if(!building)2.6f else if(swing<=0f)(.5f+2.6f*ease(lift)) else if(lower<=0f)3.1f else 3.1f-2.7f*ease(lower)
-        val tipX=pivotX+cos(angle)*(radius+.2f);val tipZ=pivotZ+sin(angle)*(radius+.2f);val tipY=max(hy+2.2f,5.2f)
-        // Slewing turret, telescopic boom, cable, hook block and the carried piece.
+        val hookY=(if(building)0f else base)+hy
+        val tipX=pivotX+cos(angle)*(radius+.2f);val tipZ=pivotZ+sin(angle)*(radius+.2f);val tipY=max(hookY+2.2f,5.2f)
         push();translate(pivotX,pivotY-.25f,pivotZ);rotate(-angle*180f/PI.toFloat(),0f,1f,0f)
         surface(0f,0f,0f,1.6f,.5f,1.3f,yellowDark,PAINT);panel(-.75f,.35f,0f,.6f,.4f,1.2f,ink)
         pop()
@@ -756,17 +767,26 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         rod3(pivotX,pivotY,pivotZ,midX,midY,midZ,.24f,yellow,PAINT)
         rod3(midX,midY,midZ,tipX,tipY,tipZ,.16f,yellowDark,PAINT)
         rod3(pivotX+.3f,pivotY-.3f,pivotZ,pivotX+(midX-pivotX)*.5f,pivotY+(midY-pivotY)*.5f-.25f,pivotZ+(midZ-pivotZ)*.5f,.08f,chrome,METAL)
-        rod3(tipX,tipY,tipZ,hx,hy+.25f,hz,.02f,ink,METAL)
-        box(hx,hy+.15f,hz,.22f,.22f,.18f,yellow,PAINT)
+        rod3(tipX,tipY,tipZ,hx,hookY+.45f,hz,.02f,ink,METAL)
+        box(hx,hookY+.4f,hz,.22f,.18f,.18f,yellow,PAINT)
         if(building) {
-            val piece=f.bridgeStage
-            push();translate(hx,hy-.15f,hz)
-            when(piece) {
+            push();translate(hx,hookY+.1f,hz)
+            when(f.bridgeStage) {
                 0->surface(0f,-.3f,0f,.55f,.6f,1.4f,stone,CONCRETE)
                 1->surface(0f,-.1f,0f,3.2f,.2f,.28f,orange,PAINT)
                 else->surface(0f,-.08f,0f,2.4f,.1f,1.6f,rgba(104,102,100),ASPHALT)
             }
             pop()
+        } else {
+            // Clamshell grab: two jaws that close around a load of sand.
+            val open=if(f.craneCargo>0)0f else 12f
+            for(side in floatArrayOf(-1f,1f)) {
+                push();translate(hx,hookY+.2f,hz);rotate(side*open,1f,0f,0f)
+                box(0f,-.16f,side*.2f,.62f,.34f,.06f,darkSteel,METAL)
+                box(0f,-.32f,side*.1f,.62f,.06f,.24f,darkSteel,METAL)
+                pop()
+            }
+            if(f.craneCargo>0)mound(hx,hookY-.2f,hz,.55f,.25f,.5f,sandColor)
         }
     }
     /** Photo materials on a vehicle follow its body: texture space = the vehicle's local space. */
@@ -828,11 +848,11 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private fun treadMarks(f:SceneFrame) {
         if(shadowPass)return
         GL.glDepthMask(false)
-        for(v in 0..2)for(k in 0 until markCount[v]) {
+        for(v in 0..3)for(k in 0 until markCount[v]) {
             val o=k*4;val m=marks[v];val age=f.seconds-m[o+3]
             if(age<0f || age>MARK_SECONDS)continue
             tint[0]=tread[0];tint[1]=tread[1];tint[2]=tread[2];tint[3]=.26f*(1f-age/MARK_SECONDS)
-            val gauge=if(v==1).91f else .78f;val width=if(v==1).3f else .48f
+            val gauge=if(v==1 || v==3).91f else .78f;val width=if(v==1 || v==3).3f else .48f
             val a=m[o+2]*PI.toFloat()/180f
             for(side in floatArrayOf(-gauge,gauge)) {
                 val x=m[o]+sin(a)*side;val z=m[o+1]+cos(a)*side

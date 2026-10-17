@@ -1,3 +1,22 @@
+# Verifikasi alpha.13 — crane yang dikendalikan anak
+
+Tanggal: 17 Oktober 2026. versionCode 13; versi `0.1.0-alpha.13`.
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 73 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 67.659.950 byte.
+- `CraneTest` (baru, 5 tes):
+  - sentuhan dalam jangkauan membuat grab mengambil 2 unit, dan sentuhan pada truk menuangnya ke bak;
+  - sentuhan jauh membuat crane berjalan mendekat lalu menyendok dari sumber;
+  - muatan masuk ke gudang jembatan dan tidak pernah jatuh ke sungai;
+  - tombol aksi membawa crane ke tepi sungai dan memasang ketiga tahap jembatan;
+  - save v9 menyimpan keadaan crane, dan save lama mendapat crane bawaan.
+  - Total material tetap sama di setiap tes.
+- `GuideTest`: simulasi anak yang hanya mengikuti tangan penunjuk kini menekan crane sendiri untuk tiap tahap jembatan, tanpa pembangunan otomatis.
+- Pratinjau `crane-grab` (`docs/verification/alpha13/`): GL error 0. Terlihat crane dengan boom terarah ke tumpukan, grab terangkat berisi pasir, kartu crane terpilih, dan ikon aksi "tuang". Ikon crane diberi garis tepi gelap karena sebelumnya hilang di kartu kuning yang terpilih.
+
+**Batas:** belum dijalankan di HP. Sentuhan crane hanya diuji lewat tes logika dan pratinjau.
+
+---
+
 # Verifikasi alpha.12 — sungai dan proyek jembatan
 
 Tanggal: 17 Oktober 2026. versionCode 12; versi `0.1.0-alpha.12`.
