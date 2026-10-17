@@ -1,0 +1,17 @@
+{
+  "version": "0.1.0-alpha.15",
+  "apkBytes": 67756722,
+  "sha256": "003e3da9b7ccca39b5a584e8e671db23935faf085ed724e7c76b0440dc8585ae",
+  "unitTests": {
+    "tests": 92,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lintErrors": 0,
+  "lintWarnings": 1,
+  "audioFilesInApk": 0,
+  "androidDeviceTested": false,
+  "emulatorTested": false,
+  "debugCertificateSha256": "f6700a05aaf7b1a92347a38c54cd65de29099c2c355c7e8b51217b6ecf7f283e"
+}

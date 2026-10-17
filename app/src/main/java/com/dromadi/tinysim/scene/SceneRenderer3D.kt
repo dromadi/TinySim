@@ -247,6 +247,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         sandCaps(f)
         bridgeYard(f)
         bridge(f)
+        blockYard(f)
         crane(f)
         house(f)
         excavator(f)
@@ -728,6 +729,36 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
      * cable and clamshell grab. While a bridge stage builds, the hook follows the lift-swing-lower
      * timeline from the yard to the span instead.
      */
+    private val blockColors=arrayOf(rgba(235,113,65),rgba(33,167,164),rgba(250,195,60))
+    private fun block(x:Float,y:Float,z:Float,id:Int) {
+        val b=com.dromadi.tinysim.BlockYard
+        surface(x,y,z,b.WIDTH,b.HEIGHT,b.WIDTH,blockColors[id],PAINT)
+        // Reinforced corners and a clearly visible steel lifting eye.
+        for(dx in floatArrayOf(-.48f,.48f))for(dz in floatArrayOf(-.48f,.48f))surface(x+dx,y,z+dz,.09f,b.HEIGHT+.025f,.09f,paintWhite,PAINT)
+        rod3(x-.16f,y+.5f,z,x+.16f,y+.5f,z,.045f,darkSteel,METAL)
+    }
+    private fun blockYard(f:SceneFrame) {
+        val b=com.dromadi.tinysim.BlockYard
+        val ground=support(f,b.TARGET_X,b.TARGET_Z)
+        surface(b.TARGET_X,ground+.035f,b.TARGET_Z,2.1f,.07f,2.1f,stone,CONCRETE)
+        val count=f.blockLevel.count { it>=0 }
+        if(count<3 && !shadowPass) {
+            val y=ground+.08f+count*b.HEIGHT
+            val pulse=.7f+.15f*sin(f.seconds*2f)
+            val tint=rgba(100,220,195)
+            for(d in floatArrayOf(-.85f,.85f)) {
+                box(b.TARGET_X+d,y+.04f,b.TARGET_Z,.08f,.08f,1.8f,tint,DECAL)
+                box(b.TARGET_X,y+.04f,b.TARGET_Z+d,1.8f,.08f,.08f,tint,DECAL)
+            }
+            // Thin ghost edges show the volume the next block will occupy, with a slow pulse.
+            for(dx in floatArrayOf(-.67f,.67f))for(dz in floatArrayOf(-.67f,.67f))box(b.TARGET_X+dx,y+b.HEIGHT/2,b.TARGET_Z+dz,.035f,pulse*b.HEIGHT,.035f,tint,DECAL)
+        }
+        for(i in 0 until 3)if(i!=f.blockCarried) {
+            val level=max(0,f.blockLevel[i])
+            val base=support(f,f.blockX[i],f.blockZ[i])+if(f.blockLevel[i]>=0).08f else 0f
+            block(f.blockX[i],base+b.HEIGHT/2+level*b.HEIGHT,f.blockZ[i],i)
+        }
+    }
     private fun crane(f:SceneFrame) {
         val cx=WorldMap.worldX(f.craneX);val cz=f.craneZ;val base=support(f,cx,cz)
         push();translate(cx,base,cz);rotate(f.craneHeading,0f,1f,0f);beginTexFrame()
@@ -777,6 +808,11 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
                 else->surface(0f,-.08f,0f,2.4f,.1f,1.6f,rgba(104,102,100),ASPHALT)
             }
             pop()
+        } else if(f.blockCarried>=0) {
+            val by=hookY-.45f
+            val sway=.035f*sin(f.seconds*2.3f)
+            block(hx+sway,by,hz,f.blockCarried)
+            for(dx in floatArrayOf(-.48f,.48f))rod3(hx,hookY+.25f,hz,hx+dx+sway,by+.47f,hz,.025f,darkSteel,METAL)
         } else {
             // Clamshell grab: two jaws that close around a load of sand.
             val open=if(f.craneCargo>0)0f else 12f

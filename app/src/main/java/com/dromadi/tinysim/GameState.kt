@@ -130,9 +130,10 @@ class GameState {
     var hookY=HOOK_REST
         private set
     var craneCargo=0
-    private class CraneTask(val x:Float,val z:Float,val drop:Boolean) { var lowered=false }
+    val blocks=BlockYard()
+    private class CraneTask(val x:Float,val z:Float,val drop:Boolean,val block:Int=-1) { var lowered=false }
     private var craneTask:CraneTask?=null
-    private var pendingCrane:Pair<Float,Float>?=null
+    private var pendingCrane:CraneTask?=null
     private var pendingBridge=false
     val craneBusy get()=craneTask!=null
     /** Where the hook currently hangs over the ground (world metres). */
@@ -145,12 +146,35 @@ class GameState {
      */
     fun craneTap(x:Float,z:Float):Boolean {
         if(!x.isFinite() || !z.isFinite() || bridgeClock>0f)return false
-        val d=hypot(x-craneWorldX,z-craneZ)
-        if(d in CRANE_MIN_REACH..CRANE_MAX_REACH) { craneGoal=null;pendingCrane=null;craneTask=CraneTask(x,z,craneCargo>0);return true }
+        if(blocks.carried>=0) {
+            if(!BlockYard.validGround(x,z) || (!bridgeOpen && WorldMap.east(x)))return false
+            val target=if(BlockYard.atTarget(x,z))BlockYard.TARGET_X to BlockYard.TARGET_Z else x to z
+            return requestCrane(CraneTask(target.first,target.second,true,blocks.carried))
+        }
+        // A broad ground target also works when the child touches beside a block.
+        val id=(0 until BlockYard.COUNT).firstOrNull { blocks.level[it]<0 && hypot(blocks.x[it]-x,blocks.z[it]-z)<1.1f }
+        if(id!=null && craneCargo==0)return blockTap(id)
+        return requestCrane(CraneTask(x,z,craneCargo>0))
+    }
+    fun blockTap(id:Int):Boolean {
+        if(id !in 0 until BlockYard.COUNT || blocks.carried>=0 || blocks.level[id]>=0 || craneCargo>0 || craneBusy || bridgeClock>0f)return false
+        return requestCrane(CraneTask(blocks.x[id],blocks.z[id],false,id))
+    }
+    /** Existing action button can lead the entire block activity, without precise world touches. */
+    fun blockAction():Boolean {
+        if(craneBusy || craneGoal!=null || bridgeClock>0f || craneCargo>0)return false
+        if(blocks.carried>=0)return craneTap(BlockYard.TARGET_X,BlockYard.TARGET_Z)
+        val id=(0 until BlockYard.COUNT).firstOrNull { blocks.level[it]<0 } ?: return false
+        return blockTap(id)
+    }
+    private fun requestCrane(task:CraneTask):Boolean {
+        if(craneBusy || bridgeClock>0f)return false
+        val d=hypot(task.x-craneWorldX,task.z-craneZ)
+        if(d in CRANE_MIN_REACH..CRANE_MAX_REACH) { craneGoal=null;pendingCrane=null;craneTask=task;return true }
         // Park on the line toward the target, comfortably inside the reach.
-        val ux=if(d<1e-3f)1f else (craneWorldX-x)/d;val uz=if(d<1e-3f)0f else (craneZ-z)/d
-        driveTo(Vehicle.CRANE,WorldMap.gameX(x+ux*6f),z+uz*6f)
-        pendingCrane=x to z;return true
+        val ux=if(d<1e-3f)1f else (craneWorldX-task.x)/d;val uz=if(d<1e-3f)0f else (craneZ-task.z)/d
+        driveTo(Vehicle.CRANE,WorldMap.gameX(task.x+ux*6f),task.z+uz*6f)
+        pendingCrane=task;return true
     }
     /** The crane lifts the next bridge piece from the yard; it drives to its work spot first. */
     private fun craneBuildsBridge():Boolean {
@@ -160,7 +184,9 @@ class GameState {
     }
     private fun craneAction() {
         if(craneTask!=null || craneGoal!=null)return
+        if(blocks.carried>=0) { blockAction();return }
         if(craneBuildsBridge())return
+        if(!blocks.complete && hypot(craneWorldX-BlockYard.TARGET_X,craneZ-BlockYard.TARGET_Z)<12f) { blockAction();return }
         if(craneCargo>0) {
             val truck=WorldMap.worldX(truckX) to truckZ
             if(hypot(truck.first-craneWorldX,truck.second-craneZ)<=CRANE_MAX_REACH)craneTap(truck.first,truck.second)
@@ -181,7 +207,7 @@ class GameState {
                 Travel.Arrived -> {
                     craneGoal=nextLeg(Vehicle.CRANE)
                     if(craneGoal==null) {
-                        pendingCrane?.let { (x,z)->pendingCrane=null;if(hypot(x-craneWorldX,z-craneZ) in CRANE_MIN_REACH..CRANE_MAX_REACH)craneTask=CraneTask(x,z,craneCargo>0) }
+                        pendingCrane?.let { task->pendingCrane=null;if(hypot(task.x-craneWorldX,task.z-craneZ) in CRANE_MIN_REACH..CRANE_MAX_REACH)craneTask=task }
                         if(pendingBridge) { pendingBridge=false;buildBridge() }
                     }
                 }
@@ -201,17 +227,28 @@ class GameState {
             hookY+=(HOOK_SWING-hookY)*min(1f,dt*4f);return
         }
         craneAngle=wantAngle;craneReach=wantReach
-        val ground=surface(task.x,task.z)+.45f
+        val blockLevel=if(task.block<0)0 else if(task.drop && BlockYard.atTarget(task.x,task.z))blocks.placed else max(0,blocks.level[task.block])
+        val ground=surface(task.x,task.z)+if(task.block>=0).9f+blockLevel*BlockYard.HEIGHT else .45f
+        val rest=max(HOOK_REST,ground+.8f)
         if(!task.lowered) {
             hookY=max(ground,hookY-3f*dt)
             if(hookY<=ground+1e-3f) { task.lowered=true;craneTransfer(task) }
         } else {
-            hookY=min(HOOK_REST,hookY+3f*dt)
-            if(hookY>=HOOK_REST-1e-3f)craneTask=null
+            hookY=min(rest,hookY+3f*dt)
+            if(hookY>=rest-1e-3f)craneTask=null
         }
     }
     /** At the bottom of the drop: the grab closes on sand, or opens over the truck/yard/ground. */
     private fun craneTransfer(task:CraneTask) {
+        if(task.block>=0) {
+            val before=blocks.placed
+            val changed=if(task.drop)blocks.put(task.x,task.z) else blocks.pick(task.block)
+            if(changed) {
+                transferKind=6;transferSerial++
+                if(blocks.placed>before) { rewardSerial++;celebrating=if(blocks.complete)2.5f else 1f }
+            }
+            return
+        }
         if(!task.drop) {
             val pile=nearbyPile(task.x,task.z)
             when {
@@ -239,7 +276,7 @@ class GameState {
     private val bridgeSiteOccupied get()=insideBridgeSite(truckX,truckZ) || insideBridgeSite(excavatorX,excavatorZ) || insideBridgeSite(dozerX,dozerZ)
     /** Starts the crane on the next bridge stage, after moving machines out of the work area. */
     fun buildBridge():Boolean {
-        if(!bridgeReady || bridgeClock>0f || !craneAtSpot)return false
+        if(!bridgeReady || bridgeClock>0f || !craneAtSpot || blocks.carried>=0)return false
         craneTask=null;pendingCrane=null
         if(insideBridgeSite(truckX,truckZ))driveTo(Vehicle.TRUCK,WorldMap.gameX(41f),9.5f)
         if(insideBridgeSite(dozerX,dozerZ))driveTo(Vehicle.DOZER,WorldMap.gameX(41f),0f)
@@ -560,19 +597,20 @@ class GameState {
         }
     }
     fun toggleMode() { missionMode=!missionMode; mission=0; delivered=0; flattened=0; pendingReward=false; celebrating=0f; checkMission() }
-    fun reset() { earth.fill(Terrain.INITIAL_EARTH);houseFill=0;houseStage=0;buildClock=0f;bridgeFill=0;bridgeStage=0;bridgeClock=0f;craneX=WorldMap.gameX(CRANE_SPOT_X);craneZ=CRANE_SPOT_Z;craneHeading=0f;craneTravel=0f;craneAngle=-90f;craneReach=4.7f;hookY=HOOK_REST;craneCargo=0; excavatorX=200f;excavatorZ=0f;excavatorHeading=0f;excavatorTravel=0f;road.fill(0);dug.fill(0);truckX=620f; dozerX=1000f; armX=365f; armY=340f; targetX=armX; targetY=armY
+    fun reset() { blocks.reset();earth.fill(Terrain.INITIAL_EARTH);houseFill=0;houseStage=0;buildClock=0f;bridgeFill=0;bridgeStage=0;bridgeClock=0f;craneX=WorldMap.gameX(CRANE_SPOT_X);craneZ=CRANE_SPOT_Z;craneHeading=0f;craneTravel=0f;craneAngle=-90f;craneReach=4.7f;hookY=HOOK_REST;craneCargo=0; excavatorX=200f;excavatorZ=0f;excavatorHeading=0f;excavatorTravel=0f;road.fill(0);dug.fill(0);truckX=620f; dozerX=1000f; armX=365f; armY=340f; targetX=armX; targetY=armY
         bucket=0; load=0; source=36; sand.fill(0); Terrain.QUARRY.forEach { sand[it]=Terrain.QUARRY_SAND }; delivered=0; flattened=0; mission=0
         tipping=false;stopMovement();truckZ=0f;dozerZ=2.25f;truckHeading=0f;dozerHeading=0f;truckTravel=0f;dozerTravel=0f; bladeDown=true; dozerFacing=1; bedAngle=0f; celebrating=0f; tipClock=0f; pendingReward=false }
-    fun snapshot():String="9|"+listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal,if(bladeDown)1 else 0,if(tipping)1 else 0,dozerFacing,bedAngle,truckZ,dozerZ,truckHeading,dozerHeading,excavatorX,excavatorZ,excavatorHeading).joinToString(",")+";"+sand.joinToString(",")+";"+road.joinToString(",")+";"+dug.joinToString(",")+";"+earth.joinToString(",")+";"+listOf(houseFill,houseStage).joinToString(",")+";"+listOf(bridgeFill,bridgeStage).joinToString(",")+";"+listOf(craneX,craneZ,craneHeading,craneAngle,craneReach,craneCargo).joinToString(",")
+    fun snapshot():String="10|"+listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal,if(bladeDown)1 else 0,if(tipping)1 else 0,dozerFacing,bedAngle,truckZ,dozerZ,truckHeading,dozerHeading,excavatorX,excavatorZ,excavatorHeading).joinToString(",")+";"+sand.joinToString(",")+";"+road.joinToString(",")+";"+dug.joinToString(",")+";"+earth.joinToString(",")+";"+listOf(houseFill,houseStage).joinToString(",")+";"+listOf(bridgeFill,bridgeStage).joinToString(",")+";"+listOf(craneX,craneZ,craneHeading,craneAngle,craneReach,craneCargo).joinToString(",")+";"+blocks.snapshot()
     fun restore(value:String?) {
         if(value==null)return
         runCatching {
-            val alpha9=value.startsWith("9|")
+            val alpha10=value.startsWith("10|")
+            val alpha9=alpha10 || value.startsWith("9|")
             val alpha8=alpha9 || value.startsWith("8|")
             val alpha7=alpha8 || value.startsWith("7|")
             val alpha6=alpha7 || value.startsWith("6|")
             val modern=alpha6 || value.startsWith("5|")
-            val parts=value.removePrefix("9|").removePrefix("8|").removePrefix("7|").removePrefix("6|").removePrefix("5|").split(';');require(parts.size==if(alpha9)8 else if(alpha8)7 else if(alpha7)6 else if(alpha6)4 else 2)
+            val parts=value.removePrefix("10|").removePrefix("9|").removePrefix("8|").removePrefix("7|").removePrefix("6|").removePrefix("5|").split(';');require(parts.size==if(alpha10)9 else if(alpha9)8 else if(alpha8)7 else if(alpha7)6 else if(alpha6)4 else 2)
             // Saves before alpha.12 hold the 62-column map; widen them, east-bank cells start fresh.
             val cells=if(alpha8)WorldMap.CELL_COUNT else WorldMap.LEGACY_COLUMNS*WorldMap.ROWS
             fun widen(index:Int)=if(alpha8)index else index/WorldMap.LEGACY_COLUMNS*WorldMap.COLUMNS+index%WorldMap.LEGACY_COLUMNS
@@ -620,6 +658,7 @@ class GameState {
                 }
                 if(!bridgeOpen)require(listOf(truckX,dozerX,excavatorX,craneX).all { it<=WorldMap.DRIVE_MAX_X })
             } else Terrain.QUARRY.forEach { sand[it]=Terrain.QUARRY_SAND }
+            if(alpha10) { blocks.restore(parts[8]);require(blocks.carried<0 || craneCargo==0) }
             require(totalMaterial==Terrain.INITIAL_MASS);separateVehicles();checkMission()
         }.onFailure { reset() }
     }

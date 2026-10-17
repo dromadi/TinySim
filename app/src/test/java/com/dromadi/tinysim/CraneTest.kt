@@ -45,7 +45,7 @@ class CraneTest {
         g.craneX=WorldMap.gameX(30f);g.craneZ=2f
         val copy=GameState();copy.restore(g.snapshot())
         assertEquals(g.snapshot(),copy.snapshot());assertEquals(GameState.Vehicle.CRANE,copy.selected);assertEquals(1,copy.craneCargo)
-        val v8="8|"+g.snapshot().removePrefix("9|").substringBeforeLast(';').replace(",3,1,1,0,1,",",3,1,1,0,1,")
+        val v8="8|"+g.snapshot().substringAfter("|").split(';').take(7).joinToString(";").replace(",3,1,1,0,1,",",3,1,1,0,1,")
         val old=GameState();old.restore(v8.replace(Regex("^8\\\\|([^,]*,[^,]*,[^,]*,[^,]*,[^,]*,[^,]*,)(\\\\d+)"),"8|$1${33+1}"))
         assertEquals(spotX,old.craneWorldX,.01f);assertEquals(0,old.craneCargo)
     }

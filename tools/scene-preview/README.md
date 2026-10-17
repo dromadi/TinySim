@@ -31,3 +31,5 @@ Alpha.11 loads the real CC0 material textures: the JVM side records `texImageAss
 Alpha.12 adds `bridge-crane` (the crane mid-swing carrying a steel girder over the river) and `bridge-open` (finished bridge with the truck crossing toward the east-bank quarry).
 
 Alpha.13 adds `crane-grab`: the child-controlled crane right after its grab closed on a sand pile, with the truck waiting in reach and the crane card selected.
+
+Alpha.15 adds `block-lift` and `block-tower`: real crane/block tasks lift a coloured prop, then stack all three. Select with `TINYSIM_PREVIEW_SCENES=block-lift,block-tower`. The completed scene waits for the celebration star to clear so the tower stays visible. A Chrome headless-shell executable may be selected with `CHROMIUM_PATH` in environments that prohibit the full browser singleton socket. These are renderer previews, not phone tests.

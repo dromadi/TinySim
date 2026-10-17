@@ -1,0 +1,16 @@
+[
+  {
+    "name": "block-lift",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 2285,
+    "triangles": 558064
+  },
+  {
+    "name": "block-tower",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 2281,
+    "triangles": 557680
+  }
+]

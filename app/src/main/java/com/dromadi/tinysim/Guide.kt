@@ -6,6 +6,7 @@ import kotlin.math.hypot
 sealed class Hint {
     data class Card(val vehicle:GameState.Vehicle):Hint()
     object Action:Hint()
+    object Blocks:Hint()
     /** A spot on the ground (world metres) for the selected vehicle. */
     data class Ground(val x:Float,val z:Float):Hint()
 }
@@ -37,6 +38,8 @@ object Guide {
         val bridge=g.houseStage>=3 && g.bridgeStage==0 && g.bridgeFill<8
         val digging=house && !g.houseReady
         return when {
+            g.blocks.carried>=0 -> use(GameState.Vehicle.CRANE)
+            g.bridgeOpen && !g.blocks.complete && g.bucket==0 && g.load==0 && g.craneCargo==0 -> if(g.selected!=GameState.Vehicle.CRANE)Hint.Card(GameState.Vehicle.CRANE) else if(hypot(g.craneWorldX-BlockYard.TARGET_X,g.craneZ-BlockYard.TARGET_Z)>=12f)Hint.Blocks else Hint.Action
             g.tipping -> use(GameState.Vehicle.TRUCK)
             // A full truck while the foundation is still open empties at the spare spot.
             digging && g.load>=8 -> driveTruck(SPARE_X,SPARE_Z)

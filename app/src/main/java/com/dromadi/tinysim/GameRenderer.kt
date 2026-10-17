@@ -74,10 +74,15 @@ class GameRenderer {
         }
     }
     /** Pictogram progress: mission icon or the house project stage, with dots instead of words. */
+    private fun blockIcon(c:Canvas,x:Float,y:Float) {
+        for(i in 0..2)rect(c,x-19f,y+17f-i*17f,38f,15f,listOf(orange,teal,yellow)[i],4f)
+    }
     private fun progressCard(c:Canvas,g:GameState) {
         rect(c,24f,20f,300f,70f,white,22f)
         val dots:Int;val done:Int
-        if(g.missionMode) {
+        if(g.selected==GameState.Vehicle.CRANE && !g.bridgeReady && g.craneCargo==0) {
+            blockIcon(c,72f,50f);dots=3;done=g.blocks.placed
+        } else if(g.missionMode) {
             when(g.mission) {0->truck(c,72f,73f,.32f,4,0f);1->truck(c,72f,73f,.32f,2,-38f);2->dozer(c,72f,73f,.32f,1);3->roadIcon(c,72f,51f,g.roadProgress);else->houseIcon(c,72f,51f)}
             dots=4;done=g.missionProgress
         } else if(!g.houseReady && g.houseStage==0) {
@@ -108,6 +113,7 @@ class GameRenderer {
                 poly(c,floatArrayOf(x+40f,y+30f,x+70f,y-2f,x+100f,y+30f),col("#F7D583"))
             }
             GameState.Vehicle.CRANE -> when {
+                g.blocks.carried>=0 || (!g.blocks.complete && hypot(g.craneWorldX-BlockYard.TARGET_X,g.craneZ-BlockYard.TARGET_Z)<12f) -> { crane(c,x-50f,y+40f,1f,false);blockIcon(c,x+70f,y);arrowDown(c,x+110f,y-18f,white) }
                 // Bridge ready: the crane lifts the next piece over the water.
                 g.bridgeReady -> { crane(c,x-50f,y+40f,1f,false);bridgeIcon(c,x+80f,y+4f,.9f) }
                 g.craneCargo>0 -> { crane(c,x-30f,y+40f,1f,true);arrowDown(c,x+70f,y-10f,white) }

@@ -11,6 +11,7 @@ class GuideTest {
         when(hint) {
             is Hint.Card -> g.selected=hint.vehicle
             Hint.Action -> g.action()
+            Hint.Blocks -> { g.stopMovement();g.blockAction() }
             is Hint.Ground -> if(!(g.selected==GameState.Vehicle.EXCAVATOR && g.bucket==0 && g.digAt(hint.x,hint.z)))
                 g.driveTo(g.selected,WorldMap.gameX(hint.x),hint.z)
         }
@@ -41,6 +42,11 @@ class GuideTest {
             follow(g,Guide.next(g))
             assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
             assertTrue("bridge: fill=${g.bridgeFill} stage=${g.bridgeStage} load=${g.load}",++steps<600)
+        }
+        while(!g.blocks.complete) {
+            follow(g,Guide.next(g))
+            assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
+            assertTrue("blocks=${g.blocks.placed} carried=${g.blocks.carried}",++steps<650)
         }
     }
     @Test fun dozerActionDrivesThroughTheNearestTallPileWithTheBladeDown() {

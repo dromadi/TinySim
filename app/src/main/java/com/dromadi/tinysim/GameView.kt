@@ -76,6 +76,19 @@ class GameView(context: Context): FrameLayout(context) {
         // With an empty bucket the excavator digs wherever the child touches, driving there if needed.
         val ground=groundAt(x,y)
         if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
+        // Hit-test the visible block centre, not its projection on the ground behind it.
+        if(game.selected==GameState.Vehicle.CRANE && game.blocks.carried<0 && game.craneCargo==0) {
+            val id=(0 until BlockYard.COUNT).filter { game.blocks.level[it]<0 }.map { i->
+                val p=cameraSpec().project(com.dromadi.tinysim.scene.Vec3(game.blocks.x[i],game.surface(game.blocks.x[i],game.blocks.z[i])+BlockYard.HEIGHT/2,game.blocks.z[i]))
+                i to kotlin.math.hypot(x-p.first,y-p.second)
+            }.filter { it.second<52f }.minByOrNull { it.second }?.first
+            if(id!=null && game.blockTap(id))return
+        }
+        if(game.selected==GameState.Vehicle.CRANE && game.blocks.carried>=0) {
+            val targetHeight=game.surface(BlockYard.TARGET_X,BlockYard.TARGET_Z)+game.blocks.placed*BlockYard.HEIGHT+.4f
+            val target=cameraSpec().project(com.dromadi.tinysim.scene.Vec3(BlockYard.TARGET_X,targetHeight,BlockYard.TARGET_Z))
+            if(kotlin.math.hypot(x-target.first,y-target.second)<60f) { game.craneTap(BlockYard.TARGET_X,BlockYard.TARGET_Z);return }
+        }
         val unit=vehicleAt(x,y)
         // The crane works wherever the child touches: grab, drop (also into the truck) or drive closer.
         if(game.selected==GameState.Vehicle.CRANE && unit!=GameState.Vehicle.CRANE) {
@@ -117,7 +130,7 @@ class GameView(context: Context): FrameLayout(context) {
     init {
         settings.restore(game)
         isFocusable=true
-        contentDescription="TinySim 3D. Permainan konstruksi: excavator, truk, bulldozer."
+        contentDescription="TinySim 3D. Permainan konstruksi: excavator, truk, bulldozer, crane dan susun balok."
         surface.setEGLContextClientVersion(2)
         surface.setEGLConfigChooser(com.dromadi.tinysim.scene.MultisampleConfigChooser())
         surface.preserveEGLContextOnPause=true
@@ -160,7 +173,7 @@ class GameView(context: Context): FrameLayout(context) {
             if(game.selected==GameState.Vehicle.EXCAVATOR) { game.scoop();game.pour() }
             game.nextMission()
             if(game.rewardSerial!=lastReward) { audio.play(settings.sound,true);lastReward=game.rewardSerial }
-            else if(game.transferSerial!=lastTransfer)audio.machines.pourSerial++
+            if(game.transferSerial!=lastTransfer) { if(game.transferKind==6)audio.machines.blockSerial++ else audio.machines.pourSerial++ }
             lastTransfer=game.transferSerial
             machineSounds(dt)
         }
@@ -201,6 +214,7 @@ class GameView(context: Context): FrameLayout(context) {
             if(x in 1098f..1178f && y in 282f..358f)return "focus"
             if(x in 712f..812f && y in 557f..655f)return "stop"
         }
+        if(game.selected==GameState.Vehicle.CRANE && !game.bridgeReady && game.craneCargo==0 && x in 24f..324f && y in 20f..90f)return "blocks"
         if(y in 556f..660f)return when(x) {
             in 20f..180f -> "excavator"
             in 192f..352f -> "truck"
@@ -255,6 +269,7 @@ class GameView(context: Context): FrameLayout(context) {
         when(next) {
             is Hint.Card -> selectUnit(next.vehicle)
             Hint.Action -> game.action()
+            Hint.Blocks -> activate("blocks")
             is Hint.Ground -> {
                 if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && game.digAt(next.x,next.z))return
                 game.driveTo(game.selected,WorldMap.gameX(next.x),next.z);followSelected()
@@ -266,6 +281,7 @@ class GameView(context: Context): FrameLayout(context) {
         null -> null
         is Hint.Card -> GameRenderer.cardCenter(next.vehicle) to 590f
         Hint.Action -> 1010f to 590f
+        Hint.Blocks -> 170f to 55f
         is Hint.Ground -> runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(next.x,game.surface(next.x,next.z),next.z)) }.getOrNull()
             ?.takeIf { it.first in 40f..1160f && it.second in 110f..520f }
     }
@@ -284,6 +300,7 @@ class GameView(context: Context): FrameLayout(context) {
             "truck" -> selectUnit(GameState.Vehicle.TRUCK)
             "dozer" -> selectUnit(GameState.Vehicle.DOZER)
             "crane" -> selectUnit(GameState.Vehicle.CRANE)
+            "blocks" -> { game.stopMovement();game.blockAction();following=false;panX=27f;panZ=3f;zoom=1.05f }
             "action" -> game.action()
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")

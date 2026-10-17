@@ -1,11 +1,21 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.14**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.15**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Crane TinySim](docs/verification/alpha13/crane-grab.jpg)
+![Crane menyusun balok](docs/verification/alpha15/block-tower.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.15: crane menyusun balok
+
+- Area susun baru di sebelah barat rumah: tiga balok jingga, toska, dan kuning, dengan sudut diperkuat dan mata pengangkat baja. Sasaran berbingkai toska menunjukkan tingkat berikutnya dari menara.
+- Pilih crane, lalu sentuh kartu progres bergambar balok di kiri atas untuk memulai dan melihat area tersebut. Sentuh balok untuk mengambilnya, lalu sentuh sasaran untuk memasangnya. Boom, tali, sling, dan balok ikut bergerak. Sentuhan dalam radius 1,8 m dari sasaran dibantu masuk ke posisi yang tepat.
+- Tombol aksi besar dapat menyelesaikan seluruh kegiatan: ambil satu balok, tekan lagi untuk memasang, ulangi tiga kali. Di luar area balok, crane tetap dapat memindahkan pasir dan memasang jembatan.
+- Balok juga boleh diturunkan di tanah dan diangkat kembali. Sentuhan ke sungai ditolak tanpa menghilangkan muatan. Balok merupakan tiga properti tersendiri; tidak mengurangi atau menambah material tanah/pasir.
+- Bunyi benturan singkat yang disintesis langsung menandai pengambilan/pemasangan; pemasangan memberi bintang lembut. Tidak ada aset WAV, padding, duplikasi, atau batas ukuran minimum APK.
+- Save v10 menyimpan lokasi, tingkat, dan balok yang sedang dibawa. Save v9 dan versi lama tetap dimigrasikan. Pause membatalkan perjalanan/gerak lengan, tetapi mempertahankan balok dan hasil susunan.
+- Perbaikan tanah inkremental, suara aksi, tekstur, sungai/jembatan, serta tabrakan empat kendaraan dari Alpha.14 dipertahankan. Perubahan ini tidak mengklaim perbaikan tersebut sebagai pekerjaan baru.
 
 ## Alpha.14: kendaraan tidak saling tabrak
 
@@ -69,7 +79,7 @@ Fitur tabrakan ini dibuat ChatGPT di `main` (commit `9b9df77`) di atas alpha.7, 
 
 ## Alpha.8: tanah mulus & audio tanpa file besar
 
-- **Tanah tidak lagi tersendat saat berubah.** Sebelumnya setiap perubahan tanah/pasir membangun ulang seluruh mesh tanah (43.648 segitiga) di thread GL, sekitar 46–107 ms per perubahan pada CPU desktop. Sekarang `TerrainMesh` hanya menghitung ulang quad di sekitar sel yang berubah dan mengunggah baris tersebut dengan `glBufferSubData`: sekitar 0,05–0,14 ms per perubahan saat bulldozer mendorong pasir (diukur di JVM). Hasilnya identik dengan pembangunan ulang penuh (diuji).
+- **Pembaruan mesh tanah inkremental.** Sebelumnya setiap perubahan tanah/pasir membangun ulang seluruh mesh tanah (43.648 segitiga) di thread GL, sekitar 46–107 ms per perubahan pada CPU desktop. Sekarang `TerrainMesh` hanya menghitung ulang quad di sekitar sel yang berubah dan mengunggah baris tersebut dengan `glBufferSubData`: sekitar 0,05–0,14 ms per perubahan saat bulldozer mendorong pasir (diukur di JVM). Hasilnya identik dengan pembangunan ulang penuh (diuji).
 - **Soundscape disintesis langsung saat bermain** (`Soundscape.kt`, AudioTrack streaming) dengan resep yang sama seperti paket WAV alpha.7: angin/burung di area pasir, bengkel dengan mesin jauh, taman dengan air. Tidak ada lagi sambungan loop lima menit; perpindahan area tetap crossfade 2 detik, fade-in/fade-out dan audio focus tetap dihormati.
 - APK debug turun dari **173,7 MB** menjadi sekitar **0,9 MB**, karena 172,8 MB WAV tanpa kompresi tidak lagi dikemas.
 
@@ -92,9 +102,10 @@ Layar anak hanya berisi **empat kartu kendaraan**, **satu tombol aksi besar**, k
    - bulldozer: blade turun dan mendorong menembus tumpukan pasir terdekat. Jika tidak ada tumpukan, tombol mengangkat/menurunkan blade;
    - crane: ambil pasir terdekat, tuang ke truk, atau pasang tahap jembatan berikutnya.
 3. **Sentuh tanah** untuk mengarahkan kendaraan terpilih. Excavator dengan bucket kosong langsung **menggali di tempat yang disentuh** dan berjalan ke sana bila jauh. Kendaraan dan bucket juga bisa diseret. Dua jari menggeser map dan mencubit untuk zoom.
-4. **Tangan penunjuk:** setelah 5 detik tanpa sentuhan, tangan beranimasi menunjuk langkah berikutnya: kartu, tombol aksi, atau titik di tanah. Setelah 14 detik tanpa sentuhan, game melakukan satu langkah itu sendiri, lalu menunggu sentuhan berikutnya.
-5. **Alur bermain:** ambil pasir, isi truk, tuang, ratakan dengan bulldozer. Setelah pengiriman pertama, tangan mengarah ke **fondasi rumah**: gali empat titik, antar delapan unit tanah ke kotak fondasi, lalu rumah **dirakit sendiri** dalam tiga tahap.
-6. **Area orang tua** (tahan gembok **3 detik**): suara, sudut kamera, **Kontrol lanjutan** (tombol zoom +/−, kamera/orbit, Ikuti, minimap, Stop, dan speaker di layar), mode bebas/misi bergambar, mulai ulang dunia. Back menutup panel lalu mengikuti perilaku Android. Perjalanan dibatalkan ketika aplikasi masuk background; posisi terakhir tersimpan.
+4. **Susun balok:** pilih crane, sentuh kartu balok kiri atas, lalu gunakan sentuhan langsung pada balok/sasaran atau tombol aksi bergambar. Susun tiga balok menjadi menara.
+5. **Tangan penunjuk:** setelah 5 detik tanpa sentuhan, tangan beranimasi menunjuk langkah berikutnya: kartu, tombol aksi, atau titik di tanah. Setelah 14 detik tanpa sentuhan, game melakukan satu langkah itu sendiri, lalu menunggu sentuhan berikutnya.
+6. **Alur bermain:** ambil pasir, isi truk, tuang, ratakan dengan bulldozer. Setelah pengiriman pertama, tangan mengarah ke **fondasi rumah**: gali empat titik, antar delapan unit tanah ke kotak fondasi, lalu rumah **dirakit sendiri** dalam tiga tahap.
+7. **Area orang tua** (tahan gembok **3 detik**): suara, sudut kamera, **Kontrol lanjutan** (tombol zoom +/−, kamera/orbit, Ikuti, minimap, Stop, dan speaker di layar), mode bebas/misi bergambar, mulai ulang dunia. Back menutup panel lalu mengikuti perilaku Android. Perjalanan dibatalkan ketika aplikasi masuk background; posisi terakhir tersimpan.
 
 Misi bergambar (diaktifkan di area orang tua): isi 4 unit, tuang 4 unit, ratakan, bangun 4 bagian jalan di petak jingga, lalu rumah. Tidak ada kalah, hukuman, atau batas waktu.
 
@@ -105,8 +116,9 @@ Sumber awal berisi 36 unit pasir, ditambah 24 unit di tambang timur. Tanah dasar
 Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas untuk HUD. Integrasi native mempertahankan lifecycle Android dan memisahkan input, simulasi, serta rendering. Tidak ada dependency runtime pihak ketiga; seluruh model dan material dihasilkan lokal tanpa unduhan aset.
 
 - `GameState`: perjalanan ke tujuan, putaran kendaraan, transfer pasir, misi, dan snapshot.
+- `BlockYard`: tiga balok, posisi dan tingkat susunan, muatan crane, validasi serta save.
 - `Terrain`: heightfield kontinu, batas tanah dasar, dan zona fondasi rumah.
-- `WorldMap`: batas lahan, grid 62 × 22 sel pasir, konversi posisi dan tetangga sel.
+- `WorldMap`: batas lahan, grid 86 × 22 sel pasir, konversi posisi dan tetangga sel.
 - `ArmRig`: inverse kinematics dua ruas dan batas jangkauan excavator.
 - `TouchController`: state machine gestur murni Kotlin; `GameInput` mengadaptasi event/pointer Android ke pengenal tersebut.
 - `scene/WorldCamera`: kamera perspektif, pan/orbit/zoom, ray picking tanah dan bidang lengan.
@@ -120,7 +132,7 @@ Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas un
 
 Material memakai sel deterministik, bukan granular physics bebas. Heightfield digambar pada grid 0,25 unit dengan normal permukaan; tanah dapat turun 0,88 unit hingga lapisan dasar. Tinggi timbunan visual dibatasi 24 unit material (3,12 unit tinggi), sementara seluruh material tambahan tetap tersimpan dan bisa diambil kembali. Kendaraan mengikuti tinggi permukaan pada titik pusat; belum ada suspensi/kemiringan sasis atau tabrakan bangunan/dekorasi.
 
-Save baru berawalan `7|`. Format `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
+Save baru berawalan `10|`. Format `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
 
 ## Build dan pemasangan
 
@@ -133,7 +145,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.14-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.15-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
 
 Runner pengujian sentuh terpisah:
 

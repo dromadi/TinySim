@@ -42,6 +42,8 @@ class MachineSounds {
     /** Engine effort per vehicle (excavator, truck, dozer, crane): 0 off, ~.2 idle, 1 full. */
     val engine=FloatArray(4)
     @Volatile var hydraulic=0f
+    @Volatile var blockSerial=0
+    private var blockSeen=0;private var blockAge=1.0
     @Volatile var pourSerial=0
     @Volatile var hornSerial=0
     @Volatile var hornVehicle=0
@@ -91,6 +93,12 @@ class MachineSounds {
                 val square={ x:Double-> sin(x)+sin(3*x)/3+sin(5*x)/5 }
                 out+=.045*(square(hornPhase)+square(hornPhase2))
             }
+        }
+        if(blockSerial!=blockSeen) { blockSeen=blockSerial;blockAge=0.0 }
+        if(blockAge<.35) {
+            blockAge+=step
+            val envelope=min(1.0,blockAge/.012)*exp(-blockAge*17)
+            out+=.14*envelope*(sin(2*PI*220*blockAge)+.4*sin(2*PI*355*blockAge))
         }
         return out
     }

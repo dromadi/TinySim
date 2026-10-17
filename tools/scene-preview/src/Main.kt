@@ -43,6 +43,8 @@ fun main(args: Array<String>) {
             g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(60f),4.5f);repeat(240){g.update(.016f)} },
         Triple("crane-grab",0) { g-> g.sand[WorldMap.cell(42.5f,6.5f)]=4;g.source-=4;g.truckX=WorldMap.gameX(41f);g.truckZ=10.5f;g.truckHeading=0f;g.selected=GameState.Vehicle.CRANE
             check(g.craneTap(42.5f,6.5f));repeat(2000){ if(g.craneCargo==0)g.update(.016f) };repeat(25){g.update(.016f)} },
+        Triple("block-lift",0) { g-> g.selected=GameState.Vehicle.CRANE;check(g.blockAction());repeat(12000) { if(g.blocks.carried<0)g.update(.016f) };repeat(30) { g.update(.016f) } },
+        Triple("block-tower",0) { g-> g.selected=GameState.Vehicle.CRANE;repeat(3) { check(g.blockAction());repeat(12000) { if(g.driving)g.update(.016f) };check(g.blockAction());repeat(12000) { if(g.driving)g.update(.016f) } };check(g.blocks.complete);repeat(220) { g.update(.016f) } },
         Triple("vehicle-life",0) { it.selected=GameState.Vehicle.TRUCK;it.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(8f),2.2f) },
         Triple("dozer",2) { it.source=27;it.sand[WorldMap.cell(3f,2f)]=2;it.sand[WorldMap.cell(4f,2f)]=2;it.sand[WorldMap.cell(5f,2f)]=1;it.sand[WorldMap.cell(6f,2f)]=4;it.dozerX=900f;it.selected=GameState.Vehicle.DOZER }
     )
@@ -66,6 +68,7 @@ fun main(args: Array<String>) {
             "road-project","road-complete"->SceneFrame.capture(g,cam,1.2f+i,0f,8f,1.2f,20f,8f)
             "terrain-pit","terrain-mound","house-materials","house-walls","house-complete"->SceneFrame.capture(g,cam,1.2f+i,0f,8f,1.05f,36f,7f)
             "bridge-crane"->SceneFrame.capture(g,cam,1.2f+i,-18f,6f,1.1f,50f,5f)
+            "block-lift","block-tower"->SceneFrame.capture(g,cam,1.2f+i,-25f,8f,1.2f,27f,3f)
             "crane-grab"->SceneFrame.capture(g,cam,1.2f+i,-30f,5f,1.3f,44f,7.5f)
             "bridge-open"->SceneFrame.capture(g,cam,1.2f+i,12f,4f,1.05f,53f,5f)
             "vehicle-life"->SceneFrame.capture(g,cam,1.2f+i+36*.016f,-40f,2f,1.8f,-6.2f,.6f)

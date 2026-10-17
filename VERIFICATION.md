@@ -1,3 +1,33 @@
+# Verifikasi Alpha.15 — crane menyusun balok
+
+Tanggal: 18 Oktober 2026 (WIB). versionCode 15; `0.1.0-alpha.15`.
+
+Basis: `92489e9` (PR #1 sudah merged). Basis tersebut **sudah** menghapus generator/WAV 172,8 MB dan pemeriksaan ukuran minimum, serta menambahkan `TerrainMesh` inkremental, suara mesin/hidrolik/pasir, crane, sungai dan jembatan. Alpha.15 melanjutkan sistem tersebut, bukan mengimplementasikannya ulang.
+
+Perubahan yang bisa dimainkan: tiga balok berwarna di area barat rumah. Crane mengambil dengan sling, mengangkat, lalu menumpuknya pada sasaran lebar. Anak bisa memakai sentuhan langsung atau tombol aksi bergambar. Balok boleh diletakkan di tanah dan diambil lagi; air bukan sasaran. Kartu progres crane membuka area balok. Tangan penunjuk melanjutkan ke balok setelah jembatan selesai. Ada bunyi benturan sintetis dengan attack lembut, animasi, bayangan dan bintang pemasangan.
+
+Save v10 mempertahankan posisi, tingkat dan muatan balok; v9 dan format lama dimigrasikan. Tiga balok adalah properti terpisah dari inventaris material. Pause/restore membatalkan gerakan, mempertahankan balok dan material.
+
+Perintah yang dijalankan dari root proyek (distribusi Gradle lokal 8.9, JDK 17, SDK 35):
+
+```sh
+bash /workspace/scratch/250fb4835a8a/collision-toolchain/gradle-8.9/bin/gradle --no-daemon --max-workers=2 testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **BUILD SUCCESSFUL in 1m 1s**. 92 tes, 0 gagal/error/skipped (85 tes sebelumnya + 7 tes `BlockYardTest`). `GuideTest` juga diperluas sampai menara selesai. Tes migrasi lama diperbarui untuk mengambil payload tanpa bergantung pada prefix save terbaru.
+- Lint: **0 error, 1 warning** `DiscouragedApi` untuk orientasi landscape yang disengaja.
+- APK: **67.756.722 byte**; SHA-256 `003e3da9b7ccca39b5a584e8e671db23935faf085ed724e7c76b0440dc8585ae`.
+- ZIP CRC lulus; tidak ada `.wav`, `.ogg`, `.mp3`, atau `.opus` di APK (audio disintesis). Tidak ada izin Android (`aapt dump permissions`). Signature APK diverifikasi dengan `apksigner verify --print-certs`, memakai kunci lokal Alpha.8 yang dipertahankan.
+- Build pertama dengan tes baru: 91 lulus, 1 gagal pada skenario pause yang masih memilih excavator ketika memanggil tombol aksi crane. Skenario diperbaiki agar memilih crane seperti alur UI; pengujian ulang penuh menghasilkan 92 lulus. Tidak ada tes dinonaktifkan atau assertion dihapus.
+- Setelah posisi sasaran digeser agar terlihat, tes jembatan menangkap regresi prioritas tombol crane: susun balok sempat mengambil alih aksi jembatan. Prioritas diperbaiki di kode: muatan balok diselesaikan dulu, kemudian proyek jembatan yang siap, lalu balok di dekat crane. Tes lama dipertahankan; hasil akhir 92 lulus.
+- Pratinjau JVM menjalankan renderer/HUD asli untuk `block-lift` dan `block-tower`, termasuk kondisi balok sungguhan dari `GameState`. `gradle run` berhasil; dua replay WebGL berhasil dengan GL error 0, lalu kedua gambar diperiksa. Ini bukan pengujian HP.
+
+**Batas pengujian:** `adb devices` tidak menampilkan perangkat. APK instrumentasi berhasil dikompilasi, belum dijalankan. Kontrol sentuh Android, audio dari speaker, lifecycle Android nyata, dan kelancaran penggalian di HP pengguna belum diuji. Pengujian pause di atas menguji model dan save, bukan lifecycle perangkat. Tes sinyal audio tidak membuktikan kenyaringan speaker HP.
+
+Bukti: `docs/verification/alpha15/` berisi log build, XML JUnit, lint, metadata/hash APK, log pratinjau, dan gambar.
+
+---
+
 # Verifikasi alpha.14 — penggabungan fitur tabrakan dari `main`
 
 Tanggal: 17 Oktober 2026. versionCode 14; versi `0.1.0-alpha.14`.
