@@ -17,9 +17,12 @@ Prioritaskan sentuhan langsung: ketuk tujuan, seret kendaraan/bucket, pan/pinch 
 
 Pertahankan konsep dan batasan produk dalam README: permainan ramah anak usia 2–6 tahun, kontrol sederhana, offline, tanpa iklan/login/pembelian/analytics, tanpa izin yang tidak diperlukan, serta area orang tua dengan gestur tahan. Hormati lifecycle dan tombol kembali Android.
 
-## Paket konten
+## Paket konten dan arah jangka panjang
 
-Target pemilik: game berukuran **100 MB ke atas**, dicapai dari **komponen inti** yang membuat game lebih bagus: tekstur material beresolusi tinggi, model/mesh yang lebih detail, animasi, dunia/area baru, serta musik dan efek suara. Jangan mengejar angka dengan berkas tanpa kompresi, padding, duplikasi, atau konten yang hampir tidak terdengar/terlihat. Simpan aset dalam format terkompresi yang wajar (mis. PNG/KTX/ETC2 untuk tekstur, OGG/Opus untuk audio); ukuran harus datang dari jumlah dan kualitas konten, bukan dari format boros. Soundscape latar disintesis langsung saat bermain (`Soundscape.kt`). Laporkan ukuran APK dari hasil build nyata.
+- TinySim dibangun pelan-pelan dalam jalan panjang menuju game **full fitur**. Ukuran sekitar **100 MB ke atas** adalah gambaran hasil akhir ketika fiturnya lengkap, bukan angka yang dikejar di setiap versi.
+- Jangan pernah menambah ukuran demi angka: tidak ada berkas tanpa kompresi, padding, duplikasi, atau konten yang hampir tidak terdengar/terlihat, dan tidak ada pengecekan CI untuk ukuran minimum APK.
+- Setiap perubahan dinilai dari mutu fitur dan isi game (gameplay, grafis, model, tekstur, animasi, area, suara), dikerjakan dengan rapi dan teruji. Ukuran mengikuti dengan sendirinya.
+- Aset disimpan dalam format terkompresi yang wajar (mis. PNG/KTX/ETC2 untuk tekstur, OGG/Opus untuk audio). Soundscape latar disintesis langsung saat bermain (`Soundscape.kt`). Laporkan ukuran APK dari hasil build nyata.
 
 ## Kebiasaan kerja
 
