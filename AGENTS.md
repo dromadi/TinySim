@@ -19,7 +19,7 @@ Pertahankan konsep dan batasan produk dalam README: permainan ramah anak usia 2â
 
 ## Paket konten
 
-Ukuran APK bukan target. Jangan menggelembungkan ukuran dengan berkas tanpa kompresi, padding, atau duplikasi. Tambahkan konten offline (audio, material, dunia, animasi) karena dipakai dalam permainan. Soundscape disintesis langsung saat bermain (`Soundscape.kt`), bukan disimpan sebagai WAV. Laporkan ukuran APK dari hasil build nyata.
+Target pemilik: game berukuran **100 MB ke atas**, dicapai dari **komponen inti** yang membuat game lebih bagus: tekstur material beresolusi tinggi, model/mesh yang lebih detail, animasi, dunia/area baru, serta musik dan efek suara. Jangan mengejar angka dengan berkas tanpa kompresi, padding, duplikasi, atau konten yang hampir tidak terdengar/terlihat. Simpan aset dalam format terkompresi yang wajar (mis. PNG/KTX/ETC2 untuk tekstur, OGG/Opus untuk audio); ukuran harus datang dari jumlah dan kualitas konten, bukan dari format boros. Soundscape latar disintesis langsung saat bermain (`Soundscape.kt`). Laporkan ukuran APK dari hasil build nyata.
 
 ## Kebiasaan kerja
 
