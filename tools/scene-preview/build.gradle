@@ -4,9 +4,12 @@ repositories { mavenCentral() }
 def app=file('../../app/src/main/java/com/dromadi/tinysim')
 def shared=layout.buildDirectory.dir('shared')
 tasks.register('copyScene', Copy) {
-  from(app) { include 'GameState.kt','scene/Geometry.kt','scene/SceneFrame.kt','scene/SceneRenderer3D.kt','scene/WorldCamera.kt' }
+  from(app) { include 'ArmRig.kt','GameState.kt','scene/Geometry.kt','scene/SceneFrame.kt','scene/SceneRenderer3D.kt','scene/WorldCamera.kt' }
   into shared
 }
 sourceSets { main { kotlin { srcDirs = ['src','stubs',shared] } } }
 compileKotlin.dependsOn copyScene
 application { mainClass = 'MainKt' }
+
+// The same source can exercise the renderer fallback on a highp-capable desktop GPU.
+if(project.hasProperty('noHighp')) tasks.named('run') { systemProperty 'tinysim.preview.noHighp','true' }

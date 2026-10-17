@@ -1,3 +1,30 @@
+# Verifikasi TinySim 3D — 0.1.0-alpha.4
+
+Tanggal: 17 Oktober 2026. Integrasi melanjutkan commit alpha.3 `bbaa04f6529f77d495c0b73f9235d91b99f75262` dari branch `ccr-8d3a4508-l85vrd`. Grafik/material/model alpha.3 dipertahankan; alpha.4 menambah orbit/pinch/zoom, save kamera, lengan dua ruas, jangkauan fisik, serta fallback shader yang lebih aman.
+
+## Hasil aktual
+
+- `gradle --no-daemon --max-workers=2 --stacktrace clean testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: **BUILD SUCCESSFUL**, 2 menit 41 detik, 75 task (74 dijalankan).
+- **16 tes unit lulus**, 0 gagal/error/skipped: 5 GameState, 6 WorldCamera/snapshot, 3 Geometry, 2 ArmRig. Tes kamera mencakup round-trip ray-plane pada semua kombinasi batas orbit/elevasi/zoom; tes lengan memeriksa panjang kedua ruas dan jangkauan. GameState tetap menguji siklus ambil → muat → jalan → tuang → ratakan dan konservasi 36 unit pasir.
+- Lint: **0 error, 1 warning** landscape `DiscouragedApi` yang sama dengan versi sebelumnya.
+- APK package `com.dromadi.tinysim`, versionName `0.1.0-alpha.4`, versionCode 4, min SDK 26, target SDK 35. `apksigner verify --verbose` berhasil (signature v2). `aapt dump permissions` tidak mencantumkan permission.
+- SHA-256 APK lokal: `d2dd429aa8b357c55a9623d90b775af911c0602b64a0518732542bd3cda796e7`.
+- Capture JVM menjalankan renderer asli pada 8 fixture: tiga preset, orbit dekat/jauh, muatan, bak terangkat, dan bulldozer. Setiap fixture diperiksa memiliki 36 unit pasir. Replay Chromium headless/WebGL dengan shader asli: **8/8 PASS**, GL error 0, tanpa error kompilasi/link shader. Default scene: **931 draw call**, termasuk depth pass.
+- Capture kedua memaksa hasil query highp menjadi tidak didukung. Renderer tidak mengompilasi depth shader; shader warna dan varying memakai jalur mediump. Replay: **8/8 PASS**, GL error 0. Default scene fallback: **669 draw call**. Ini simulasi fallback pada GPU desktop; presisi GPU HP lama belum diuji.
+- Bukti mentah: `docs/verification/alpha4/` (build, XML tes, lint, metadata/signature/hash APK, capture/replay, hasil tiap skenario). Tiga gambar JPEG adalah capture canvas renderer: kamera awal, orbit dekat, dan fallback. Tidak ada HUD Android dalam pratinjau ini.
+
+## Batas yang belum terverifikasi
+
+**Tidak ada klaim uji sentuh/emulator/HP untuk APK alpha.4.** Emulator tanpa KVM pada percobaan sebelumnya sangat lambat; pengujian native tidak diulang untuk integrasi ini. APK instrumentasi `SmokeInstrumentation` berhasil dikompilasi, tetapi belum dijalankan. Runner tersebut menguji isolasi pinch/orbit, tombol zoom, tombol alur konstruksi, konservasi pasir, dan gerbang orang tua melalui event Android.
+
+Pratinjau JVM/WebGL hanya membuktikan kode renderer dan shader pada desktop; tidak membuktikan lifecycle, sentuhan, audio, FPS, suhu, atau baterai Android. Tes unit memeriksa logika permainan, bukan keseluruhan pengalaman di HP. Lifecycle pause/resume dan Back tetap memakai integrasi alpha.2; perubahan kamera disimpan saat release/cancel/pause. Perlu uji nyata, khususnya Android 16, sebelum rilis stabil.
+
+Kualitas grafik tinggi tetap aktif secara default. Kamera orbit dibatasi ke depan bidang kerja. Pasir tetap simulasi 24 sel deterministik, bukan granular physics 3D bebas. Debug key lokal/CI/versi sebelumnya dapat berbeda; install -r bisa ditolak karena signature. Uninstall menghapus save, jadi jangan menganggap save dapat dipertahankan lintas key.
+
+Percobaan build pertama gagal saat Gradle menyiapkan cache dependency (`Cannot snapshot output property outputDirectory`); build bersih berikutnya berhasil. Ini dicatat sebagai kegagalan persiapan lokal, bukan hasil tes yang lulus. Status CI harus dibaca pada run untuk commit yang dipublikasikan.
+
+---
+
 # Verifikasi TinySim 3D — 0.1.0-alpha.3 (grafik)
 
 Tanggal: 17 Oktober 2026. Perubahan alpha.3 hanya pada rendering; logika permainan, input, save, dan HUD tidak berubah.

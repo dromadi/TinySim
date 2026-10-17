@@ -1,0 +1,8 @@
+start-cam1 PASS 669 draw calls
+start-cam2 PASS 669 draw calls
+start-cam3 PASS 669 draw calls
+orbit-close PASS 669 draw calls
+orbit-wide PASS 669 draw calls
+loaded PASS 671 draw calls
+dump PASS 658 draw calls
+dozer PASS 666 draw calls

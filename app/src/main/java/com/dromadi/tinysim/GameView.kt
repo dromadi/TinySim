@@ -8,7 +8,6 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
-import com.dromadi.tinysim.scene.MultisampleConfigChooser
 import com.dromadi.tinysim.scene.SceneFrame
 import com.dromadi.tinysim.scene.SceneRenderer3D
 import com.dromadi.tinysim.scene.WorldCamera
@@ -28,6 +27,20 @@ class GameView(context: Context): FrameLayout(context) {
     var parents=false
     var holdProgress=0f
     private var camera=settings.camera
+    var orbitMode=false
+    private var yaw=settings.yaw
+    private var pitch=settings.pitch
+    private var zoom=settings.zoom
+    fun orbit(dx:Float,dy:Float,ratio:Float=1f) {
+        val base=WorldCamera.spec(camera)
+        val d=base.eye-base.target
+        val baseYaw=kotlin.math.atan2(d.x,d.z)*180f/kotlin.math.PI.toFloat()
+        val basePitch=kotlin.math.asin(d.y/kotlin.math.sqrt(d.dot(d)))*180f/kotlin.math.PI.toFloat()
+        yaw=(yaw+dx*.15f).coerceIn(-55f-baseYaw,55f-baseYaw)
+        pitch=(pitch+dy*.1f).coerceIn(22f-basePitch,55f-basePitch)
+        if(ratio.isFinite())zoom=(zoom*ratio).coerceIn(.8f,1.45f)
+    }
+    fun saveCamera() { settings.yaw=yaw;settings.pitch=pitch;settings.zoom=zoom }
     private var running=false
     private var previous=0L
     private var lastTransfer=0
@@ -40,7 +53,7 @@ class GameView(context: Context): FrameLayout(context) {
         isFocusable=true
         contentDescription="TinySim 3D. Permainan konstruksi: excavator, truk, bulldozer."
         surface.setEGLContextClientVersion(2)
-        surface.setEGLConfigChooser(MultisampleConfigChooser())
+        surface.setEGLConfigChooser(com.dromadi.tinysim.scene.MultisampleConfigChooser())
         surface.preserveEGLContextOnPause=true
         surface.setRenderer(sceneRenderer)
         surface.renderMode=GLSurfaceView.RENDERMODE_WHEN_DIRTY
@@ -55,7 +68,7 @@ class GameView(context: Context): FrameLayout(context) {
     fun pause() {
         input.cancel()
         if(running) { running=false;surface.onPause();audio.pause() }
-        settings.save(game)
+        saveCamera();settings.save(game)
     }
     fun closePanel(): Boolean {
         if(parents) { parents=false;input.cancel();hud.invalidate();return true }
@@ -64,7 +77,7 @@ class GameView(context: Context): FrameLayout(context) {
     fun worldX(x: Float)=(x-offsetX)/scale
     fun worldY(y: Float)=(y-offsetY)/scale
     fun dragArm(x: Float,y: Float) {
-        val point=WorldCamera.spec(camera).armPlane(x,y) ?: return
+        val point=WorldCamera.spec(camera,yaw,pitch,zoom).armPlane(x,y) ?: return
         game.moveArm(WorldCamera.gameX(point.x),WorldCamera.gameY(point.y))
     }
     private fun drawHud(canvas: Canvas) {
@@ -82,10 +95,10 @@ class GameView(context: Context): FrameLayout(context) {
             lastTransfer=game.transferSerial
         }
         previous=now
-        sceneRenderer.submit(SceneFrame.capture(game,camera,now/1000f))
+        sceneRenderer.submit(SceneFrame.capture(game,camera,now/1000f,yaw,pitch,zoom))
         surface.requestRender()
         canvas.save();canvas.translate(offsetX,offsetY);canvas.scale(scale,scale)
-        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera)
+        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,orbitMode,zoom)
         canvas.restore()
         if(running)hud.postInvalidateOnAnimation()
     }
@@ -105,6 +118,9 @@ class GameView(context: Context): FrameLayout(context) {
             else -> null
         }
         if(x in 1098f..1178f && y in 106f..182f)return "camera"
+        if(x in 1098f..1178f && y in 194f..270f)return "orbitToggle"
+        if(x in 20f..100f && y in 110f..186f)return "zoomIn"
+        if(x in 20f..100f && y in 198f..274f)return "zoomOut"
         if(y in 557f..655f)return when {
             x in 20f..145f -> "excavator"
             x in 155f..280f -> "truck"
@@ -114,13 +130,19 @@ class GameView(context: Context): FrameLayout(context) {
             x in 850f..1175f -> "action"
             else -> null
         }
-        if(game.selected==GameState.Vehicle.EXCAVATOR && y in 100f..535f)return "arm"
+        if(y in 100f..535f) {
+            if(orbitMode)return "orbit"
+            if(game.selected==GameState.Vehicle.EXCAVATOR)return "arm"
+        }
         return null
     }
     fun activate(action: String) {
         when(action) {
             "sound" -> settings.sound=!settings.sound
-            "camera" -> { camera=(camera+1)%3;settings.camera=camera;input.cancel() }
+            "camera" -> { camera=(camera+1)%3;settings.camera=camera;yaw=0f;pitch=0f;zoom=1f;saveCamera();input.cancel() }
+            "orbitToggle" -> { orbitMode=!orbitMode;input.cancel() }
+            "zoomIn" -> { orbit(0f,0f,1.12f);saveCamera() }
+            "zoomOut" -> { orbit(0f,0f,1f/1.12f);saveCamera() }
             "excavator" -> { game.selected=GameState.Vehicle.EXCAVATOR;game.direction=0 }
             "truck" -> { game.selected=GameState.Vehicle.TRUCK;game.direction=0 }
             "dozer" -> { game.selected=GameState.Vehicle.DOZER;game.direction=0 }

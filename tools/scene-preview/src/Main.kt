@@ -12,13 +12,19 @@ fun main(args: Array<String>) {
         Triple("start-cam1",0) { },
         Triple("start-cam2",1) { },
         Triple("start-cam3",2) { },
+        Triple("orbit-close",0) { },
+        Triple("orbit-wide",2) { },
         Triple("loaded",0) { it.source=28;it.load=6;it.bucket=2;it.armX=520f;it.armY=330f },
-        Triple("dump",0) { it.source=28;it.load=0;it.truckX=760f;it.tipping=true;it.bedAngle=42f;it.sand[8]=4;it.sand[9]=3;it.selected=GameState.Vehicle.TRUCK },
-        Triple("dozer",2) { it.source=20;it.sand[10]=2;it.sand[11]=2;it.sand[12]=1;it.sand[16]=4;it.dozerX=900f;it.selected=GameState.Vehicle.DOZER }
+        Triple("dump",0) { it.source=29;it.load=0;it.truckX=760f;it.tipping=true;it.bedAngle=-42f;it.sand[8]=4;it.sand[9]=3;it.selected=GameState.Vehicle.TRUCK },
+        Triple("dozer",2) { it.source=27;it.sand[10]=2;it.sand[11]=2;it.sand[12]=1;it.sand[16]=4;it.dozerX=900f;it.selected=GameState.Vehicle.DOZER }
     )
     scenes.forEachIndexed { i,(name,cam,setup) ->
-        val g=GameState();setup(g)
-        r.submit(SceneFrame.capture(g,cam,1.2f+i))
+        val g=GameState();setup(g);check(g.totalSand==36) { "Invalid inventory in preview $name" }
+        r.submit(when(name) {
+            "orbit-close"->SceneFrame.capture(g,cam,1.2f+i,18f,8f,1.35f)
+            "orbit-wide"->SceneFrame.capture(g,cam,1.2f+i,-18f,14f,.8f)
+            else->SceneFrame.capture(g,cam,1.2f+i)
+        })
         r.onDrawFrame(null)
         if(i>0)out.append(',');out.append('"').append(name).append("\":[").append(GLES20.ops).append(']');GLES20.ops.setLength(0)
     }

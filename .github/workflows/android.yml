@@ -20,10 +20,10 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
-      - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+      - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
       - uses: actions/upload-artifact@v4
         with:
-          name: TinySim-0.1.0-alpha.3-debug
+          name: TinySim-0.1.0-alpha.4-debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
           if-no-files-found: error

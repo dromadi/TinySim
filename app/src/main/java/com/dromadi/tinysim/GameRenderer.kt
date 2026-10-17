@@ -21,7 +21,7 @@ class GameRenderer {
     private fun star(c:Canvas,x:Float,y:Float,r:Float,color:Int) {
         val a=FloatArray(20);for(i in 0..9) {val t=i*PI/5-PI/2;val rad=if(i%2==0)r else r*.48f;a[i*2]=x+(cos(t)*rad).toFloat();a[i*2+1]=y+(sin(t)*rad).toFloat()};poly(c,a,color)
     }
-    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int) {
+    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,orbitMode:Boolean=false,zoom:Float=1f) {
         // Top navigation and mission card.
         rect(c,24f,20f,201f,64f,white,22f)
         if(g.missionMode) { star(c,56f,52f,17f,yellow);text(c,"Misi",133f,60f,24f) }
@@ -37,11 +37,22 @@ class GameRenderer {
         rect(c,1000f,20f,70f,64f,white,20f);speaker(c,1035f,52f,sound)
         rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
         if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
-        // Three fixed cameras keep the 3D world easy to explore without accidental orbit gestures.
+        // Presets, explicit orbit mode and large zoom buttons support imprecise touches.
         rect(c,1098f,106f,80f,76f,white,22f)
         rect(c,1114f,124f,45f,28f,ink,6f);circle(c,1137f,138f,9f,white)
         poly(c,floatArrayOf(1159f,129f,1170f,121f,1170f,155f,1159f,147f),teal)
-        text(c,"${camera+1} / 3",1138f,172f,15f,teal)
+        text(c,"${camera+1} · ${(zoom*100).toInt()}%",1138f,172f,13f,teal)
+        rect(c,1098f,194f,80f,76f,if(orbitMode)yellow else white,22f)
+        text(c,"↔",1138f,229f,32f);text(c,if(orbitMode)"Putar" else "Kamera",1138f,255f,14f,teal)
+        for(i in 0..1) {
+            rect(c,20f,110f+i*88,80f,76f,white,22f)
+            text(c,if(i==0)"+" else "−",60f,151f+i*88,36f)
+            text(c,if(i==0)"Dekat" else "Jauh",60f,175f+i*88,13f,teal)
+        }
+        if(orbitMode) {
+            rect(c,364f,492f,472f,40f,white,18f)
+            text(c,"Geser untuk putar • cubit untuk zoom",600f,518f,17f,teal)
+        }
         // Lower controls, comfortable targets with room for accidental touches.
         rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
         button(c,20f,125f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,81f,615f)

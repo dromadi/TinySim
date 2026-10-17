@@ -1,0 +1,8 @@
+start-cam1 PASS 931 draw calls
+start-cam2 PASS 931 draw calls
+start-cam3 PASS 931 draw calls
+orbit-close PASS 931 draw calls
+orbit-wide PASS 931 draw calls
+loaded PASS 935 draw calls
+dump PASS 923 draw calls
+dozer PASS 933 draw calls

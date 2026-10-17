@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.util.Log
 import com.dromadi.tinysim.GameState
+import com.dromadi.tinysim.ArmRig
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.*
@@ -38,6 +39,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private var lastDozerX=Float.NaN;private var dustUntil=-10f;private var dustX=0f
     private var drawCalls=0
     // Shadow map: depth is packed into RGBA8 because depth textures are optional on OpenGL ES 2.0.
+    private var highPrecision=false
     private var shadowsEnabled=false;private var shadowSize=2048
     private var shadowFbo=0;private var shadowTexture=0;private var shadowDepth=0
     private var shadowPass=false;private var casting=true
@@ -93,7 +95,11 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
 
     fun submit(snapshot: SceneFrame) { frame=snapshot }
     override fun onSurfaceCreated(unused:GL10?,config:EGLConfig?) {
-        program=link(VERTEX,FRAGMENT)
+        val precision=IntArray(1)
+        GL.glGetShaderPrecisionFormat(GL.GL_FRAGMENT_SHADER,GL.GL_HIGH_FLOAT,IntArray(2),0,precision,0)
+        highPrecision=precision[0]>=16
+        fun compatible(source:String)=if(highPrecision)source else source.replace("#ifdef GL_FRAGMENT_PRECISION_HIGH","#if 0")
+        program=link(compatible(VERTEX),compatible(FRAGMENT))
         position=GL.glGetAttribLocation(program,"aPosition");normal=GL.glGetAttribLocation(program,"aNormal")
         uMvp=GL.glGetUniformLocation(program,"uMvp");uModel=GL.glGetUniformLocation(program,"uModel")
         uNormal=GL.glGetUniformLocation(program,"uNormal");uColor=GL.glGetUniformLocation(program,"uColor")
@@ -102,8 +108,6 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         uLightVp=GL.glGetUniformLocation(program,"uLightVp");uShadowMap=GL.glGetUniformLocation(program,"uShadowMap")
         uShadowOn=GL.glGetUniformLocation(program,"uShadowOn");uShadowTexel=GL.glGetUniformLocation(program,"uShadowTexel")
         uViewport=GL.glGetUniformLocation(program,"uViewport")
-        depthProgram=link(DEPTH_VERTEX,DEPTH_FRAGMENT)
-        depthPosition=GL.glGetAttribLocation(depthProgram,"aPosition");uDepthMvp=GL.glGetUniformLocation(depthProgram,"uMvp")
         for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane))mesh.upload()
         GL.glEnable(GL.GL_DEPTH_TEST);GL.glDepthFunc(GL.GL_LEQUAL)
         GL.glEnable(GL.GL_CULL_FACE);GL.glCullFace(GL.GL_BACK)
@@ -119,9 +123,10 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun createShadowMap() {
         shadowsEnabled=false
-        val range=IntArray(2);val precision=IntArray(1)
-        GL.glGetShaderPrecisionFormat(GL.GL_FRAGMENT_SHADER,GL.GL_HIGH_FLOAT,range,0,precision,0)
-        if(precision[0]<16) { Log.w("TinySim3D","No highp fragment float; shadow map disabled");return }
+        if(!highPrecision) { Log.w("TinySim3D","No highp fragment float; shadow map disabled");return }
+        try { depthProgram=link(DEPTH_VERTEX,DEPTH_FRAGMENT) }
+        catch(e:IllegalStateException) { Log.w("TinySim3D","Shadow shader unavailable; using unshadowed lighting: ${e.message}");return }
+        depthPosition=GL.glGetAttribLocation(depthProgram,"aPosition");uDepthMvp=GL.glGetUniformLocation(depthProgram,"uMvp")
         val max=IntArray(1);GL.glGetIntegerv(GL.GL_MAX_TEXTURE_SIZE,max,0)
         shadowSize=if(max[0]>=4096)2048 else 1024
         val ids=IntArray(1)
@@ -169,7 +174,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         GL.glClear(GL.GL_COLOR_BUFFER_BIT or GL.GL_DEPTH_BUFFER_BIT)
         GL.glViewport(viewportX,viewportY,viewportW,viewportH)
         GL.glEnable(GL.GL_SCISSOR_TEST);GL.glScissor(viewportX,viewportY,viewportW,viewportH)
-        val camera=WorldCamera.spec(f.camera)
+        val camera=WorldCamera.spec(f.camera,f.yaw,f.pitch,f.zoom)
         Matrix.setLookAtM(view,0,camera.eye.x,camera.eye.y,camera.eye.z,camera.target.x,camera.target.y,camera.target.z,0f,1f,0f)
         Matrix.perspectiveM(projection,0,camera.fov,WorldCamera.ASPECT,.8f,260f)
         Matrix.multiplyMM(vp,0,projection,0,view,0)
@@ -319,7 +324,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         noCast { disk(WorldCamera.x(365f),.08f,0f,3.4f,2.85f,sandWet,SAND) }
         if(f.source>0)mound(WorldCamera.x(365f),.07f,0f,3.1f,.25f+f.source/30f,2.6f,sandColor)
         for(i in f.sand.indices)if(f.sand[i]>0) {
-            mound(WorldCamera.x(495f+i*30),.07f,.7f,.85f,.1f+f.sand[i]*.13f,1.05f,sandColor)
+            mound(WorldCamera.x(495f+i*30),.07f,1.35f,.85f,.1f+f.sand[i]*.13f,3.1f,sandColor)
         }
     }
     private fun excavator(f:SceneFrame) {
@@ -339,17 +344,18 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         box(-1.24f,1.5f,.73f,.04f,.7f,.04f,ink,METAL)
         pop()
         val px=WorldCamera.x(243f);val py=WorldCamera.y(412f)
-        val jx=WorldCamera.x(310f);val jy=WorldCamera.y(285f)
+        val joint=ArmRig.elbow(f.armX,f.armY)
+        val jx=WorldCamera.x(joint.first);val jy=WorldCamera.y(joint.second)
         val bx=WorldCamera.x(f.armX);val by=WorldCamera.y(f.armY)
         beam(px,py,jx,jy,.38f,.5f,yellow,PAINT)
-        beam(jx,jy,bx,by+.3f,.28f,.36f,yellow,PAINT)
+        beam(jx,jy,bx,by,.28f,.36f,yellow,PAINT)
         // Hydraulic cylinders: painted barrel with a polished rod.
         hydraulic(px-.14f,py+.27f,jx-.12f,jy-.31f,.11f)
         hydraulic(jx+.08f,jy-.12f,bx-.08f,by+.48f,.08f)
         wheelDisc(px,py,0f,.23f,.63f,darkSteel,METAL)
         wheelDisc(jx,jy,0f,.21f,.6f,darkSteel,METAL)
-        wheelDisc(bx,by+.28f,0f,.12f,.54f,darkSteel,METAL)
-        push();translate(bx,by+.08f,0f);rotate(if(f.bucket>0)10f else -12f,0f,0f,1f)
+        wheelDisc(bx,by,0f,.12f,.54f,darkSteel,METAL)
+        push();translate(bx,by-.22f,0f);rotate(if(f.bucket>0)10f else -12f,0f,0f,1f)
         box(0f,-.18f,0f,.88f,.1f,.92f,darkSteel,METAL)
         box(-.36f,.05f,0f,.11f,.5f,.92f,darkSteel,METAL)
         box(0f,.0f,-.43f,.83f,.43f,.07f,darkSteel,METAL);box(0f,.0f,.43f,.83f,.43f,.07f,darkSteel,METAL)
@@ -429,8 +435,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun beaconLight(x:Float,y:Float,z:Float,seconds:Float) {
         shape(cylinder,x,y-.04f,z,.16f,.06f,.16f,ink,METAL)
-        val on=(seconds*1.6f)%1f<.5f
-        blob(x,y+.06f,z,.15f,.18f,.15f,if(on)beacon else rgba(150,70,20),if(on)EMISSIVE else GLASS)
+        val glow=.78f+.22f*(.5f+.5f*sin(seconds*2f))
+        blob(x,y+.06f,z,.15f,.18f,.15f,rgba((255*glow).toInt(),(140*glow).toInt(),30),EMISSIVE)
     }
     private fun cabWindows(x:Float,y:Float,width:Float,length:Float) {
         for(z in floatArrayOf(-length/2-.02f,length/2+.02f)) {
@@ -488,7 +494,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
                 blob(x,y,.05f,.06f,.06f,.06f,white,EMISSIVE)
             }
             // A bright wrist pin gives children a large, visible dragging target.
-            blob(WorldCamera.x(f.armX),WorldCamera.y(f.armY)+.3f,.36f,.16f,.16f,.08f,white,EMISSIVE)
+            blob(WorldCamera.x(f.armX),WorldCamera.y(f.armY),.36f,.16f,.16f,.08f,white,EMISSIVE)
         }
     }
     private fun particles(f:SceneFrame) {
@@ -608,9 +614,14 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             uniform mat4 uLightVp;
             attribute vec3 aPosition;
             attribute vec3 aNormal;
-            varying vec3 vNormal;
-            varying vec3 vWorld;
-            varying vec4 vLight;
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            #define VARYING_PRECISION highp
+            #else
+            #define VARYING_PRECISION mediump
+            #endif
+            varying VARYING_PRECISION vec3 vNormal;
+            varying VARYING_PRECISION vec3 vWorld;
+            varying VARYING_PRECISION vec4 vLight;
             void main() {
                 vec4 world=uModel*vec4(aPosition,1.0);
                 vNormal=normalize(uNormal*aNormal);
@@ -636,14 +647,23 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             uniform float uShadowOn;
             uniform vec2 uShadowTexel;
             uniform vec4 uViewport;
-            varying vec3 vNormal;
-            varying vec3 vWorld;
-            varying vec4 vLight;
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            #define VARYING_PRECISION highp
+            #else
+            #define VARYING_PRECISION mediump
+            #endif
+            varying VARYING_PRECISION vec3 vNormal;
+            varying VARYING_PRECISION vec3 vWorld;
+            varying VARYING_PRECISION vec4 vLight;
 
             float hash(vec3 p) {
                 p=fract(p*0.3183099+vec3(0.71,0.113,0.419));
                 p*=17.0;
+                #ifdef GL_FRAGMENT_PRECISION_HIGH
                 return fract(p.x*p.y*p.z*(p.x+p.y+p.z));
+                #else
+                return fract(dot(p,vec3(0.13,0.17,0.19)));
+                #endif
             }
             float noise(vec3 x) {
                 vec3 i=floor(x);vec3 f=fract(x);f=f*f*(3.0-2.0*f);
@@ -659,6 +679,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
                 float s=max(dot(dir,uSun),0.0);
                 return sky+vec3(1.0,0.8,0.55)*(pow(s,8.0)*0.22+pow(s,900.0)*12.0);
             }
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
             float unpackDepth(vec4 c) { return dot(c,vec4(1.0,1.0/255.0,1.0/65025.0,1.0/16581375.0)); }
             float shadowTap(vec2 uv,float d) { return step(d,unpackDepth(texture2D(uShadowMap,uv))); }
             float shadow(vec3 n) {
@@ -678,6 +699,9 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
                 s+=shadowTap(p.xy+vec2(-2.0*t.x,0.0),d);
                 return s/10.0;
             }
+            #else
+            float shadow(vec3 n) { return 1.0; }
+            #endif
             vec3 finish(vec3 c) {
                 c*=0.78;
                 c=clamp((c*(2.51*c+0.03))/(c*(2.43*c+0.59)+0.14),0.0,1.0);

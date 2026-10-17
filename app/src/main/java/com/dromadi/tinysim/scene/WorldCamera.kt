@@ -38,7 +38,16 @@ object WorldCamera {
         CameraSpec(Vec3(0f,15f,25f),Vec3(-.3f,.7f,0f)),
         CameraSpec(Vec3(-12f,11f,24f),Vec3(-.3f,.7f,0f))
     )
-    fun spec(index: Int)=presets[index.coerceIn(0,2)]
+    fun spec(index: Int, yawOffset: Float=0f, pitchOffset: Float=0f, zoom: Float=1f): CameraSpec {
+        val base=presets[index.coerceIn(0,2)]
+        if(yawOffset==0f && pitchOffset==0f && zoom==1f)return base
+        val d=base.eye-base.target
+        val radius=sqrt(d.dot(d))/zoom.safe(1f,.8f,1.45f)
+        val yaw=(atan2(d.x,d.z)*180f/PI.toFloat()+yawOffset.safe(0f,-110f,110f)).coerceIn(-55f,55f)*PI.toFloat()/180f
+        val pitch=(asin(d.y/sqrt(d.dot(d)))*180f/PI.toFloat()+pitchOffset.safe(0f,-40f,40f)).coerceIn(22f,55f)*PI.toFloat()/180f
+        return CameraSpec(base.target+Vec3(sin(yaw)*cos(pitch),sin(pitch),cos(yaw)*cos(pitch))*radius,base.target)
+    }
+    private fun Float.safe(fallback:Float,min:Float,max:Float)=if(isFinite())coerceIn(min,max) else fallback
     fun x(gameX: Float)=(gameX-600f)/60f
     fun y(gameY: Float)=(480f-gameY)/60f
     fun gameX(worldX: Float)=600f+60f*worldX

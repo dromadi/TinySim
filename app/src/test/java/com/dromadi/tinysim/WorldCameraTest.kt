@@ -21,6 +21,23 @@ class WorldCameraTest {
             assertTrue("y=${p.second}",p.second in 100f..535f)
         }
     }
+    @Test fun orbitZoomPickingIsAccurateAtEveryLimit() {
+        for(index in 0..2)for(yaw in listOf(-110f,0f,110f))for(pitch in listOf(-40f,0f,40f))for(zoom in listOf(.8f,1f,1.45f)) {
+            val camera=WorldCamera.spec(index,yaw,pitch,zoom)
+            for(x in listOf(285f,365f,620f,825f))for(y in listOf(220f,440f,466f)) {
+                val world=Vec3(WorldCamera.x(x),WorldCamera.y(y),0f)
+                val screen=camera.project(world)
+                val picked=camera.armPlane(screen.first,screen.second)!!
+                assertEquals(x,WorldCamera.gameX(picked.x),.01f)
+                assertEquals(y,WorldCamera.gameY(picked.y),.01f)
+            }
+        }
+    }
+    @Test fun invalidCameraValuesRecoverAndKeepFrontFacing() {
+        val camera=WorldCamera.spec(99,Float.NaN,Float.POSITIVE_INFINITY,Float.NaN)
+        assertTrue(camera.eye.x.isFinite());assertTrue(camera.eye.y.isFinite());assertTrue(camera.eye.z>0f)
+        assertNotNull(camera.armPlane(600f,337.5f))
+    }
     @Test fun glSnapshotOwnsSandArray() {
         val game=GameState();game.sand[0]=2
         val frame=SceneFrame.capture(game,2,1f)

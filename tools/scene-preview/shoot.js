@@ -3,15 +3,28 @@ const fs=require('fs');
 (async()=>{
   fs.mkdirSync(process.argv[3],{recursive:true});
   const data=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
-  const browser=await chromium.launch({args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
-  for(const name of Object.keys(data.frames)){
-    const page=await browser.newPage({viewport:{width:1200,height:675}});
-    page.on('console',m=>console.log('console',m.text()));
-    await page.goto('file://'+__dirname+'/replay.html');
-    await page.evaluate(d=>{window.DATA=d},data);
-    try{ const err=await page.evaluate(n=>run(n),name); console.log(name,'glError',err);}catch(e){console.log(name,'FAIL',e.message.slice(0,800));}
-    await page.locator('#c').screenshot({path:`${process.argv[3]}/${name}.png`});
-    await page.close();
-  }
-  await browser.close();
-})();
+  const browser=await chromium.launch({...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
+  const results=[];
+  const jpeg=process.env.PREVIEW_FORMAT==='jpeg';
+  try {
+    for(const name of Object.keys(data.frames)) {
+      const page=await browser.newPage({viewport:{width:1200,height:675}});
+      page.setDefaultTimeout(90000);
+      page.on('console',m=>console.log('console',m.text()));
+      try {
+        await page.goto('file://'+__dirname+'/replay.html');
+        await page.evaluate(d=>{window.DATA=d},data);
+        const error=await page.evaluate(n=>run(n),name);
+        if(error!==0)throw new Error(`GL error ${error}`);
+        await page.locator('#c').screenshot({path:`${process.argv[3]}/${name}.${jpeg?'jpg':'png'}`,...(jpeg?{type:'jpeg',quality:90}:{})});
+        const draws=data.frames[name].filter(op=>op[0]==='drawArrays');
+        results.push({name,status:'PASS',glError:error,drawCalls:draws.length,triangles:draws.reduce((sum,op)=>sum+op[2]/3,0)});
+        console.log(name,'PASS',draws.length,'draw calls');
+      } catch(e) {
+        results.push({name,status:'FAIL',error:e.message});console.error(name,'FAIL',e.message);
+      } finally { await page.close(); }
+    }
+  } finally { await browser.close(); }
+  fs.writeFileSync(`${process.argv[3]}/results.json`,JSON.stringify(results,null,2));
+  if(results.some(r=>r.status!=='PASS'))process.exitCode=1;
+})().catch(e=>{console.error(e);process.exitCode=1});

@@ -33,8 +33,9 @@ class GameState {
     val totalSand get() = source + bucket + load + sand.sum()
     val missionProgress get() = when(mission) { 0 -> load.coerceAtMost(4); 1 -> delivered.coerceAtMost(4); else -> flattened.coerceAtMost(4) }
     fun moveArm(x: Float, y: Float) {
-        targetX = x.coerceIn(285f, 825f)
-        targetY = y.coerceIn(220f, 466f)
+        if(!x.isFinite() || !y.isFinite())return
+        val point=ArmRig.limit(x,y)
+        targetX=point.first;targetY=point.second
     }
     fun scoop(): Boolean {
         if (bucket == 0 && source > 0 && armX < 460 && armY > 380) {
@@ -113,6 +114,7 @@ class GameState {
             truckX=v[0].toFloat().coerceIn(510f,1110f); dozerX=v[1].toFloat().coerceIn(520f,1110f)
             armX=v[2].toFloat().coerceIn(285f,825f); armY=v[3].toFloat().coerceIn(220f,466f)
             require(listOf(truckX,dozerX,armX,armY).all { it.isFinite() })
+            val end=ArmRig.limit(armX,armY);armX=end.first;armY=end.second
             targetX=armX; targetY=armY; bucket=v[4].toInt().coerceIn(0,2); load=v[5].toInt().coerceIn(0,8)
             source=v[6].toInt().coerceIn(0,36); delivered=v[7].toInt().coerceAtLeast(0); flattened=v[8].toInt().coerceAtLeast(0)
             mission=v[9].toInt().coerceIn(0,2); missionMode=v[10]=="1"; selected=Vehicle.entries[v[11].toInt().coerceIn(0,2)]

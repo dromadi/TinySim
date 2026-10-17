@@ -56,7 +56,7 @@ object GLES20 {
   @JvmStatic fun glUniform1i(l:Int,a:Int)=op("u1i",l,a)
   @JvmStatic fun glGetError()=0
   @JvmStatic fun glGetString(n:Int)="harness"
-  @JvmStatic fun glGetShaderPrecisionFormat(s:Int,p:Int,r:IntArray,ro:Int,pr:IntArray,po:Int){ pr[po]=23 }
+  @JvmStatic fun glGetShaderPrecisionFormat(s:Int,p:Int,r:IntArray,ro:Int,pr:IntArray,po:Int){ pr[po]=if(System.getProperty("tinysim.preview.noHighp")=="true")0 else 23 }
   @JvmStatic fun glGetIntegerv(p:Int,r:IntArray,o:Int){ r[o]=4096 }
   @JvmStatic fun glGenTextures(n:Int,r:IntArray,o:Int){ r[o]=id("createTexture") }
   @JvmStatic fun glBindTexture(t:Int,x:Int)=op("bindTexture",x)

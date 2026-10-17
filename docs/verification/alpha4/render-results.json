@@ -1,0 +1,58 @@
+[
+  {
+    "name": "start-cam1",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 931,
+    "triangles": 171604
+  },
+  {
+    "name": "start-cam2",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 931,
+    "triangles": 171604
+  },
+  {
+    "name": "start-cam3",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 931,
+    "triangles": 171604
+  },
+  {
+    "name": "orbit-close",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 931,
+    "triangles": 171604
+  },
+  {
+    "name": "orbit-wide",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 931,
+    "triangles": 171604
+  },
+  {
+    "name": "loaded",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 935,
+    "triangles": 173508
+  },
+  {
+    "name": "dump",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 923,
+    "triangles": 165724
+  },
+  {
+    "name": "dozer",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 933,
+    "triangles": 171372
+  }
+]
