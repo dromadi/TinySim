@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
+import com.dromadi.tinysim.scene.MultisampleConfigChooser
 import com.dromadi.tinysim.scene.SceneFrame
 import com.dromadi.tinysim.scene.SceneRenderer3D
 import com.dromadi.tinysim.scene.WorldCamera
@@ -39,7 +40,7 @@ class GameView(context: Context): FrameLayout(context) {
         isFocusable=true
         contentDescription="TinySim 3D. Permainan konstruksi: excavator, truk, bulldozer."
         surface.setEGLContextClientVersion(2)
-        surface.setEGLConfigChooser(8,8,8,8,16,0)
+        surface.setEGLConfigChooser(MultisampleConfigChooser())
         surface.preserveEGLContextOnPause=true
         surface.setRenderer(sceneRenderer)
         surface.renderMode=GLSurfaceView.RENDERMODE_WHEN_DIRTY

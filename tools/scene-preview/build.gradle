@@ -1,0 +1,12 @@
+// Desktop preview: runs the real SceneRenderer3D against recording GLES20 stubs and writes the GL call stream.
+plugins { id 'org.jetbrains.kotlin.jvm' version '2.0.21'; id 'application' }
+repositories { mavenCentral() }
+def app=file('../../app/src/main/java/com/dromadi/tinysim')
+def shared=layout.buildDirectory.dir('shared')
+tasks.register('copyScene', Copy) {
+  from(app) { include 'GameState.kt','scene/Geometry.kt','scene/SceneFrame.kt','scene/SceneRenderer3D.kt','scene/WorldCamera.kt' }
+  into shared
+}
+sourceSets { main { kotlin { srcDirs = ['src','stubs',shared] } } }
+compileKotlin.dependsOn copyScene
+application { mainClass = 'MainKt' }

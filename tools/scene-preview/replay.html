@@ -1,0 +1,51 @@
+<!doctype html><html><body style="margin:0;background:#000"><canvas id="c" width="1200" height="675"></canvas><script>
+async function run(name){
+  const data=window.DATA; const c=document.getElementById('c');
+  const gl=c.getContext('webgl',{antialias:true,preserveDrawingBuffer:true});
+  const objs={},attribs={},uniforms={};let program=null;
+  const exec=(o)=>{const [n,...a]=o;switch(n){
+    case'createShader':objs[a[0]]=gl.createShader(a[1]);break;
+    case'shaderSource':gl.shaderSource(objs[a[0]],a[1]);break;
+    case'compileShader':gl.compileShader(objs[a[0]]);if(!gl.getShaderParameter(objs[a[0]],gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(objs[a[0]]));break;
+    case'createProgram':objs[a[0]]=gl.createProgram();break;
+    case'attachShader':gl.attachShader(objs[a[0]],objs[a[1]]);break;
+    case'linkProgram':gl.linkProgram(objs[a[0]]);if(!gl.getProgramParameter(objs[a[0]],gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(objs[a[0]]));break;
+    case'attrib':attribs[a[0]]=gl.getAttribLocation(objs[a[1]],a[2]);break;
+    case'uniformLoc':uniforms[a[0]]=gl.getUniformLocation(objs[a[1]],a[2]);break;
+    case'createBuffer':objs[a[0]]=gl.createBuffer();break;
+    case'bindBuffer':gl.bindBuffer(gl.ARRAY_BUFFER,objs[a[0]]);break;
+    case'bufferData':gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(a[0]),gl.STATIC_DRAW);break;
+    case'attribPointer':gl.vertexAttribPointer(attribs[a[0]],a[1],gl.FLOAT,false,a[2],a[3]);break;
+    case'enableAttrib':gl.enableVertexAttribArray(attribs[a[0]]);break;
+    case'disableAttrib':gl.disableVertexAttribArray(attribs[a[0]]);break;
+    case'drawArrays':gl.drawArrays(gl.TRIANGLES,a[0],a[1]);break;
+    case'enable':gl.enable(a[0]);break; case'disable':gl.disable(a[0]);break;
+    case'depthFunc':gl.depthFunc(a[0]);break; case'cullFace':gl.cullFace(a[0]);break;
+    case'blendFunc':gl.blendFunc(a[0],a[1]);break; case'depthMask':gl.depthMask(a[0]);break;
+    case'clearColor':gl.clearColor(...a);break; case'clear':gl.clear(a[0]);break;
+    case'viewport':gl.viewport(...a);break; case'scissor':gl.scissor(...a);break;
+    case'useProgram':gl.useProgram(objs[a[0]]);break;
+    case'm4':gl.uniformMatrix4fv(uniforms[a[0]],false,a[1]);break;
+    case'm3':gl.uniformMatrix3fv(uniforms[a[0]],false,a[1]);break;
+    case'u4':gl.uniform4f(uniforms[a[0]],a[1],a[2],a[3],a[4]);break;
+    case'u3':gl.uniform3f(uniforms[a[0]],a[1],a[2],a[3]);break;
+    case'u2':gl.uniform2f(uniforms[a[0]],a[1],a[2]);break;
+    case'u1':gl.uniform1f(uniforms[a[0]],a[1]);break;
+    case'u1i':gl.uniform1i(uniforms[a[0]],a[1]);break;
+    case'createTexture':objs[a[0]]=gl.createTexture();break;
+    case'bindTexture':gl.bindTexture(gl.TEXTURE_2D,a[0]?objs[a[0]]:null);break;
+    case'texImage':gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a[0],a[1],0,gl.RGBA,gl.UNSIGNED_BYTE,null);break;
+    case'texParam':gl.texParameteri(gl.TEXTURE_2D,a[0],a[1]);break;
+    case'createRenderbuffer':objs[a[0]]=gl.createRenderbuffer();break;
+    case'bindRenderbuffer':gl.bindRenderbuffer(gl.RENDERBUFFER,objs[a[0]]);break;
+    case'renderbufferStorage':gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,a[0],a[1]);break;
+    case'createFramebuffer':objs[a[0]]=gl.createFramebuffer();break;
+    case'bindFramebuffer':gl.bindFramebuffer(gl.FRAMEBUFFER,a[0]?objs[a[0]]:null);break;
+    case'fbTexture':gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,objs[a[0]],0);break;
+    case'fbRenderbuffer':gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,objs[a[0]]);break;
+    case'activeTexture':gl.activeTexture(a[0]);break;
+    default:throw new Error('op '+n);}};
+  data.init.forEach(exec); data.frames[name].forEach(exec);
+  const e=gl.getError(); return e;
+}
+</script></body></html>

@@ -23,7 +23,7 @@ jobs:
       - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: TinySim-0.1.0-alpha.2-debug
+          name: TinySim-0.1.0-alpha.3-debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
           if-no-files-found: error

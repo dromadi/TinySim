@@ -1,11 +1,23 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Dunia konstruksi 3D offline untuk anak usia 2–6 tahun. Versi `0.1.0-alpha.2`, package `com.dromadi.tinysim`, Android 8.0+ dengan OpenGL ES 2.0. Tanpa login, internet permission, iklan, IAP, analytics, backend, atau pengumpulan data pribadi. Save permainan, kamera, dan pilihan suara tersimpan di perangkat; backup/transfer data aplikasi dinonaktifkan.
+Dunia konstruksi 3D offline untuk anak usia 2–6 tahun. Versi `0.1.0-alpha.3`, package `com.dromadi.tinysim`, Android 8.0+ dengan OpenGL ES 2.0. Tanpa login, internet permission, iklan, IAP, analytics, backend, atau pengumpulan data pribadi. Save permainan, kamera, dan pilihan suara tersimpan di perangkat; backup/transfer data aplikasi dinonaktifkan.
 
-![TinySim 3D](docs/verification/3d/gameplay.png)
+![TinySim 3D](docs/verification/graphics/start-cam1.png)
 
-## Yang baru di alpha.2
+## Yang baru di alpha.3 — grafik lebih realistis
+- **Bayangan matahari asli** (shadow mapping 2048 px dengan PCF lembut) untuk kendaraan, pohon, pagar, dan pasir, ditambah ambient occlusion di titik kontak dengan tanah.
+- **Pencahayaan linear + tone mapping filmic**: cahaya matahari hangat, ambient langit/tanah (hemisphere), specular Blinn-Phong per material, Fresnel, vignette halus.
+- **Material berbeda**: cat kendaraan mengilap, logam/krom memantulkan langit, kaca kabin reflektif, karet, kayu, rumput, dan pasir berbutir. Detail permukaan dibuat prosedural di shader, tanpa file tekstur.
+- **Langit dan atmosfer**: kubah langit bergradasi dengan matahari, perbukitan dan pegunungan berkabut (aerial perspective), awan bervolume.
+- **Model lebih detail**: panel bertepi bevel, silinder hidrolik dengan batang krom, lampu depan/belakang, grill, spion, knalpot, lampu rotator berkedip, roda dengan jari-jari dan tapak yang ikut berputar, track yang bergerak saat kendaraan berjalan, ripper bulldozer.
+- **Pasir lebih alami**: gundukan halus tidak beraturan menggantikan kerucut; debu muncul saat bulldozer mendorong.
+- **Lingkungan**: padang rumput bervariasi, pohon berdaun rimbun dan pohon cemara dengan bentuk acak per posisi, deretan pohon latar.
+- **Anti-aliasing 4x MSAA** bila didukung perangkat, dengan fallback otomatis. Bayangan otomatis nonaktif pada GPU tanpa presisi `highp` di fragment shader.
+
+Perbandingan sebelum (alpha.2) dan sesudah: `docs/verification/graphics/before-alpha2.png` dan `docs/verification/graphics/*.png`.
+
+## Alpha.2
 - Dunia diorama 3D dengan mesh kendaraan, pasir, pepohonan, pagar, kerucut konstruksi, dan awan.
 - Perspektif dan depth testing OpenGL, pencahayaan berdasarkan normal permukaan, bayangan kontak sederhana, roda truk berputar, serta butiran pasir 3D saat transfer.
 - Lengan dan bucket excavator bergerak di dunia 3D. Bak dan pintu belakang dump truck berartikulasi; blade bulldozer bisa dinaikkan.
@@ -28,8 +40,9 @@ Dunia konstruksi 3D offline untuk anak usia 2–6 tahun. Versi `0.1.0-alpha.2`, 
 Kotlin + **OpenGL ES 2.0 / GLSurfaceView** untuk dunia 3D; Canvas untuk HUD. Tidak ada game engine atau dependency runtime pihak ketiga. Mesh dan shader dibuat lokal, sehingga APK tetap kecil dan tidak memerlukan unduhan aset.
 
 - `GameState`: logika deterministik, konservasi pasir, misi, dan save yang kompatibel dengan alpha.1. Pergerakan kendaraan tetap pada jalur X yang terkontrol. Pasir menggunakan 24 sel stabil, bukan simulasi granular bebas.
-- `scene/Geometry`: generator cube, cylinder, cone, dan low-poly sphere beserta normal permukaan; VBO diunggah sekali per konteks EGL.
-- `scene/SceneRenderer3D`: model kendaraan berhierarki, shader pencahayaan, depth testing, dekorasi, dan efek butiran. Bayangan kontak berupa geometri transparan, bukan shadow map.
+- `scene/Geometry`: generator cube, bevel cube, cylinder, cone, sphere, gundukan pasir, dan bidang tanah dengan normal halus; VBO diunggah sekali per konteks EGL. Winding diuji di `GeometryTest`.
+- `scene/SceneRenderer3D`: dua pass per frame — depth pass dari matahari ke shadow map (kedalaman dipak ke RGBA8 karena depth texture opsional di ES 2.0), lalu pass warna dengan langit, material, bayangan, kabut, dan tone mapping. Model kendaraan berhierarki dan efek butiran/debu.
+- `scene/MultisampleConfigChooser`: memilih konfigurasi EGL 4x MSAA dengan fallback.
 - `scene/WorldCamera`: basis kamera perspektif dan ray-plane picking murni Kotlin, dipakai bersama oleh rendering dan input.
 - `scene/SceneFrame`: snapshot milik thread GL dengan salinan array pasir. Thread GL tidak memodifikasi GameState.
 - `GameRenderer`: overlay Canvas dan piktogram asli untuk kontrol.
@@ -49,10 +62,10 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`.
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
-Actions **Android debug** menjalankan tes, lint, dan build, lalu menyimpan APK dan laporan. Artifact **TinySim-0.1.0-alpha.2-debug** tersedia pada run yang sukses. APK debug lokal dan CI mungkin memakai debug key berbeda; pembaruan lintas key dapat memerlukan uninstall. Jangan uninstall bila ingin mempertahankan save lokal.
+Actions **Android debug** menjalankan tes, lint, dan build, lalu menyimpan APK dan laporan. Artifact **TinySim-0.1.0-alpha.3-debug** tersedia pada run yang sukses. APK debug lokal dan CI mungkin memakai debug key berbeda; pembaruan lintas key dapat memerlukan uninstall. Jangan uninstall bila ingin mempertahankan save lokal.
 
 ## Verifikasi
-Lihat `VERIFICATION.md` untuk hasil aktual. Tes meliputi alur lengkap, konservasi/kapasitas pasir, batas gerak, misi, snapshot, migrasi save alpha.1, isolasi snapshot thread GL, serta proyeksi/picking ketiga kamera. Hasil emulator tidak menjadi tolok ukur FPS pada HP nyata.
+Lihat `VERIFICATION.md` untuk hasil aktual. Pratinjau grafik tanpa HP: `tools/scene-preview` menjalankan renderer asli di JVM lalu memutar ulang panggilan GL-nya di WebGL. Tes meliputi alur lengkap, konservasi/kapasitas pasir, batas gerak, misi, snapshot, migrasi save alpha.1, isolasi snapshot thread GL, serta proyeksi/picking ketiga kamera. Hasil emulator tidak menjadi tolok ukur FPS pada HP nyata.
 
 ## Roadmap
 1. Uji bersama anak dan orang tua pada perangkat nyata; validasi ergonomi, kualitas suara dan performa Android 16.
@@ -61,4 +74,4 @@ Lihat `VERIFICATION.md` untuk hasil aktual. Tes meliputi alur lengkap, konservas
 4. Dunia kebun dan kendaraan penyelamat menggunakan model asli.
 
 ## Aset dan lisensi
-Seluruh mesh 3D, model kendaraan, dekorasi, shader, ikon, dan launcher dibuat sendiri dalam repository ini. Tidak ada aset gambar, model, musik, atau font yang diunduh. Font sistem dan ToneGenerator disediakan Android. Kode dan artwork asli TinySim berlisensi MIT (`LICENSE`). Gradle wrapper berasal dari Gradle (Apache-2.0); Kotlin/Android SDK adalah tool build, bukan aset permainan.
+Seluruh mesh 3D, model kendaraan, dekorasi, shader, tekstur prosedural, ikon, dan launcher dibuat sendiri dalam repository ini. Tidak ada aset gambar, model, musik, atau font yang diunduh. Font sistem dan ToneGenerator disediakan Android. Kode dan artwork asli TinySim berlisensi MIT (`LICENSE`). Gradle wrapper berasal dari Gradle (Apache-2.0); Kotlin/Android SDK adalah tool build, bukan aset permainan.
