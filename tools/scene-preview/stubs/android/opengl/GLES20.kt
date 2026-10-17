@@ -6,7 +6,7 @@ object GLES20 {
   const val GL_DEPTH_TEST=0x0B71; const val GL_LEQUAL=0x0203; const val GL_CULL_FACE=0x0B44; const val GL_BACK=0x0405; const val GL_FRONT=0x0404
   const val GL_BLEND=0x0BE2; const val GL_SRC_ALPHA=0x0302; const val GL_ONE_MINUS_SRC_ALPHA=0x0303; const val GL_SCISSOR_TEST=0x0C11
   const val GL_COLOR_BUFFER_BIT=0x4000; const val GL_DEPTH_BUFFER_BIT=0x100; const val GL_NO_ERROR=0; const val GL_RENDERER=0x1F01
-  const val GL_ARRAY_BUFFER=0x8892; const val GL_STATIC_DRAW=0x88E4; const val GL_FLOAT=0x1406; const val GL_TRIANGLES=4
+  const val GL_ARRAY_BUFFER=0x8892; const val GL_STATIC_DRAW=0x88E4; const val GL_DYNAMIC_DRAW=0x88E8; const val GL_FLOAT=0x1406; const val GL_TRIANGLES=4
   const val GL_VERTEX_SHADER=0x8B31; const val GL_FRAGMENT_SHADER=0x8B30; const val GL_COMPILE_STATUS=0x8B81; const val GL_LINK_STATUS=0x8B82
   const val GL_HIGH_FLOAT=0x8DF2; const val GL_MAX_TEXTURE_SIZE=0x0D33; const val GL_TEXTURE_2D=0x0DE1; const val GL_RGBA=0x1908; const val GL_UNSIGNED_BYTE=0x1401
   const val GL_TEXTURE_MIN_FILTER=0x2801; const val GL_TEXTURE_MAG_FILTER=0x2800; const val GL_NEAREST=0x2600; const val GL_TEXTURE_WRAP_S=0x2802; const val GL_TEXTURE_WRAP_T=0x2803; const val GL_CLAMP_TO_EDGE=0x812F
@@ -31,6 +31,7 @@ object GLES20 {
   @JvmStatic fun glGenBuffers(n:Int,r:IntArray,o:Int){ r[o]=id("createBuffer") }
   @JvmStatic fun glBindBuffer(t:Int,b:Int)=op("bindBuffer",b)
   @JvmStatic fun glBufferData(t:Int,size:Int,data:Buffer,u:Int){ val fb=data as FloatBuffer; val a=FloatArray(fb.remaining()); fb.duplicate().get(a); op("bufferData",a) }
+  @JvmStatic fun glBufferSubData(t:Int,offset:Int,size:Int,data:Buffer){ val fb=data as FloatBuffer; val a=FloatArray(size/4); fb.duplicate().get(a); op("bufferSubData",offset,a) }
   @JvmStatic fun glVertexAttribPointer(i:Int,s:Int,t:Int,n:Boolean,stride:Int,off:Int)=op("attribPointer",i,s,stride,off)
   @JvmStatic fun glEnableVertexAttribArray(i:Int)=op("enableAttrib",i)
   @JvmStatic fun glDisableVertexAttribArray(i:Int)=op("disableAttrib",i)

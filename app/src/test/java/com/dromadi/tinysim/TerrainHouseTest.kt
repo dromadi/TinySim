@@ -17,7 +17,7 @@ class TerrainHouseTest {
         val x=30.5f;val z=8.5f;val before=g.surface(x,z);dig(g,x,z)
         assertEquals(2,g.bucket);assertEquals(before-.44f,g.surface(x,z),.001f)
         assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
-        val mesh=Geometry.terrain(g.earth,g.sand).vertexData();var low=1f
+        val terrain=TerrainMesh();terrain.update(g.earth,g.sand);val mesh=terrain.vertices;var low=1f
         for(i in mesh.indices step 6) { low=minOf(low,mesh[i+1]);assertTrue(mesh[i+4]>0f);assertTrue(mesh[i+1].isFinite()) }
         assertTrue(low<0f)
     }

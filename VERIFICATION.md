@@ -1,3 +1,21 @@
+# Verifikasi alpha.8 — tanah inkremental & audio sintesis
+
+Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 8; versi `0.1.0-alpha.8`.
+
+## Hasil yang benar-benar dijalankan
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 55 tes, 0 gagal/error/skipped; lint 0 error dan satu warning `DiscouragedApi` (landscape yang disengaja, sama seperti sebelumnya).
+- **Mesh tanah.** Diukur di JVM desktop dengan kode asli: alpha.7 membangun ulang seluruh mesh 43.648 segitiga setiap kali tanah/pasir berubah, 46–107 ms per perubahan (satu frame 60 fps = 16,7 ms). Alpha.8 `TerrainMesh`: pembangunan penuh awal sekitar 4 ms setelah pemanasan JIT; saat bulldozer mendorong pasir, tiap perubahan 0,05–0,14 ms dan hanya 12 baris quad yang diperbarui. `TerrainMeshTest` membuktikan hasil update parsial **identik** dengan pembangunan ulang penuh setelah 44 perubahan acak termasuk sudut dan tepi peta, serta normal/winding menghadap ke atas.
+- **Pratinjau renderer** (`tools/scene-preview`): adegan awal, lubang galian, timbunan dan rumah lengkap lulus tanpa GL error. Adegan berikutnya memakai jalur `glBufferSubData`; hasil gambar sama dengan bukti alpha.7.
+- **Audio.** `SoundscapeTest`: tiga area terdengar (RMS 0,001–0,05), tidak pernah melewati batas ±0,35, deterministik, berbeda antar area, kicau burung muncul di jendela waktunya, fade-in mencapai volume 0,22, crossfade antar area tanpa lonjakan sampel besar, dan fade-out sampai hening.
+- APK debug lokal **987.732 byte** (alpha.7: 173.725.502 byte). Tidak ada aset WAV; CI tidak lagi mewajibkan APK >100 MiB.
+
+## Batas pengujian
+
+Alpha.8 belum dijalankan pada HP/emulator. Suara AudioTrack belum didengarkan di perangkat; tes membuktikan sinyal yang dihasilkan, bukan pengalaman mendengar. FPS di HP belum diukur; angka mesh di atas berasal dari JVM desktop.
+
+---
+
 # Verifikasi alpha.7 — terrain & proyek rumah
 
 Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 7; versi `0.1.0-alpha.7`.

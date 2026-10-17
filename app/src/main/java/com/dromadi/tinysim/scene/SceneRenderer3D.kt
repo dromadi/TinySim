@@ -26,8 +26,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private val moundMesh=Geometry.mound()
     private val plane=Geometry.plane()
     private val gable=Geometry.gable()
-    private val terrain=Geometry.terrain(IntArray(WorldMap.CELL_COUNT){4},IntArray(WorldMap.CELL_COUNT))
-    private var terrainEarth=IntArray(0);private var terrainSand=IntArray(0)
+    private val terrain=TerrainMesh()
     private fun support(f:SceneFrame,x:Float,z:Float)=Terrain.height(f.earth,f.sand,x,z)-.07f
     private var program=0;private var depthProgram=0
     private var position=0;private var normal=0;private var depthPosition=0
@@ -116,8 +115,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         uLightVp=GL.glGetUniformLocation(program,"uLightVp");uShadowMap=GL.glGetUniformLocation(program,"uShadowMap")
         uShadowOn=GL.glGetUniformLocation(program,"uShadowOn");uShadowTexel=GL.glGetUniformLocation(program,"uShadowTexel")
         uViewport=GL.glGetUniformLocation(program,"uViewport")
-        terrain.contextLost();terrainEarth=IntArray(0)
-        for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane,terrain,gable)) { mesh.contextLost();mesh.upload() }
+        for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane,gable)) { mesh.contextLost();mesh.upload() }
+        terrain.update(frame.earth,frame.sand);terrain.contextLost();terrain.upload()
         GL.glEnable(GL.GL_DEPTH_TEST);GL.glDepthFunc(GL.GL_LEQUAL)
         GL.glEnable(GL.GL_CULL_FACE);GL.glCullFace(GL.GL_BACK)
         GL.glEnable(GL.GL_BLEND);GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA)
@@ -164,9 +163,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     override fun onDrawFrame(unused:GL10?) {
         val f=frame
-        if(!terrainEarth.contentEquals(f.earth) || !terrainSand.contentEquals(f.sand)) {
-            terrain.replaceWith(Geometry.terrain(f.earth,f.sand));terrainEarth=f.earth.copyOf();terrainSand=f.sand.copyOf()
-        }
+        // Only the quads around changed cells are recomputed and re-uploaded.
+        if(terrain.update(f.earth,f.sand)!=null)terrain.upload()
         updateEffects(f)
         drawCalls=0
         if(shadowsEnabled) {
@@ -684,13 +682,13 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private fun wheelDisc(x:Float,y:Float,z:Float,r:Float,thickness:Float,color:FloatArray,material:FloatArray) {
         push();translate(x,y,z);rotate(90f,1f,0f,0f);scale(r*2,thickness,r*2);draw(cylinder,color,material);pop()
     }
-    private fun shape(mesh:Geometry,x:Float,y:Float,z:Float,w:Float,h:Float,d:Float,color:FloatArray,material:FloatArray) {
+    private fun shape(mesh:Mesh,x:Float,y:Float,z:Float,w:Float,h:Float,d:Float,color:FloatArray,material:FloatArray) {
         push();translate(x,y,z);draw(mesh,color,material,w,h,d);pop()
     }
-    private fun draw(mesh:Geometry,color:FloatArray,material:FloatArray,w:Float,h:Float,d:Float) {
+    private fun draw(mesh:Mesh,color:FloatArray,material:FloatArray,w:Float,h:Float,d:Float) {
         push();scale(w,h,d);draw(mesh,color,material);pop()
     }
-    private fun draw(mesh:Geometry,color:FloatArray,material:FloatArray) {
+    private fun draw(mesh:Mesh,color:FloatArray,material:FloatArray) {
         if(shadowPass) {
             if(!casting || color[3]<1f || material[4]>=1f && material[4]<=3f)return
             Matrix.multiplyMM(mvp,0,lightVp,0,model,0)

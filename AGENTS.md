@@ -19,4 +19,11 @@ Pertahankan konsep dan batasan produk dalam README: permainan ramah anak usia 2â
 
 ## Paket konten
 
-Target pengguna adalah game berukuran 100 MB ke atas. Penuhi dengan konten offline yang benar-benar dipakai (audio, material, dunia, animasi), bukan padding atau duplikasi berkas untuk mengejar angka. Ukuran APK harus dilaporkan dari hasil build nyata.
+Ukuran APK bukan target. Jangan menggelembungkan ukuran dengan berkas tanpa kompresi, padding, atau duplikasi. Tambahkan konten offline (audio, material, dunia, animasi) karena dipakai dalam permainan. Soundscape disintesis langsung saat bermain (`Soundscape.kt`), bukan disimpan sebagai WAV. Laporkan ukuran APK dari hasil build nyata.
+
+## Kebiasaan kerja
+
+- Komunikasi dengan pemilik dalam Bahasa Indonesia.
+- Sebelum push, jalankan `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` (JDK 17, Android SDK 35).
+- Untuk memeriksa tampilan 3D tanpa HP/emulator, gunakan `tools/scene-preview` (lihat README di folder itu).
+- Pekerjaan berat di thread GL (misalnya membangun ulang mesh) harus bersifat inkremental; ukur waktunya dengan tes JVM bila ragu.

@@ -5,8 +5,11 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.*
 
+/** Anything the renderer can draw from an interleaved position/normal buffer. */
+interface Mesh { fun draw(position: Int, normal: Int) }
+
 /** Original procedural meshes. Positions and normals are uploaded once per EGL context. */
-class Geometry private constructor(private var vertices: FloatArray) {
+class Geometry private constructor(private val vertices: FloatArray): Mesh {
     private var buffer=0
     val triangleCount get()=vertices.size/18
     /** Interleaved position/normal copy, used by tests to check winding and normals. */
@@ -18,9 +21,8 @@ class Geometry private constructor(private var vertices: FloatArray) {
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER,buffer)
         GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER,vertices.size*4,bytes,GLES20.GL_STATIC_DRAW)
     }
-    fun replaceWith(other:Geometry) { vertices=other.vertices;upload() }
     fun contextLost() { buffer=0 }
-    fun draw(position: Int, normal: Int) {
+    override fun draw(position: Int, normal: Int) {
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER,buffer)
         GLES20.glVertexAttribPointer(position,3,GLES20.GL_FLOAT,false,24,0)
         if(normal>=0)GLES20.glVertexAttribPointer(normal,3,GLES20.GL_FLOAT,false,24,12)
@@ -129,19 +131,6 @@ class Geometry private constructor(private var vertices: FloatArray) {
             facing(a,d,e,Vec3(0f,-1f,0f));facing(a,e,b,Vec3(0f,-1f,0f))
             facing(a,c,f,Vec3(0f,1f,-1f));facing(a,f,d,Vec3(0f,1f,-1f))
             facing(b,e,f,Vec3(0f,1f,1f));facing(b,f,c,Vec3(0f,1f,1f))
-        }
-        fun terrain(earth:IntArray,sand:IntArray)=build {
-            val step=.25f
-            fun point(x:Float,z:Float)=Vec3(x,com.dromadi.tinysim.Terrain.height(earth,sand,x,z),z)
-            fun normal(p:Vec3):Vec3 {
-                fun h(x:Float,z:Float)=com.dromadi.tinysim.Terrain.height(earth,sand,x,z)
-                return Vec3(h(p.x-.05f,p.z)-h(p.x+.05f,p.z),.1f,h(p.x,p.z-.05f)-h(p.x,p.z+.05f)).normalized()
-            }
-            for(z in 0 until 88)for(x in 0 until 248) {
-                val x0=-12f+x*step;val z0=-7f+z*step
-                val a=point(x0,z0);val b=point(x0,z0+step);val c=point(x0+step,z0+step);val d=point(x0+step,z0)
-                smooth(a,normal(a),b,normal(b),c,normal(c));smooth(a,normal(a),c,normal(c),d,normal(d))
-            }
         }
         /** Large ground patch subdivided so per-vertex lighting and fog stay smooth. */
         fun plane(cells: Int=24)=build {

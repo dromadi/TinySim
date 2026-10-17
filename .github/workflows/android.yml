@@ -21,10 +21,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
       - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
-      - run: python3 tools/audio/verify_pack.py app/build/generated/sound-assets/soundscapes app/build/outputs/apk/debug/app-debug.apk > app/build/reports/audio-pack.json
       - uses: actions/upload-artifact@v4
         with:
-          name: TinySim-0.1.0-alpha.7-debug
+          name: TinySim-0.1.0-alpha.8-debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
           if-no-files-found: error
@@ -35,4 +34,3 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/reports/lint-results-debug.html
-            app/build/reports/audio-pack.json
