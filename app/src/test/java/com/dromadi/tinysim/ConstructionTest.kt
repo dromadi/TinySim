@@ -46,6 +46,7 @@ class ConstructionTest {
         }
         g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(18.3f),8.5f);arrive(g)
         g.selected=GameState.Vehicle.TRUCK;g.action();tick(g);assertEquals(4,g.sand.sum())
+        g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(40f),-2f);arrive(g)
         g.dozerX=WorldMap.gameX(13f);g.dozerZ=8.5f;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(25f),8.5f);arrive(g)
         assertEquals(4,g.roadProgress);assertEquals(36,g.totalSand)
@@ -79,7 +80,7 @@ class ConstructionTest {
         for(x in listOf(0f,47f))for(z in listOf(-2.8f,11.5f))for(angle in listOf(0f,90f,180f,270f)) {
             val g=GameState();g.excavatorX=WorldMap.gameX(x);g.excavatorZ=z;g.excavatorHeading=angle
             g.bucket=2;g.source=34;g.action();arrive(g);tick(g)
-            if(g.bucket>0)assertTrue("pose $x $z $angle",g.pour());assertEquals(2,g.load);assertEquals(36,g.totalSand)
+            if(g.bucket>0)assertTrue("pose $x $z $angle; truck=${g.truckX},${g.truckZ}, heading=${g.excavatorHeading}, bucket=${g.bucketPosition}, goal=${g.truckGoal}",g.pour());assertEquals(2,g.load);assertEquals(36,g.totalSand)
         }
     }
     @Test fun roadMissionIsOptionalAndAlreadyBuiltRoadCanCompleteIt() {

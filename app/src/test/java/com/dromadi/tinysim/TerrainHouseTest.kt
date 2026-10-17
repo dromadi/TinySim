@@ -27,6 +27,8 @@ class TerrainHouseTest {
         g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(32.3f),8.5f);arrive(g);g.truckHeading=0f
         g.selected=GameState.Vehicle.TRUCK;g.action();settle(g)
         val i=WorldMap.cell(30.5f,8.5f);assertEquals(2,g.sand[i]);assertEquals(2,g.earth[i])
+        g.driveTo(GameState.Vehicle.EXCAVATOR,WorldMap.gameX(20f),2f);arrive(g)
+        g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(40f),-2f);arrive(g)
         g.dozerX=WorldMap.gameX(27f);g.dozerZ=8.5f;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(34f),8.5f);arrive(g)
         assertEquals(4,g.earth[i]);assertEquals(0,g.sand[i]);assertEquals(.07f,g.surface(30.5f,8.5f),.001f)

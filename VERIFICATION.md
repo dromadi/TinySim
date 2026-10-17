@@ -1,3 +1,25 @@
+# Verifikasi alpha.8 — tabrakan kendaraan
+
+Tanggal: 18 Oktober 2026 (WIB). Package `com.dromadi.tinysim`; versionCode 8; versi `0.1.0-alpha.8`.
+
+## Yang dijalankan
+
+- Build bersih `clean testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` berhasil: **57 tes, 0 gagal/error/skipped**. Lint **0 error, 1 warning** landscape yang disengaja.
+- Sembilan tes baru memeriksa penghindaran kendaraan parkir, berpapasan, tujuan yang ditempati kendaraan, tiga kendaraan menuju satu titik, retarget sentuhan berulang, dt besar, pemeriksaan seluruh segmen, rotasi/blade, serta pemulihan save bertumpuk termasuk sudut map. Pemisahan bodi dan konservasi 5.492 unit material diperiksa setiap langkah simulasi.
+- Tes alur pengangkutan/penggalian/jalan diperbarui agar truk dan excavator meninggalkan area kerja sebelum bulldozer mendekati timbunan, sesuai tabrakan yang kini aktif. Bantuan Isi truk diuji pada 16 kombinasi sudut/batas map; hanya memilih parkir yang aman, terjangkau bucket, serta punya rute.
+- APK lokal **173.733.838 byte**; signature v2 valid, 0 Android permission. WAV/hash/CRC/daftar aset persis dan ukuran >100 MiB lulus verifier audio yang sama dengan CI.
+- Runner Android dikompilasi, dengan pemeriksaan jarak bodi selama alur MotionEvent dan pemindahan truk dari area kerja. Runner belum dieksekusi pada HP/emulator. Tidak ada klaim pengujian sentuh/performa perangkat dari tes JVM.
+
+## Batas dan pemasangan
+
+Tabrakan memakai lingkaran konservatif yang menutup bodi/roda/track/blade dan tidak berubah saat rotasi. Rute visibility graph dan pemeriksaan swept segment memakai batas yang sama; kendaraan berhenti jika tidak ada rute aman. Lengan excavator tetap bisa mencapai bak untuk pemuatan; belum ada kontak fisik mesh lengan atau tabrakan bangunan/dekorasi.
+
+Kunci debug alpha.7 tidak tersedia setelah pembersihan otomatis lingkungan build. APK lokal alpha.8 memakai kunci baru; **tidak dapat memperbarui APK dengan signing key lama**. Uninstall menghapus save. Cadangan kunci baru disimpan privat, tidak dipublikasikan di repository atau artifact CI. Format save tetap `7|` agar data dunia tetap kompatibel bila dibangun dengan key yang sama.
+
+Bukti tersedia di [`docs/verification/alpha8/`](docs/verification/alpha8/). Grafik/audio alpha.7 dipertahankan; tidak dibuat screenshot perangkat untuk perubahan ini.
+
+---
+
 # Verifikasi alpha.7 — terrain & proyek rumah
 
 Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 7; versi `0.1.0-alpha.7`.

@@ -20,3 +20,7 @@ Pertahankan konsep dan batasan produk dalam README: permainan ramah anak usia 2â
 ## Paket konten
 
 Target pengguna adalah game berukuran 100 MB ke atas. Penuhi dengan konten offline yang benar-benar dipakai (audio, material, dunia, animasi), bukan padding atau duplikasi berkas untuk mengejar angka. Ukuran APK harus dilaporkan dari hasil build nyata.
+
+## Identitas APK debug
+
+Pertahankan keystore debug lokal pengguna untuk pembaruan berikutnya. Jika lingkungan build dibersihkan, pulihkan cadangan privat sebelum build. Jangan memasukkan keystore atau private key ke Git/artifact publik. Jelaskan perubahan key bila pembaruan Android tidak bisa mempertahankan identitas lama.

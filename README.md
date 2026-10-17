@@ -1,11 +1,20 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.7**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.8**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
 ![Map konstruksi dan kontrol sentuh TinySim](docs/verification/alpha7/house-complete.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.8: tabrakan antar kendaraan
+
+- Bodi excavator, truk dan bulldozer sekarang memiliki batas tabrakan, termasuk roda/track dan blade. Batasnya tidak mengecil saat kendaraan berputar.
+- Kendaraan mencari jalur pendek mengitari kendaraan lain. Seluruh lintasan tiap langkah diperiksa, sehingga tidak hanya memeriksa titik akhir gerakan.
+- Tujuan yang ditempati kendaraan dipindahkan ke titik aman terdekat; jika tidak ada rute aman, perjalanan berhenti. Kendaraan yang diam tidak didorong oleh kendaraan yang berjalan.
+- Save lama yang menyimpan kendaraan bertumpuk dipisahkan secara deterministik tanpa mereset pasir, terrain, jalan, rumah atau muatan.
+- Setelah membongkar pasir, pindahkan truk dari area kerja agar bulldozer dapat mendekati tumpukan. Bantuan Isi truk memilih tempat parkir yang aman dan masih terjangkau bucket.
+- Tabrakan ini memakai lingkaran konservatif pada bidang tanah (radius excavator 2,0; truk 2,4; bulldozer 2,5 unit, ditambah celah 0,08). Lengan excavator tetap dapat menjangkau bak untuk pemuatan; ini belum merupakan simulasi kontak mesh lengan atau bangunan.
 
 ## Alpha.7: tanah berubah bentuk & rumah yang bisa dibangun
 
@@ -34,6 +43,7 @@ Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas un
 
 - `GameState`: perjalanan ke tujuan, putaran kendaraan, transfer pasir, misi, dan snapshot.
 - `Terrain`: heightfield kontinu, batas tanah dasar, dan zona fondasi rumah.
+- `VehicleNavigation` / `VehicleRoutes`: batas bodi, pemeriksaan lintasan, rute menghindar, tujuan aman dan pemulihan posisi bertumpuk.
 - `WorldMap`: batas lahan, grid 62 × 22 sel pasir, konversi posisi dan tetangga sel.
 - `ArmRig`: inverse kinematics dua ruas dan batas jangkauan excavator.
 - `TouchController`: state machine gestur murni Kotlin; `GameInput` mengadaptasi event/pointer Android ke pengenal tersebut.
@@ -61,7 +71,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.7-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.7 memakai key yang sama dengan APK lokal alpha.4/alpha.5/alpha.6 selama key pengembangan tersebut tetap tersedia.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.8-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 memakai kunci debug baru karena kunci lama tidak tersedia setelah pembersihan lingkungan build. Android menolak pembaruan lintas key; uninstall menghapus save. Kunci baru disimpan secara privat dengan nama `TinySim_debug_signing_alpha8.keystore`, tidak masuk Git. Untuk mempertahankan identitas build lokal berikutnya, pulihkan ke `~/.android/debug.keystore` sebelum membangun. Jangan mengunggah keystore ke repository/artifact publik.
 
 Runner pengujian sentuh terpisah:
 

@@ -13,6 +13,7 @@ class GameStateTest {
         assertEquals(18f,WorldMap.worldX(g.truckX),.001f);assertEquals(6f,g.truckZ,.001f)
         g.selected=GameState.Vehicle.TRUCK;g.action();settle(g)
         assertEquals(0,g.load);assertEquals(4,g.delivered);assertEquals(4,g.sand.sum())
+        g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(40f),-2f);arrive(g)
         val pile=g.sand.indexOfFirst { it>0 };val px=WorldMap.cellX(pile);val pz=WorldMap.cellZ(pile)
         g.dozerX=WorldMap.gameX(px-3f);g.dozerZ=pz;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(px+4f),pz);arrive(g)

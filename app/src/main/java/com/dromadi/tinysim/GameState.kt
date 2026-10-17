@@ -5,6 +5,31 @@ import kotlin.math.*
 /** Deterministic, bounded simulation. Sand units are conserved, including the source. */
 class GameState {
     enum class Vehicle { EXCAVATOR, TRUCK, DOZER }
+    private val routes=VehicleRoutes()
+    fun vehicleBody(unit:Vehicle)=VehicleNavigation.Body(unit,when(unit) {
+        Vehicle.EXCAVATOR->VehicleNavigation.Point(WorldMap.worldX(excavatorX),excavatorZ)
+        Vehicle.TRUCK->VehicleNavigation.Point(WorldMap.worldX(truckX),truckZ)
+        Vehicle.DOZER->VehicleNavigation.Point(WorldMap.worldX(dozerX),dozerZ)
+    })
+    private fun others(unit:Vehicle)=Vehicle.entries.filter { it!=unit }.map { vehicleBody(it) }
+    /** Old saves may already contain overlaps. Keep inventory/heading; separate only the poses. */
+    private fun separateVehicles() {
+        val placed=mutableListOf<VehicleNavigation.Body>()
+        for(unit in Vehicle.entries) {
+            val body=vehicleBody(unit)
+            if(!VehicleNavigation.free(body.point,unit,placed)) {
+                val p=VehicleNavigation.nearestFree(body.point,body.point,unit,placed) ?: continue
+                when(unit) {
+                    Vehicle.EXCAVATOR->{excavatorX=WorldMap.gameX(p.x);excavatorZ=p.z}
+                    Vehicle.TRUCK->{truckX=WorldMap.gameX(p.x);truckZ=p.z}
+                    Vehicle.DOZER->{dozerX=WorldMap.gameX(p.x);dozerZ=p.z}
+                };routes.clear(unit)
+            }
+            placed+=vehicleBody(unit)
+        }
+    }
+    private fun waypoint(unit:Vehicle,goal:DriveGoal)=routes.next(unit,vehicleBody(unit).point,VehicleNavigation.Point(WorldMap.worldX(goal.x),goal.z),others(unit))
+    private fun moveAllowed(unit:Vehicle,x:Float,z:Float)=VehicleNavigation.clear(vehicleBody(unit).point,VehicleNavigation.Point(x,z),unit,others(unit))
     var selected = Vehicle.EXCAVATOR
     // Arm coordinates stay local to the excavator; its pose moves/rotates the rig in 3D.
     var excavatorX=200f
@@ -81,6 +106,8 @@ class GameState {
         private set
     fun driveTo(vehicle:Vehicle,x:Float,z:Float) {
         if(!x.isFinite() || !z.isFinite())return
+        separateVehicles()
+        routes.clear(vehicle)
         if(vehicle==Vehicle.EXCAVATOR)digTarget=null
         val goal=DriveGoal(x.coerceIn(if(vehicle==Vehicle.EXCAVATOR)90f else WorldMap.DRIVE_MIN_X,WorldMap.DRIVE_MAX_X),z.coerceIn(WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z))
         when(vehicle) {
@@ -89,7 +116,7 @@ class GameState {
             Vehicle.EXCAVATOR -> excavatorGoal=goal
         }
     }
-    fun stopMovement() { truckGoal=null;dozerGoal=null;excavatorGoal=null;digTarget=null;buildClock=0f }
+    fun stopMovement() { routes.clear(); truckGoal=null;dozerGoal=null;excavatorGoal=null;digTarget=null;buildClock=0f }
     val driving get()=truckGoal!=null || dozerGoal!=null || excavatorGoal!=null
     var bladeDown = true
     var dozerFacing = 1
@@ -150,6 +177,7 @@ class GameState {
     }
     private fun digY(x:Float,z:Float)=(480f-(surface(x,z)+.6f-excavatorHeight)*60f).coerceIn(390f,550f)
     fun action() {
+        separateVehicles()
         when(selected) {
             Vehicle.EXCAVATOR -> if(bucket==0) {
                 if(!scoop()) {
@@ -158,14 +186,19 @@ class GameState {
                     else digAt(WorldMap.worldX(365f),0f)
                 }
             } else if(!pour()) {
-                // Park the truck at the local pouring point, even at the far work sites.
-                var desired=armWorld(620f)
-                if(desired.first !in WorldMap.worldX(WorldMap.DRIVE_MIN_X)..WorldMap.worldX(WorldMap.DRIVE_MAX_X) || desired.second !in WorldMap.DRIVE_MIN_Z..WorldMap.DRIVE_MAX_Z) {
-                    excavatorHeading=(excavatorHeading+180f)%360f;desired=armWorld(620f)
+                // Choose a reachable, unoccupied loading bay; clamp before checking map edges.
+                val desired=armWorld(620f)
+                val origin=vehicleBody(Vehicle.EXCAVATOR).point
+                val candidates=mutableListOf(VehicleNavigation.bounded(VehicleNavigation.Point(desired.first,desired.second),Vehicle.TRUCK))
+                for(i in 0 until 32) {
+                    val angle=i*2*PI/32
+                    candidates+=VehicleNavigation.bounded(VehicleNavigation.Point(origin.x+cos(angle).toFloat()*7f,origin.z+sin(angle).toFloat()*7f),Vehicle.TRUCK)
                 }
-                val point=WorldMap.worldX(WorldMap.gameX(desired.first).coerceIn(WorldMap.DRIVE_MIN_X,WorldMap.DRIVE_MAX_X)) to desired.second.coerceIn(WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z)
-                driveTo(Vehicle.TRUCK,WorldMap.gameX(point.first),point.second)
-                aimAt(point.first,point.second,300f)
+                val point=candidates.filter { it.distance(origin) in 4.5f..7.4f && VehicleNavigation.free(it,Vehicle.TRUCK,others(Vehicle.TRUCK)) }
+                    .sortedBy { it.distance(VehicleNavigation.Point(desired.first,desired.second))+.01f*it.distance(vehicleBody(Vehicle.TRUCK).point) }
+                    .firstOrNull { VehicleNavigation.plan(vehicleBody(Vehicle.TRUCK).point,it,Vehicle.TRUCK,others(Vehicle.TRUCK)).isNotEmpty() } ?: return
+                driveTo(Vehicle.TRUCK,WorldMap.gameX(point.x),point.z)
+                aimAt(point.x,point.z,300f)
             }
             Vehicle.TRUCK -> { truckGoal=null;tipping=!tipping }
             Vehicle.DOZER -> { bladeDown=!bladeDown }
@@ -174,6 +207,8 @@ class GameState {
     fun update(rawDt: Float) {
         if(!rawDt.isFinite())return
         val dt = rawDt.coerceIn(0f, .04f)
+        if(dt==0f)return
+        separateVehicles()
         celebrating = max(0f, celebrating-dt)
         if(buildClock>0f && !siteOccupied) {
             buildClock=max(0f,buildClock-dt)
@@ -203,14 +238,19 @@ class GameState {
     }
     private fun advanceExcavator(dt:Float) {
         val goal=excavatorGoal ?: return
-        val dx=(goal.x-excavatorX)/60f;val dz=goal.z-excavatorZ;val distance=hypot(dx,dz)
-        if(distance<.025f) { excavatorX=goal.x;excavatorZ=goal.z;excavatorGoal=null
-            val target=digTarget;digTarget=null
-            if(target!=null)aimAt(target.first,target.second,digY(target.first,target.second))
-            return }
+        val target=waypoint(Vehicle.EXCAVATOR,goal) ?: run { excavatorGoal=null;digTarget=null;return }
+        val dx=target.x-WorldMap.worldX(excavatorX);val dz=target.z-excavatorZ;val distance=hypot(dx,dz)
+        if(distance<.025f && routes.last(Vehicle.EXCAVATOR)) {
+            excavatorX=WorldMap.gameX(target.x);excavatorZ=target.z;excavatorGoal=null;routes.clear(Vehicle.EXCAVATOR)
+            val dig=digTarget;digTarget=null
+            if(dig!=null)aimAt(dig.first,dig.second,digY(dig.first,dig.second))
+            return
+        }
+        if(distance<1e-6f)return
+        val step=min(distance,2.4f*dt);val x=WorldMap.worldX(excavatorX)+dx/distance*step;val z=excavatorZ+dz/distance*step
+        if(!moveAllowed(Vehicle.EXCAVATOR,x,z)) { routes.clear(Vehicle.EXCAVATOR);return }
         excavatorHeading=heading(excavatorHeading,dx,dz,dt)
-        val step=min(distance,2.4f*dt)
-        excavatorX+=dx/distance*step*60f;excavatorZ+=dz/distance*step;excavatorTravel+=step
+        excavatorX=WorldMap.gameX(x);excavatorZ=z;excavatorTravel+=step
     }
     private fun compactRoad(index:Int):Boolean {
         val section=WorldMap.roadSection(index)
@@ -222,19 +262,25 @@ class GameState {
     private fun advanceTruck(dt:Float) {
         val goal=truckGoal ?: return
         if(tipping || bedAngle < -8f)return
-        val dx=(goal.x-truckX)/60f;val dz=goal.z-truckZ;val distance=hypot(dx,dz)
-        if(distance<.025f) { truckX=goal.x;truckZ=goal.z;truckGoal=null;return }
+        val target=waypoint(Vehicle.TRUCK,goal) ?: run { truckGoal=null;return }
+        val dx=target.x-WorldMap.worldX(truckX);val dz=target.z-truckZ;val distance=hypot(dx,dz)
+        if(distance<.025f && routes.last(Vehicle.TRUCK)) { truckX=WorldMap.gameX(target.x);truckZ=target.z;truckGoal=null;routes.clear(Vehicle.TRUCK);return }
+        if(distance<1e-6f)return
+        val step=min(distance,3.5f*dt);val x=WorldMap.worldX(truckX)+dx/distance*step;val z=truckZ+dz/distance*step
+        if(!moveAllowed(Vehicle.TRUCK,x,z)) { routes.clear(Vehicle.TRUCK);return }
         truckHeading=heading(truckHeading,dx,dz,dt)
-        val step=min(distance,3.5f*dt)
-        truckX+=dx/distance*step*60f;truckZ+=dz/distance*step;truckTravel+=step
+        truckX=WorldMap.gameX(x);truckZ=z;truckTravel+=step
     }
     private fun advanceDozer(dt:Float) {
         val goal=dozerGoal ?: return
-        val dx=(goal.x-dozerX)/60f;val dz=goal.z-dozerZ;val distance=hypot(dx,dz)
-        if(distance<.025f) { dozerX=goal.x;dozerZ=goal.z;dozerGoal=null;return }
+        val target=waypoint(Vehicle.DOZER,goal) ?: run { dozerGoal=null;return }
+        val dx=target.x-WorldMap.worldX(dozerX);val dz=target.z-dozerZ;val distance=hypot(dx,dz)
+        if(distance<.025f && routes.last(Vehicle.DOZER)) { dozerX=WorldMap.gameX(target.x);dozerZ=target.z;dozerGoal=null;routes.clear(Vehicle.DOZER);return }
+        if(distance<1e-6f)return
+        val step=min(distance,2.8f*dt);val x=WorldMap.worldX(dozerX)+dx/distance*step;val z=dozerZ+dz/distance*step
+        if(!moveAllowed(Vehicle.DOZER,x,z)) { routes.clear(Vehicle.DOZER);return }
         dozerHeading=heading(dozerHeading,dx,dz,dt);dozerFacing=if(dx<0)-1 else 1
-        val step=min(distance,2.8f*dt);if(step<=0f)return
-        dozerX+=dx/distance*step*60f;dozerZ+=dz/distance*step;dozerTravel+=step
+        dozerX=WorldMap.gameX(x);dozerZ=z;dozerTravel+=step
         if(bladeDown) {
             val ux=dx/distance;val uz=dz/distance
             val touched=HashSet<Int>()
@@ -308,7 +354,7 @@ class GameState {
                 houseFill=house[0].toInt();houseStage=house[1].toInt();require(houseFill in 0..8 && houseStage in 0..3)
                 require(houseStage==0 || (houseFill==8 && houseReady))
             }
-            require(totalMaterial==Terrain.INITIAL_MASS);checkMission()
+            require(totalMaterial==Terrain.INITIAL_MASS);separateVehicles();checkMission()
         }.onFailure { reset() }
     }
 }
