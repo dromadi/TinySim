@@ -51,7 +51,7 @@ fun main(args: Array<String>) {
         }
         r.submit(frame)
         r.onDrawFrame(null)
-        val canvas=Canvas();GameRenderer().draw(canvas,g,true,false,0f,frame.seconds,cam,false,frame.zoom,frame.panX,frame.panZ)
+        val canvas=Canvas();GameRenderer().draw(canvas,g,true,false,0f,frame.seconds,cam,advanced=false,orbitMode=false,zoom=frame.zoom,panX=frame.panX,panZ=frame.panZ,hintX=if(name=="start-cam1")1010f else Float.NaN,hintY=590f)
         if(i>0)hud.append(',');hud.append('"').append(name).append("\":[").append(canvas.ops).append(']')
         if(i>0)out.append(',');out.append('"').append(name).append("\":[").append(GLES20.ops).append(']');GLES20.ops.setLength(0)
     }

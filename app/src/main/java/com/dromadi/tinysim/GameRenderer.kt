@@ -21,79 +21,108 @@ class GameRenderer {
     private fun star(c:Canvas,x:Float,y:Float,r:Float,color:Int) {
         val a=FloatArray(20);for(i in 0..9) {val t=i*PI/5-PI/2;val rad=if(i%2==0)r else r*.48f;a[i*2]=x+(cos(t)*rad).toFloat();a[i*2+1]=y+(sin(t)*rad).toFloat()};poly(c,a,color)
     }
-    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,digging:Boolean=false) {
-        // Top navigation and mission card.
-        rect(c,24f,20f,201f,64f,white,22f)
-        if(g.missionMode) { star(c,56f,52f,17f,yellow);text(c,"Misi",133f,60f,24f) }
-        else { text(c,"∞",58f,65f,38f,teal);text(c,"Bebas",143f,60f,24f) }
-        rect(c,245f,20f,270f,70f,white,22f)
-        text(c,"TinySim",320f,52f,30f);text(c,"Dunia kecil, imajinasi besar.",376f,77f,14f)
-        rect(c,544f,20f,410f,70f,white,22f)
-        if(g.missionMode) {
-            when(g.mission) {0->truck(c,600f,73f,.32f,4,0f);1->truck(c,600f,73f,.32f,2,-38f);2->dozer(c,600f,73f,.32f,1);3->roadIcon(c,600f,51f,g.roadProgress);else->houseIcon(c,600f,51f)}
-            text(c,when(g.mission){0->"Isi truk";1->"Tuang pasir";2->"Ratakan";3->"Bangun jalan";else->"Bangun rumah"},756f,48f,20f)
-            for(i in 0..3)circle(c,716f+i*30,70f,7f,if(g.missionProgress>i)teal else col("#DDE5DC"))
-        } else { houseIcon(c,600f,51f);text(c,if(!g.houseReady)"Gali fondasi ${g.foundationProgress}/4" else if(g.houseFill<8)"Antar bahan ${g.houseFill}/8" else "Rakit rumah ${g.houseStage}/3",790f,61f,21f,teal) }
-        rect(c,1000f,20f,70f,64f,white,20f);speaker(c,1035f,52f,sound)
+    /**
+     * Child HUD: three vehicle cards, one large action button and a pictogram progress card, with
+     * no words to read. Zoom, camera, minimap and stop appear only when a parent enables them.
+     * hintX/hintY place the pointing hand (NaN hides it).
+     */
+    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN) {
+        progressCard(c,g)
         rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
         if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
-        // Presets, explicit orbit mode and large zoom buttons support imprecise touches.
-        rect(c,1098f,106f,80f,76f,white,22f)
-        rect(c,1114f,124f,45f,28f,ink,6f);circle(c,1137f,138f,9f,white)
-        poly(c,floatArrayOf(1159f,129f,1170f,121f,1170f,155f,1159f,147f),teal)
-        text(c,"${camera+1} · ${(zoom*100).toInt()}%",1138f,172f,13f,teal)
-        rect(c,1098f,194f,80f,76f,if(orbitMode)yellow else white,22f)
-        text(c,"↔",1138f,229f,32f);text(c,if(orbitMode)"Putar" else "Kamera",1138f,255f,14f,teal)
-        for(i in 0..1) {
-            rect(c,20f,110f+i*88,80f,76f,white,22f)
-            text(c,if(i==0)"+" else "−",60f,151f+i*88,36f)
-            text(c,if(i==0)"Dekat" else "Jauh",60f,175f+i*88,13f,teal)
-        }
-        rect(c,1098f,282f,80f,76f,white,22f)
-        text(c,"⊙",1138f,320f,32f,teal);text(c,"Ikuti",1138f,344f,14f)
-        minimap(c,g,panX,panZ)
-        rect(c,1098f,370f,80f,76f,if(g.houseReady && g.houseFill==8)yellow else white,22f)
-        houseIcon(c,1138f,398f);text(c,"Bangun",1138f,434f,13f)
-        if(orbitMode) {
-            rect(c,364f,492f,472f,40f,white,18f)
-            text(c,"Geser untuk putar • cubit untuk zoom",600f,518f,17f,teal)
-        }
-        // Lower controls, comfortable targets with room for accidental touches.
-        rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
-        button(c,20f,125f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,81f,615f)
-        button(c,155f,125f,g.selected==GameState.Vehicle.TRUCK);truck(c,218f,620f,.44f,2,0f)
-        button(c,290f,125f,g.selected==GameState.Vehicle.DOZER);dozer(c,353f,620f,.44f,1)
-        rect(c,425f,557f,100f,98f,if(digging)yellow else white,24f)
-        poly(c,floatArrayOf(451f,582f,497f,582f,487f,607f,462f,607f),teal)
-        text(c,if(digging)"Gali aktif" else "Gali",475f,638f,14f)
-        text(c,if(g.selected==GameState.Vehicle.EXCAVATOR)"Ketuk / seret" else "Ketuk tujuan",610f,595f,21f,teal)
-        text(c,"Geser • cubit zoom",610f,627f,13f,ink)
-        rect(c,720f,557f,90f,98f,white,24f)
-        rect(c,751f,582f,28f,28f,ink,5f);text(c,"Stop",765f,638f,15f)
-        rect(c,850f,557f,325f,98f,teal,26f)
-        when(g.selected) {
-            GameState.Vehicle.EXCAVATOR -> {
-                poly(c,floatArrayOf(888f,594f,932f,594f,920f,623f,898f,623f),yellow)
-                text(c,if(g.bucket==0)"Ambil pasir" else "Isi truk",1040f,615f,26f,white)
+        if(advanced) {
+            rect(c,1000f,20f,70f,64f,white,20f);speaker(c,1035f,52f,sound)
+            rect(c,1098f,106f,80f,76f,white,22f)
+            rect(c,1114f,124f,45f,28f,ink,6f);circle(c,1137f,138f,9f,white)
+            poly(c,floatArrayOf(1159f,129f,1170f,121f,1170f,155f,1159f,147f),teal)
+            text(c,"${camera+1} · ${(zoom*100).toInt()}%",1138f,172f,13f,teal)
+            rect(c,1098f,194f,80f,76f,if(orbitMode)yellow else white,22f)
+            text(c,"↔",1138f,229f,32f);text(c,if(orbitMode)"Putar" else "Kamera",1138f,255f,14f,teal)
+            for(i in 0..1) {
+                rect(c,20f,110f+i*88,80f,76f,white,22f)
+                text(c,if(i==0)"+" else "−",60f,151f+i*88,36f)
+                text(c,if(i==0)"Dekat" else "Jauh",60f,175f+i*88,13f,teal)
             }
-            GameState.Vehicle.TRUCK -> { truck(c,910f,629f,.38f,2,-32f);text(c,if(g.tipping)"Turunkan bak" else "Tuang pasir",1047f,615f,24f,white) }
-            GameState.Vehicle.DOZER -> { dozer(c,909f,629f,.38f,1);text(c,if(g.bladeDown) "Angkat blade" else "Turunkan blade",1040f,615f,23f,white) }
+            rect(c,1098f,282f,80f,76f,white,22f)
+            text(c,"⊙",1138f,320f,32f,teal);text(c,"Ikuti",1138f,344f,14f)
+            minimap(c,g,panX,panZ)
         }
+        // Large targets with room for imprecise touches.
+        rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
+        button(c,20f,170f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,105f,615f)
+        button(c,205f,170f,g.selected==GameState.Vehicle.TRUCK);truck(c,292f,620f,.5f,2,0f)
+        button(c,390f,170f,g.selected==GameState.Vehicle.DOZER);dozer(c,477f,622f,.5f,1)
+        if(advanced) { rect(c,710f,557f,110f,98f,white,24f);rect(c,748f,585f,34f,34f,ink,6f) }
+        rect(c,840f,556f,340f,104f,teal,28f)
+        actionIcon(c,g,1010f,608f)
         if(g.celebrating>0) {
-            rect(c,430f,130f,340f,100f,white,35f);text(c,"Hebat!",600f,194f,38f,teal)
-            for(i in 0..7) star(c,380f+i*65,260f+sin(time*2+i)*16,14f,yellow)
+            star(c,600f,250f,70f+sin(time*6)*6,yellow)
+            for(i in 0..7) star(c,380f+i*65,360f+sin(time*2+i)*16,14f,yellow)
         }
+        if(!hintX.isNaN() && !parents)hand(c,hintX,hintY,time)
         if(parents) {
             rect(c,0f,0f,1200f,675f,Color.argb(185,22,49,58),0f)
-            rect(c,300f,90f,600f,490f,white,35f)
-            text(c,"Area orang tua",600f,142f,29f)
-            for(i in 0..3) rect(c,350f,170f+i*90,500f,75f,if(i==3)teal else col("#E6EFE7"),20f)
-            text(c,if(sound)"Suara: aktif" else "Suara: nonaktif",600f,217f,25f)
-            text(c,"Mulai ulang dunia",600f,307f,25f)
-            text(c,if(g.missionMode)"Mode: misi bergambar" else "Mode: bermain bebas",600f,397f,25f)
-            text(c,"Kembali bermain",600f,487f,25f,white)
-            text(c,"Offline • tanpa iklan • tanpa pengumpulan data",600f,550f,17f)
+            rect(c,300f,80f,600f,530f,white,35f)
+            text(c,"Area orang tua",600f,130f,29f)
+            for(i in 0..5) rect(c,350f,PARENT_TOP+i*PARENT_STEP,500f,60f,if(i==5)teal else col("#E6EFE7"),20f)
+            val labels=listOf(if(sound)"Suara: aktif" else "Suara: nonaktif","Sudut kamera: ${camera+1} / 3",
+                if(advanced)"Kontrol lanjutan: tampil" else "Kontrol lanjutan: sembunyi",
+                if(g.missionMode)"Mode: misi bergambar" else "Mode: bermain bebas","Mulai ulang dunia","Kembali bermain")
+            labels.forEachIndexed { i,label-> text(c,label,600f,PARENT_TOP+i*PARENT_STEP+39f,23f,if(i==5)white else ink) }
+            text(c,"Offline • tanpa iklan • tanpa pengumpulan data",600f,592f,16f)
         }
+    }
+    /** Pictogram progress: mission icon or the house project stage, with dots instead of words. */
+    private fun progressCard(c:Canvas,g:GameState) {
+        rect(c,24f,20f,300f,70f,white,22f)
+        val dots:Int;val done:Int
+        if(g.missionMode) {
+            when(g.mission) {0->truck(c,72f,73f,.32f,4,0f);1->truck(c,72f,73f,.32f,2,-38f);2->dozer(c,72f,73f,.32f,1);3->roadIcon(c,72f,51f,g.roadProgress);else->houseIcon(c,72f,51f)}
+            dots=4;done=g.missionProgress
+        } else if(!g.houseReady && g.houseStage==0) {
+            poly(c,floatArrayOf(50f,40f,96f,40f,86f,68f,60f,68f),yellow);line(c,73f,22f,73f,38f,ink,6f)
+            dots=4;done=g.foundationProgress
+        } else if(g.houseFill<8 && g.houseStage==0) { truck(c,72f,73f,.32f,4,0f);dots=8;done=g.houseFill }
+        else { houseIcon(c,72f,51f);dots=3;done=g.houseStage }
+        val step=if(dots>4)22f else 34f
+        for(i in 0 until dots)circle(c,140f+i*step,55f,if(dots>4)7f else 9f,if(done>i)teal else col("#DDE5DC"))
+    }
+    /** The single big action, drawn as what will happen next. */
+    private fun actionIcon(c:Canvas,g:GameState,x:Float,y:Float) {
+        when(g.selected) {
+            GameState.Vehicle.EXCAVATOR -> if(g.bucket==0) {
+                poly(c,floatArrayOf(x-60f,y-30f,x-6f,y-30f,x-18f,y+4f,x-48f,y+4f),yellow)
+                arrowDown(c,x+40f,y-14f,white)
+            } else {
+                poly(c,floatArrayOf(x-110f,y-34f,x-62f,y-34f,x-72f,y-6f,x-100f,y-6f),yellow)
+                poly(c,floatArrayOf(x-104f,y-36f,x-86f,y-50f,x-68f,y-36f),col("#F7D583"))
+                line(c,x-50f,y-20f,x-10f,y-20f,white,9f);poly(c,floatArrayOf(x-4f,y-20f,x-22f,y-34f,x-22f,y-6f),white)
+                truck(c,x+60f,y+36f,.42f,2,0f)
+            }
+            GameState.Vehicle.TRUCK -> truck(c,x,y+38f,.55f,3,if(g.tipping)0f else -32f)
+            GameState.Vehicle.DOZER -> {
+                dozer(c,x-30f,y+38f,.5f,1)
+                poly(c,floatArrayOf(x+40f,y+30f,x+70f,y-2f,x+100f,y+30f),col("#F7D583"))
+            }
+        }
+    }
+    private fun arrowDown(c:Canvas,x:Float,y:Float,color:Int) { line(c,x,y-24f,x,y+14f,color,10f);poly(c,floatArrayOf(x-18f,y+8f,x+18f,y+8f,x,y+30f),color) }
+    /** A bobbing pointing hand with a tap ripple; visible pictorial help for non-readers. */
+    private fun hand(c:Canvas,x:Float,y:Float,time:Float) {
+        val phase=(time*1.4f)%1f
+        p.style=Paint.Style.STROKE;p.strokeWidth=6f
+        p.color=Color.argb((200*(1f-phase)).toInt(),255,253,243);c.drawCircle(x,y,18f+phase*42f,p)
+        p.style=Paint.Style.FILL
+        val bob=abs(sin(time*PI.toFloat()*1.4f))*16f
+        c.save()
+        // Near the bottom controls the hand reaches down from above so it stays on screen.
+        if(y>450f) { c.rotate(180f,x,y);c.translate(x-6f,y+10f+bob) } else c.translate(x+6f,y+10f+bob)
+        p.color=ink
+        c.drawRoundRect(-12f,-4f,12f,52f,12f,12f,p);c.drawRoundRect(-17f,32f,40f,90f,20f,20f,p)
+        p.color=white
+        c.drawRoundRect(-8f,0f,8f,52f,8f,8f,p);c.drawRoundRect(-13f,36f,36f,86f,16f,16f,p)
+        circle(c,36f,52f,9f,white)
+        c.restore()
     }
     private fun minimap(c:Canvas,g:GameState,panX:Float,panZ:Float) {
         rect(c,20f,298f,216f,122f,white,18f)
@@ -114,6 +143,7 @@ class GameRenderer {
         p.style=Paint.Style.STROKE;p.strokeWidth=2f;p.color=white;c.drawCircle(fx,fz,9f,p);p.style=Paint.Style.FILL
         text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
     }
+    companion object { const val PARENT_TOP=160f;const val PARENT_STEP=70f }
     private fun houseIcon(c:Canvas,x:Float,y:Float) {
         rect(c,x-19f,y-3f,38f,28f,teal,3f)
         poly(c,floatArrayOf(x-27f,y-4f,x,y-26f,x+27f,y-4f),orange)

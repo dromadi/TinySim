@@ -168,8 +168,19 @@ class GameState {
                 aimAt(point.first,point.second,300f)
             }
             Vehicle.TRUCK -> { truckGoal=null;tipping=!tipping }
-            Vehicle.DOZER -> { bladeDown=!bladeDown }
+            Vehicle.DOZER -> if(!pushNearestPile())bladeDown=!bladeDown
         }
+    }
+    /** One-touch bulldozing: lower the blade and drive straight through the nearest tall pile. */
+    fun pushNearestPile():Boolean {
+        if(dozerGoal!=null)return false
+        val x=WorldMap.worldX(dozerX)
+        val pile=sand.indices.filter { sand[it]>1 }.minByOrNull { hypot(WorldMap.cellX(it)-x,WorldMap.cellZ(it)-dozerZ) } ?: return false
+        var dx=WorldMap.cellX(pile)-x;var dz=WorldMap.cellZ(pile)-dozerZ;val distance=hypot(dx,dz)
+        if(distance<.5f) { dx=1f;dz=0f } else { dx/=distance;dz/=distance }
+        bladeDown=true
+        driveTo(Vehicle.DOZER,WorldMap.gameX(WorldMap.cellX(pile)+dx*3f),WorldMap.cellZ(pile)+dz*3f)
+        return true
     }
     fun update(rawDt: Float) {
         if(!rawDt.isFinite())return

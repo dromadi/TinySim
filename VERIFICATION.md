@@ -1,3 +1,20 @@
+# Verifikasi alpha.9 — kontrol ramah balita
+
+Tanggal: 17 Oktober 2026. versionCode 9; versi `0.1.0-alpha.9`.
+
+## Hasil yang benar-benar dijalankan
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 58 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 934.088 byte.
+- `GuideTest` (baru): urutan petunjuk untuk alur pasir; **simulasi anak yang hanya mengikuti tangan penunjuk** (pilih kartu yang ditunjuk, tekan aksi, sentuh titik tanah yang ditunjuk) dari dunia baru sampai rumah tahap 3, dengan total material tetap 5.492 di setiap langkah; aksi bulldozer mendorong menembus tumpukan terdekat, dan tetap mengangkat/menurunkan blade bila tidak ada tumpukan. Simulasi ini menemukan dan membantu memperbaiki dua putaran tanpa akhir sebelum rilis: pasir yang sama terus dimuat ulang, dan tanah galian fondasi ditimbun kembali.
+- Pratinjau HUD (`tools/scene-preview`): layar anak hanya menampilkan 3 kartu, tombol aksi bergambar, kartu progres bergambar, dan gembok; tangan penunjuk tampil penuh di atas tombol aksi. GL error 0.
+- Runner instrumentasi Android disesuaikan (kontrol lanjutan diaktifkan, bantuan otomatis dimatikan selama skrip, rumah dirakit otomatis) dan berhasil dikompilasi, **tetapi belum dijalankan** di HP/emulator.
+
+## Batas pengujian
+
+Belum dicoba bersama anak dan belum dijalankan di perangkat. Batas waktu 5 detik (tangan) dan 14 detik (bantuan) adalah nilai awal yang perlu disesuaikan setelah uji nyata.
+
+---
+
 # Verifikasi alpha.8 — tanah inkremental & audio sintesis
 
 Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 8; versi `0.1.0-alpha.8`.
