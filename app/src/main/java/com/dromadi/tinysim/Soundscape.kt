@@ -33,8 +33,72 @@ class Soundscape(val zone:Int) {
     companion object { const val RATE=48000 }
 }
 
+/**
+ * Live machine sounds: a diesel engine per vehicle whose pitch follows speed, hydraulic whine
+ * while the excavator arm moves, a sand hiss for every transfer and a friendly two-note horn.
+ * Parameters are written by the UI thread; synthesis runs on the audio thread.
+ */
+class MachineSounds {
+    /** Engine effort per vehicle (excavator, truck, dozer): 0 off, ~.2 idle, 1 full. */
+    val engine=FloatArray(3)
+    @Volatile var hydraulic=0f
+    @Volatile var pourSerial=0
+    @Volatile var hornSerial=0
+    @Volatile var hornVehicle=0
+    private val random=Random(911)
+    private val phase=DoubleArray(3);private val level=DoubleArray(3);private val rumble=DoubleArray(3)
+    private var whinePhase=0.0;private var whine=0.0;private var hissLow=0.0;private var hissBand=0.0
+    private var pourSeen=0;private var pourLeft=0.0
+    private var hornSeen=0;private var hornAge=10.0;private var hornKind=0;private var hornPhase=0.0;private var hornPhase2=0.0
+    /** Mono sample for this instant, roughly within ±0.3. */
+    fun next(step:Double):Double {
+        var out=0.0
+        for(v in 0..2) {
+            val target=engine[v].toDouble().coerceIn(0.0,1.0)
+            level[v]+=(target-level[v])*step*6
+            if(level[v]<1e-4)continue
+            // Firing frequency: big machines chug low, the truck revs a little higher.
+            val base=if(v==1)34.0 else 27.0
+            phase[v]+=2*PI*(base+level[v]*(if(v==1)38.0 else 26.0))*step
+            val p=phase[v]
+            rumble[v]=.995*rumble[v]+.005*(random.nextDouble()*2-1)
+            val chug=.55*sin(p)+.28*sin(2*p+.6)+.16*sin(3*p+1.3)+.08*sin(5*p)
+            val knock=max(0.0,sin(p))
+            out+=level[v]*(.06*chug*(.7+.3*knock)+.5*rumble[v])
+        }
+        whine+=(hydraulic.toDouble().coerceIn(0.0,1.0)-whine)*step*8
+        if(whine>1e-4) {
+            whinePhase+=2*PI*(480+140*whine)*step
+            hissLow=.96*hissLow+.04*(random.nextDouble()*2-1)
+            out+=whine*(.018*sin(whinePhase)+.012*sin(whinePhase*2.01)+.25*hissLow)
+        }
+        if(pourSerial!=pourSeen) { pourSeen=pourSerial;pourLeft=.75 }
+        if(pourLeft>0) {
+            pourLeft-=step
+            val noise=random.nextDouble()*2-1
+            hissBand=.7*hissBand+.3*noise
+            val grains=if(random.nextDouble()<.004)(random.nextDouble()-.5)*.6 else 0.0
+            out+=(.09*(noise-hissBand)+grains)*min(1.0,pourLeft/.25)*min(1.0,(.75-pourLeft)/.03)
+        }
+        if(hornSerial!=hornSeen) { hornSeen=hornSerial;hornAge=0.0;hornKind=hornVehicle }
+        if(hornAge<.6) {
+            hornAge+=step
+            // Truck: beep-beep; tracked machines: one longer, lower toot.
+            val on=if(hornKind==1)(hornAge<.16 || hornAge in .24..0.40) else hornAge<.38
+            if(on) {
+                val f=if(hornKind==1)440.0 else 330.0
+                hornPhase+=2*PI*f*step;hornPhase2+=2*PI*f*1.26*step
+                val square={ x:Double-> sin(x)+sin(3*x)/3+sin(5*x)/5 }
+                out+=.045*(square(hornPhase)+square(hornPhase2))
+            }
+        }
+        return out
+    }
+}
+
 /** Mixes the active area with a crossfade from the previous one and ramps the master volume. */
 class SoundscapeMixer {
+    val machines=MachineSounds()
     @Volatile var targetZone=0
     @Volatile var targetVolume=0f
     /** Current master volume, readable from the UI thread to know when playback is silent. */
@@ -62,12 +126,14 @@ class SoundscapeMixer {
                 old.next(b);l=l*fade+b[0]*(1-fade);r=r*fade+b[1]*(1-fade)
                 if(fade>=1.0)previous=null
             }
-            out[i*2]=(l.coerceIn(-.35,.35)*32767*level).toInt().toShort()
-            out[i*2+1]=(r.coerceIn(-.35,.35)*32767*level).toInt().toShort()
+            // Machines play at full loudness (they share the master fade), ambience stays soft.
+            val machine=machines.next(step)*level/AMBIENCE_VOLUME
+            out[i*2]=((l.coerceIn(-.35,.35)*level+machine).coerceIn(-.95,.95)*32767).toInt().toShort()
+            out[i*2+1]=((r.coerceIn(-.35,.35)*level+machine).coerceIn(-.95,.95)*32767).toInt().toShort()
         }
         volume=level
     }
     /** Back to silence so the next stream fades in; call only while no thread is rendering. */
     fun reset() { volume=0f;current=null;previous=null }
-    companion object { const val CROSSFADE_SECONDS=2.0 }
+    companion object { const val CROSSFADE_SECONDS=2.0;const val AMBIENCE_VOLUME=.22f }
 }

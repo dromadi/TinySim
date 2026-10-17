@@ -31,12 +31,19 @@ fun main(args: Array<String>) {
         Triple("house-complete",0) { g->for(x in listOf(33.5f,34.5f,35.5f,36.5f))g.earth[WorldMap.cell(x,6.5f)]=2;g.load=8;g.truckX=WorldMap.gameX(37.3f);g.truckZ=7.5f;g.tipping=true;repeat(240){g.update(.016f)};repeat(3){check(g.buildHouse());repeat(400){g.update(.016f)}};g.excavatorX=WorldMap.gameX(29f);g.excavatorZ=5f;g.truckX=WorldMap.gameX(41f);g.truckZ=11f },
         Triple("loaded",0) { it.source=28;it.load=6;it.bucket=2;it.armX=520f;it.armY=330f },
         Triple("dump",0) { it.source=29;it.load=0;it.truckX=760f;it.tipping=true;it.bedAngle=-42f;it.sand[WorldMap.cell(1.2f,0f)]=4;it.sand[WorldMap.cell(2.2f,0f)]=3;it.selected=GameState.Vehicle.TRUCK },
+        Triple("vehicle-life",0) { it.selected=GameState.Vehicle.TRUCK;it.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(8f),2.2f) },
         Triple("dozer",2) { it.source=27;it.sand[WorldMap.cell(3f,2f)]=2;it.sand[WorldMap.cell(4f,2f)]=2;it.sand[WorldMap.cell(5f,2f)]=1;it.sand[WorldMap.cell(6f,2f)]=4;it.dozerX=900f;it.selected=GameState.Vehicle.DOZER }
     )
     val hud=StringBuilder()
     val chosen=System.getenv("TINYSIM_PREVIEW_SCENES")?.split(',')
     scenes.filter { chosen==null || it.first in chosen }.forEachIndexed { i,(name,cam,setup) ->
         val g=GameState();setup(g);check(g.totalMaterial==com.dromadi.tinysim.Terrain.INITIAL_MASS) { "Invalid inventory in preview $name" }
+        if(name=="vehicle-life") {
+            // Warm-up frames: the truck drives (dust, smoke, engine bob) and the excavator driver is greeted.
+            var t=1.2f+i
+            repeat(36) { k-> if(k==2)g.greet(GameState.Vehicle.EXCAVATOR);g.update(.016f)
+                r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
+        }
         val frame=when(name) {
             "orbit-close"->SceneFrame.capture(g,cam,1.2f+i,18f,8f,1.35f)
             "orbit-wide"->SceneFrame.capture(g,cam,1.2f+i,-18f,14f,.8f)
@@ -46,6 +53,7 @@ fun main(args: Array<String>) {
             "rotated-excavator"->SceneFrame.capture(g,cam,1.2f+i,0f,4f,1.1f,18f,7f)
             "road-project","road-complete"->SceneFrame.capture(g,cam,1.2f+i,0f,8f,1.2f,20f,8f)
             "terrain-pit","terrain-mound","house-materials","house-walls","house-complete"->SceneFrame.capture(g,cam,1.2f+i,0f,8f,1.05f,36f,7f)
+            "vehicle-life"->SceneFrame.capture(g,cam,1.2f+i+36*.016f,-40f,2f,1.8f,-6.2f,.6f)
             "building-site"->SceneFrame.capture(g,cam,1.2f+i,0f,4f,1f,36f,6f)
             else->SceneFrame.capture(g,cam,1.2f+i)
         }

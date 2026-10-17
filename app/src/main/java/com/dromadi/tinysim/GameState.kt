@@ -94,6 +94,12 @@ class GameState {
     var bladeDown = true
     var dozerFacing = 1
     var rewardSerial = 0
+    /** Transient (not saved): a vehicle was picked, so its driver waves and it honks. */
+    var greetSerial=0
+        private set
+    var greetVehicle=Vehicle.EXCAVATOR
+        private set
+    fun greet(vehicle:Vehicle) { greetVehicle=vehicle;greetSerial++ }
     var transferSerial = 0
     var transferKind=0
     private var tipClock = 0f

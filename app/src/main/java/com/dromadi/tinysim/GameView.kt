@@ -54,7 +54,7 @@ class GameView(context: Context): FrameLayout(context) {
         panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,44f)
         panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,11f)
     }
-    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus }
+    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus;game.greet(vehicle) }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
         val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,WorldMap.worldX(game.excavatorX),game.excavatorZ),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ))
@@ -101,6 +101,9 @@ class GameView(context: Context): FrameLayout(context) {
     private var running=false
     private var previous=0L
     private var lastTransfer=0
+    private var lastGreet=0
+    private var lastArmX=Float.NaN;private var lastArmY=Float.NaN
+    private val motion=Array(3) { VehicleMotion() }
     private var lastReward=0
     private var scale=1f
     private var offsetX=0f
@@ -151,8 +154,9 @@ class GameView(context: Context): FrameLayout(context) {
             if(game.selected==GameState.Vehicle.EXCAVATOR) { game.scoop();game.pour() }
             game.nextMission()
             if(game.rewardSerial!=lastReward) { audio.play(settings.sound,true);lastReward=game.rewardSerial }
-            else if(game.transferSerial!=lastTransfer)audio.play(settings.sound)
+            else if(game.transferSerial!=lastTransfer)audio.machines.pourSerial++
             lastTransfer=game.transferSerial
+            machineSounds(dt)
         }
         if(following && !parents) {
             val targetX=when(game.selected) { GameState.Vehicle.EXCAVATOR -> WorldMap.worldX(game.excavatorX)+3.3f;GameState.Vehicle.TRUCK->WorldMap.worldX(game.truckX)+.3f;GameState.Vehicle.DOZER->WorldMap.worldX(game.dozerX)+.3f }
@@ -208,6 +212,22 @@ class GameView(context: Context): FrameLayout(context) {
         }
         return null
     }
+    /** Engines follow each vehicle's real speed; the selected one idles; arm motion drives hydraulics. */
+    private fun machineSounds(dt:Float) {
+        val travel=floatArrayOf(game.excavatorTravel,game.truckTravel,game.dozerTravel)
+        for(v in 0..2) {
+            motion[v].update(travel[v],dt)
+            audio.machines.engine[v]=when {
+                motion[v].moving -> .35f+.65f*motion[v].effort
+                game.selected.ordinal==v -> .18f
+                else -> 0f
+            }
+        }
+        val arm=if(lastArmX.isNaN() || dt<=0f)0f else kotlin.math.hypot(game.armX-lastArmX,game.armY-lastArmY)/dt
+        lastArmX=game.armX;lastArmY=game.armY
+        audio.machines.hydraulic=(arm/240f).coerceIn(0f,1f)
+        if(game.greetSerial!=lastGreet) { lastGreet=game.greetSerial;audio.machines.hornVehicle=game.greetVehicle.ordinal;audio.machines.hornSerial++ }
+    }
     /** House stages assemble by themselves once the foundation and materials are ready. */
     private fun houseAndHelp(now:Long) {
         if(game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
@@ -259,7 +279,8 @@ class GameView(context: Context): FrameLayout(context) {
                 .setNegativeButton("Batal",null).show()
             "close" -> parents=false
         }
-        if(action !in listOf("sound"))audio.play(settings.sound)
+        // Vehicle cards honk instead of beeping.
+        if(action !in listOf("sound","excavator","truck","dozer"))audio.play(settings.sound)
     }
     override fun onInterceptTouchEvent(event: MotionEvent)=true
     override fun onTouchEvent(event: MotionEvent): Boolean {

@@ -1,11 +1,17 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.9**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.10**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
 ![Map konstruksi dan kontrol sentuh TinySim](docs/verification/alpha7/house-complete.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.10: kendaraan yang hidup
+
+- **Suara mesin disintesis langsung:** tiap kendaraan punya mesin diesel yang nadanya naik saat melaju dan menyala pelan saat dipilih. Ada desis hidrolik saat lengan excavator bergerak, desir pasir setiap kali pasir berpindah, dan klakson saat kendaraan dipilih (truk "tit-tit", alat berat satu nada rendah). Bunyi "bip" saat pasir berpindah diganti desir pasir.
+- **Sopir di setiap kabin** dengan helm kuning dan rompi oranye. Sopir melambai sekitar 2 detik saat kendaraannya dipilih. Kabin kini berongga dengan kaca tembus pandang.
+- **Bodi hidup:** memantul pelan saat kendaraan berhenti dan bergetar halus saat mesin menyala. Asap knalpot keluar sesuai tenaga mesin, debu mengepul di belakang roda/track, dan **bekas roda/track** tertinggal di tanah lalu memudar dalam 30 detik.
 
 ## Alpha.9: kontrol ramah balita
 
@@ -60,7 +66,7 @@ Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas un
 - `scene/TerrainMesh`: heightfield tanah yang diperbarui per wilayah dan diunggah per baris.
 - `scene/SceneRenderer3D`, `Geometry`: model berhierarki, VBO, depth/shadow pass, material, langit, partikel, dan dekorasi. GPU tanpa highp memakai shader warna mediump tanpa shadow map.
 - `GameRenderer`: HUD, ikon, minimap, dan kontrol sentuh besar.
-- `Soundscape` / `GameAudio`: sintesis soundscape stereo 48 kHz di thread audio, AudioTrack streaming, tone lembut, audio focus, fade/crossfade, dan pelepasan saat pause.
+- `Soundscape` / `GameAudio`: sintesis soundscape stereo 48 kHz serta suara mesin, hidrolik, pasir, dan klakson (`MachineSounds`) di thread audio, AudioTrack streaming, tone lembut, audio focus, fade/crossfade, dan pelepasan saat pause.
 - `SettingsStore`: SharedPreferences lokal untuk dunia, suara, dan kamera.
 - `GameView` / `MainActivity`: simulasi pada thread UI, snapshot ke GL, pause/resume, dan Back.
 
@@ -79,7 +85,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.9-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.10-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
 
 Runner pengujian sentuh terpisah:
 

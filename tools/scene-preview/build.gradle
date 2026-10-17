@@ -4,7 +4,7 @@ repositories { mavenCentral() }
 def app=file('../../app/src/main/java/com/dromadi/tinysim')
 def shared=layout.buildDirectory.dir('shared')
 tasks.register('copyScene', Copy) {
-  from(app) { include 'Terrain.kt','GameRenderer.kt','WorldMap.kt','ArmRig.kt','GameState.kt','scene/Geometry.kt','scene/TerrainMesh.kt','scene/SceneFrame.kt','scene/SceneRenderer3D.kt','scene/WorldCamera.kt' }
+  from(app) { include 'Terrain.kt','GameRenderer.kt','WorldMap.kt','VehicleMotion.kt','ArmRig.kt','GameState.kt','scene/Geometry.kt','scene/TerrainMesh.kt','scene/SceneFrame.kt','scene/SceneRenderer3D.kt','scene/WorldCamera.kt' }
   into shared
 }
 sourceSets { main { kotlin { srcDirs = ['src','stubs',shared] } } }

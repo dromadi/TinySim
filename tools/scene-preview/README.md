@@ -23,3 +23,5 @@ Alpha.6 adds mobile digging, a rotated excavator, a partially built road, and a 
 Alpha.7 adds the real deforming terrain mesh, terrain-aware vehicle positions and house foundation/materials/walls/roof stages. `TINYSIM_PREVIEW_SCENES=start-cam1,terrain-pit,terrain-mound,house-materials,house-walls,house-complete,road-project` selects the seven current verification fixtures. Both shader paths render those fixtures; real touch/audio/device lifecycle still require Android device testing.
 
 Alpha.8 renders the ground through `TerrainMesh`: the first frame uploads the full buffer, later scenes upload only changed rows via `glBufferSubData`, which the stubs record and the replay page applies.
+
+Alpha.10 adds `vehicle-life`: 36 warm-up frames let the truck drive (dust, smoke, suspension) and greet the excavator driver, then the last frame is captured with the driver mid-wave.

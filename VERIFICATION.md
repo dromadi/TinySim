@@ -1,3 +1,22 @@
+# Verifikasi alpha.10 — kendaraan yang hidup
+
+Tanggal: 17 Oktober 2026. versionCode 10; versi `0.1.0-alpha.10`.
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 63 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 943.872 byte.
+- `VehicleLifeTest` (baru):
+  - kecepatan mengikuti jarak tempuh;
+  - setelah berhenti ada pantulan teredam (bergoyang minimal 2 kali, 1–7 cm, lalu diam);
+  - frame pertama dan input tidak valid tidak menimbulkan lonjakan;
+  - suara mesin hening sampai ada kejadian, makin keras dengan tenaga, dan mati saat mesin dimatikan;
+  - klakson dan desir pasir terdengar lalu berhenti sendiri;
+  - hidrolik terdengar saat lengan bergerak;
+  - sampel suara selalu terbatas, dan tes `SoundscapeTest` lama tetap lulus.
+- Pratinjau `vehicle-life` (`tools/scene-preview`): truk melaju dengan asap knalpot, sopir excavator terlihat melambai di dalam kabin berkaca, dan sopir truk memegang setir. GL error 0.
+
+**Batas:** suara belum didengarkan di HP. Keras-lemah dan karakter suara mesin perlu disetel setelah didengar di perangkat. Bekas roda disimpan hanya di renderer (60 jejak per kendaraan) dan hilang saat aplikasi ditutup.
+
+---
+
 # Verifikasi alpha.9 — kontrol ramah balita
 
 Tanggal: 17 Oktober 2026. versionCode 9; versi `0.1.0-alpha.9`.

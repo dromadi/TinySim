@@ -13,6 +13,8 @@ import android.os.SystemClock
 class GameAudio(private val context:Context) {
     private val manager=context.getSystemService(AudioManager::class.java)
     private val mixer=SoundscapeMixer()
+    /** Engine, hydraulic, sand and horn controls, read live by the audio thread. */
+    val machines get()=mixer.machines
     @Volatile private var focused=false
     private var focusRequested=false
     private var running=false

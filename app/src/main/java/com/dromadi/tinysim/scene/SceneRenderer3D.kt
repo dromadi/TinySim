@@ -43,6 +43,14 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private var transferSeen=0;private var streamStart=-10f;private var streamX=0f;private var streamY=0f
     private var streamZ=0f;private var streamGround=0f
     private var lastDozerZ=Float.NaN
+    // Vehicle life: per-vehicle motion (excavator, truck, dozer), driver wave and tyre/track marks.
+    private val motion=Array(3) { com.dromadi.tinysim.VehicleMotion() }
+    private var lastSeconds=Float.NaN
+    private var greetSeen=-1;private var waveStart=-10f;private var waveVehicle=0
+    private val marks=Array(3) { FloatArray(MARKS*4) }
+    private val markCount=IntArray(3);private val markNext=IntArray(3)
+    private val lastStamp=Array(3) { floatArrayOf(Float.NaN,0f) }
+    private val tint=FloatArray(4)
     private var lastDozerX=Float.NaN;private var dustUntil=-10f;private var dustX=0f
     private var drawCalls=0
     // Shadow map: depth is packed into RGBA8 because depth textures are optional on OpenGL ES 2.0.
@@ -65,7 +73,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private val rubber=rgba(34,35,36)
     private val metal=rgba(168,172,174)
     private val chrome=rgba(214,218,220)
-    private val glass=rgba(40,62,72)
+    private val glass=rgba(40,62,72,.42f)
     private val sandColor=rgba(226,190,130)
     private val sandWet=rgba(196,156,102)
     private val soil=rgba(178,142,96)
@@ -83,6 +91,12 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private val cloudColor=rgba(255,255,255)
     private val contact=rgba(18,22,16,.11f)
     private val dust=rgba(214,186,140,.16f)
+    private val skin=rgba(226,172,132)
+    private val vest=rgba(255,120,30)
+    private val hat=rgba(255,206,40)
+    private val trousers=rgba(52,70,110)
+    private val smoke=rgba(88,88,92)
+    private val tread=rgba(70,52,34)
 
     // Material: specular strength, shininess, detail frequency, detail amount, kind.
     private val PAINT=floatArrayOf(.55f,60f,5f,.05f,0f)
@@ -207,6 +221,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         environment(f)
         destination(f)
         contactShadows(f)
+        treadMarks(f)
         sand(f)
         house(f)
         excavator(f)
@@ -222,6 +237,25 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         GL.glDepthMask(true);GL.glEnable(GL.GL_CULL_FACE)
     }
     private fun updateEffects(f:SceneFrame) {
+        val dt=if(lastSeconds.isNaN())0f else (f.seconds-lastSeconds).coerceIn(0f,.1f)
+        lastSeconds=f.seconds
+        val travel=floatArrayOf(f.excavatorTravel,f.truckTravel,f.dozerTravel)
+        val px=floatArrayOf(WorldMap.worldX(f.excavatorX),WorldMap.worldX(f.truckX),WorldMap.worldX(f.dozerX))
+        val pz=floatArrayOf(f.excavatorZ,f.truckZ,f.dozerZ)
+        val heading=floatArrayOf(f.excavatorHeading,f.truckHeading,f.dozerHeading)
+        for(v in 0..2) {
+            motion[v].update(travel[v],dt)
+            val last=lastStamp[v]
+            if(last[0].isNaN() || hypot(px[v]-last[0],pz[v]-last[1])>.45f) {
+                if(!last[0].isNaN()) {
+                    val o=markNext[v]*4
+                    marks[v][o]=px[v];marks[v][o+1]=pz[v];marks[v][o+2]=heading[v];marks[v][o+3]=f.seconds
+                    markNext[v]=(markNext[v]+1)%MARKS;markCount[v]=min(MARKS,markCount[v]+1)
+                }
+                last[0]=px[v];last[1]=pz[v]
+            }
+        }
+        if(f.greetSerial!=greetSeen) { if(greetSeen>=0) { waveStart=f.seconds;waveVehicle=f.greetVehicle.ordinal };greetSeen=f.greetSerial }
         if(!lastDozerX.isNaN() && hypot((f.dozerX-lastDozerX)/60f,f.dozerZ-lastDozerZ)>.008f && f.bladeDown) { dustUntil=f.seconds+.7f;dustX=f.dozerX }
         lastDozerX=f.dozerX;lastDozerZ=f.dozerZ
     }
@@ -460,14 +494,15 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun excavator(f:SceneFrame) {
         push();translate(WorldMap.worldX(f.excavatorX),support(f,WorldMap.worldX(f.excavatorX),f.excavatorZ),f.excavatorZ);rotate(f.excavatorHeading,0f,1f,0f);translate(-WorldMap.worldX(200f),0f,0f)
+        val bob=bob(f,0);translate(0f,bob,0f)
         push();translate(WorldMap.worldX(200f),0f,0f)
-        tracks(2.75f,f.excavatorTravel)
+        push();translate(0f,-bob,0f);tracks(2.75f,f.excavatorTravel);wheelDust(f,0,2.75f);pop()
         // Slewing ring and upper house.
         shape(cylinder,0f,.82f,0f,1.4f,.14f,1.4f,darkSteel,METAL)
         panel(0f,1.06f,0f,2.5f,.5f,1.65f,yellow)
-        panel(-.6f,1.86f,0f,1.2f,1.12f,1.4f,yellow)
-        cabWindows(-.6f,1.92f,1.2f,1.4f)
+        cab(-.6f,1.30f,2.42f,1.53f,2.31f,1.2f,1.4f,yellow) { driver(-.74f,1.62f,0f,wave(f,0),f.seconds) }
         panel(-.6f,2.46f,0f,1.32f,.1f,1.52f,yellowDark)
+        exhaust(.5f,1.92f,-.5f,f,0)
         // Counterweight, engine grille, exhaust and beacon.
         panel(.86f,1.38f,0f,.78f,.5f,1.62f,yellowDark)
         for(i in 0..3)box(.5f+i*.16f,1.33f,.82f,.07f,.32f,.02f,ink,MATTE)
@@ -503,14 +538,16 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private fun truck(f:SceneFrame) {
         val tx=WorldCamera.x(f.truckX)
         push();translate(tx,support(f,tx,f.truckZ),f.truckZ);rotate(f.truckHeading,0f,1f,0f)
-        box(0f,.67f,0f,3.85f,.25f,1.25f,darkSteel,METAL)
         val spin=-f.truckTravel/.47f*180f/PI.toFloat()
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.91f,.91f))wheel(x,.48f,z,spin)
+        wheelDust(f,1,3.85f)
+        // Body rides on the suspension: it settles after stopping and trembles while idling.
+        translate(0f,bob(f,1),0f)
+        box(0f,.67f,0f,3.85f,.25f,1.25f,darkSteel,METAL)
         // Mudguards and fuel tank.
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.92f,.92f))panel(x,1.0f,z,1.08f,.07f,.36f,ink)
         push();translate(.15f,.62f,-.66f);rotate(90f,0f,0f,1f);shape(cylinder,0f,0f,0f,.34f,.7f,.34f,chrome,METAL);pop()
-        panel(1.13f,1.52f,0f,1.26f,1.38f,1.62f,orange)
-        cabWindows(1.13f,1.77f,1.26f,1.62f)
+        cab(1.13f,.83f,2.21f,1.42f,2.12f,1.26f,1.62f,orange) { driver(1.02f,1.4f,.32f,wave(f,1),f.seconds) }
         panel(1.11f,2.25f,0f,1.36f,.12f,1.7f,orange)
         // Grille, bumper, headlights and mirrors.
         panel(1.79f,1.2f,0f,.05f,.5f,1.0f,ink)
@@ -522,6 +559,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             box(1.66f,1.85f,z*1.1f,.06f,.3f,.08f,ink,PAINT)
         }
         shape(cylinder,.42f,1.9f,-.72f,.11f,1.6f,.11f,chrome,METAL)
+        exhaust(.42f,2.72f,-.72f,f,1)
         // Bed hinge at the rear; positive world-Z rotation lifts the front.
         push();translate(-1.66f,.91f,0f);rotate(-f.bedAngle,0f,0f,1f)
         panel(1.05f,.07f,0f,2.7f,.14f,1.88f,teal)
@@ -542,15 +580,16 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private fun bulldozer(f:SceneFrame) {
         val dx=WorldCamera.x(f.dozerX)
         push();translate(dx,support(f,dx,f.dozerZ),f.dozerZ);rotate(f.dozerHeading,0f,1f,0f)
-        tracks(2.7f,f.dozerTravel)
+        tracks(2.7f,f.dozerTravel);wheelDust(f,2,2.7f)
+        translate(0f,bob(f,2),0f)
         panel(0f,.98f,0f,2.7f,.55f,1.55f,yellow)
-        panel(-.5f,1.8f,0f,1.2f,1.12f,1.4f,yellow)
-        cabWindows(-.5f,1.86f,1.2f,1.4f)
+        cab(-.5f,1.24f,2.36f,1.51f,2.21f,1.2f,1.4f,yellow) { driver(-.64f,1.56f,0f,wave(f,2),f.seconds) }
         panel(-.5f,2.42f,0f,1.36f,.1f,1.52f,ink)
         // Engine hood with grille vents, exhaust and beacon.
         panel(.78f,1.38f,0f,.95f,.36f,1.3f,yellowDark)
         for(i in 0..4)box(.45f+i*.16f,1.57f,0f,.06f,.02f,1.0f,ink,MATTE)
         shape(cylinder,.7f,1.86f,-.42f,.11f,.7f,.11f,darkSteel,METAL)
+        exhaust(.7f,2.23f,-.42f,f,2)
         beaconLight(-.5f,2.54f,0f,f.seconds+.35f)
         // Rear ripper.
         box(-1.45f,.8f,0f,.18f,.18f,1.0f,darkSteel,METAL)
@@ -564,19 +603,105 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         if(f.bladeDown && f.sand[WorldMap.cell(dx+cos(f.dozerHeading*PI.toFloat()/180)*1.8f,f.dozerZ-sin(f.dozerHeading*PI.toFloat()/180)*1.8f)]>0)mound(2.1f,.05f,0f,.5f,.18f,1.6f,sandColor)
         pop();pop()
     }
+    private fun engineOn(f:SceneFrame,v:Int)=motion[v].moving || f.selected.ordinal==v
+    /** Settle bounce after stopping plus a faint diesel tremble while the engine runs. */
+    private fun bob(f:SceneFrame,v:Int)=motion[v].settle+if(engineOn(f,v)).005f*sin(f.seconds*2f*PI.toFloat()*21f) else 0f
+    /** 0..1 waving strength for a couple of seconds after the vehicle was picked. */
+    private fun wave(f:SceneFrame,v:Int):Float {
+        val age=f.seconds-waveStart
+        return if(v!=waveVehicle || age !in 0f..2.4f)0f else min(1f,age/.2f)*min(1f,(2.4f-age)/.4f)
+    }
+    /** Seated driver in a hi-vis vest and hard hat, facing +x; one arm waves when greeted. */
+    private fun driver(x:Float,y:Float,z:Float,waving:Float,seconds:Float) {
+        panel(x,y,z,.3f,.36f,.4f,vest)
+        box(x+.16f,y-.2f,z,.32f,.12f,.34f,trousers,MATTE)
+        blob(x+.02f,y+.32f,z,.25f,.27f,.25f,skin,MATTE)
+        blob(x+.02f,y+.43f,z,.29f,.17f,.29f,hat,PAINT)
+        disk(x+.06f,y+.42f,z,.36f,.34f,hat,PAINT,.02f)
+        for(eye in floatArrayOf(-.05f,.05f))blob(x+.14f,y+.34f,z+eye,.03f,.04f,.03f,ink,MATTE)
+        val side=if(z>=0f)-1f else 1f
+        // Steering-wheel hand on the inside, waving hand toward the window.
+        rod3(x+.04f,y+.12f,z+side*.18f,x+.3f,y+.02f,z+side*.12f,.045f,vest)
+        blob(x+.31f,y+.02f,z+side*.12f,.08f,.08f,.08f,skin,MATTE)
+        val hx:Float;val hy:Float;val hz:Float
+        if(waving>0f) { hx=x+.18f;hy=y+.12f+.4f*waving;hz=z-side*(.24f+.13f*waving*sin(seconds*15f)) }
+        else { hx=x+.3f;hy=y+.02f;hz=z-side*.12f }
+        rod3(x+.04f,y+.12f,z-side*.18f,hx,hy,hz,.045f,vest)
+        blob(hx,hy,hz,.09f,.09f,.09f,skin,MATTE)
+    }
+    /** Diesel smoke puffs drifting back from the stack while the engine runs. */
+    private fun exhaust(x:Float,y:Float,z:Float,f:SceneFrame,v:Int) {
+        if(shadowPass || !engineOn(f,v))return
+        val effort=motion[v].effort
+        GL.glDepthMask(false)
+        for(i in 0..4) {
+            val t=(f.seconds*(.9f+effort)+i*.2f+v*.13f)%1f
+            val size=.12f+.38f*t
+            tint[0]=smoke[0];tint[1]=smoke[1];tint[2]=smoke[2];tint[3]=(1f-t)*(.08f+.22f*effort)
+            blob(x-t*(.4f+.8f*effort),y+t*1.1f,z+sin(i*1.9f+v)*.1f*t,size,size,size,tint,DECAL)
+        }
+        GL.glDepthMask(true)
+    }
+    /** Dust kicked up behind the wheels or tracks of a moving vehicle (local coordinates). */
+    private fun wheelDust(f:SceneFrame,v:Int,length:Float) {
+        if(shadowPass || !motion[v].moving)return
+        val effort=motion[v].effort
+        GL.glDepthMask(false)
+        for(i in 0..5) {
+            val t=(f.seconds*1.6f+i/6f)%1f
+            val size=.25f+.6f*t
+            tint[0]=dust[0];tint[1]=dust[1];tint[2]=dust[2];tint[3]=(1f-t)*.22f*effort
+            blob(-length/2-.2f-t*.9f,.2f+t*.55f,(if(i%2==0).75f else -.75f)+sin(i*2.7f)*.2f,size,size*.7f,size,tint,DECAL)
+        }
+        GL.glDepthMask(true)
+    }
+    /** Fading tyre and track prints left on the ground. */
+    private fun treadMarks(f:SceneFrame) {
+        if(shadowPass)return
+        GL.glDepthMask(false)
+        for(v in 0..2)for(k in 0 until markCount[v]) {
+            val o=k*4;val m=marks[v];val age=f.seconds-m[o+3]
+            if(age<0f || age>MARK_SECONDS)continue
+            tint[0]=tread[0];tint[1]=tread[1];tint[2]=tread[2];tint[3]=.26f*(1f-age/MARK_SECONDS)
+            val gauge=if(v==1).91f else .78f;val width=if(v==1).3f else .48f
+            val a=m[o+2]*PI.toFloat()/180f
+            for(side in floatArrayOf(-gauge,gauge)) {
+                val x=m[o]+sin(a)*side;val z=m[o+1]+cos(a)*side
+                push();translate(x,Terrain.height(f.earth,f.sand,x,z)+.012f,z);rotate(m[o+2],0f,1f,0f)
+                draw(cube,tint,DECAL,.42f,.004f,width);pop()
+            }
+        }
+        GL.glDepthMask(true)
+    }
+    /** Cylinder between two arbitrary 3D points in the current model space. */
+    private fun rod3(ax:Float,ay:Float,az:Float,bx:Float,by:Float,bz:Float,radius:Float,color:FloatArray) {
+        val dx=bx-ax;val dy=by-ay;val dz=bz-az;val length=sqrt(dx*dx+dy*dy+dz*dz)
+        if(length<1e-4f)return
+        push();translate((ax+bx)/2,(ay+by)/2,(az+bz)/2)
+        val axis=hypot(dz,dx)
+        if(axis>1e-5f)rotate(acos((dy/length).coerceIn(-1f,1f))*180f/PI.toFloat(),dz/axis,0f,-dx/axis)
+        else if(dy<0f)rotate(180f,1f,0f,0f)
+        scale(radius*2,length,radius*2);draw(cylinder,color,MATTE);pop()
+    }
     private fun beaconLight(x:Float,y:Float,z:Float,seconds:Float) {
         shape(cylinder,x,y-.04f,z,.16f,.06f,.16f,ink,METAL)
         val glow=.78f+.22f*(.5f+.5f*sin(seconds*2f))
         blob(x,y+.06f,z,.15f,.18f,.15f,rgba((255*glow).toInt(),(140*glow).toInt(),30),EMISSIVE)
     }
-    private fun cabWindows(x:Float,y:Float,width:Float,length:Float) {
-        for(z in floatArrayOf(-length/2-.02f,length/2+.02f)) {
-            box(x,y,z,width*.84f,.78f,.03f,ink,MATTE)
-            box(x,y,z*1.005f,width*.76f,.7f,.03f,glass,GLASS)
-        }
-        box(x+width/2+.02f,y,0f,.03f,.78f,length*.84f,ink,MATTE)
-        box(x+width/2+.025f,y,0f,.03f,.7f,length*.76f,glass,GLASS)
-        box(x-width/2-.02f,y+.05f,0f,.03f,.6f,length*.6f,glass,GLASS)
+    /**
+     * Open cab: painted lower body, roof and corner pillars around see-through glass, so the
+     * driver inside is visible. The interior is drawn before the glass for correct blending.
+     */
+    private inline fun cab(x:Float,bottom:Float,top:Float,glassBottom:Float,glassTop:Float,width:Float,length:Float,color:FloatArray,interior:()->Unit) {
+        panel(x,(bottom+glassBottom)/2,0f,width,glassBottom-bottom,length,color)
+        panel(x,(glassTop+top)/2,0f,width+.04f,top-glassTop,length+.04f,color)
+        val h=glassTop-glassBottom;val mid=(glassTop+glassBottom)/2
+        for(sx in floatArrayOf(-1f,1f))for(sz in floatArrayOf(-1f,1f))box(x+sx*(width/2-.04f),mid,sz*(length/2-.04f),.08f,h,.08f,ink,PAINT)
+        box(x+width/2-.12f,glassBottom+.06f,0f,.14f,.16f,length*.8f,ink,MATTE)
+        interior()
+        box(x+width/2-.01f,mid,0f,.02f,h,length-.16f,glass,GLASS)
+        box(x-width/2+.01f,mid,0f,.02f,h,length-.16f,glass,GLASS)
+        for(sz in floatArrayOf(-1f,1f))box(x,mid,sz*(length/2-.01f),width-.16f,h,.02f,glass,GLASS)
     }
     private fun tracks(length:Float,travel:Float) {
         val pitch=(length-.4f)/8
@@ -714,6 +839,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private fun scale(x:Float,y:Float,z:Float)=Matrix.scaleM(model,0,x,y,z)
     private fun rotate(a:Float,x:Float,y:Float,z:Float)=Matrix.rotateM(model,0,a,x,y,z)
     companion object {
+        private const val MARKS=60;private const val MARK_SECONDS=30f
         private const val GRASS_Y=-1.6f
         private fun rgba(r:Int,g:Int,b:Int,a:Float=1f)=floatArrayOf(r/255f,g/255f,b/255f,a)
         private fun shader(type:Int,source:String):Int {
