@@ -1,0 +1,14 @@
+# Aturan pengembangan TinySim
+
+## Target perangkat dan prioritas grafis
+
+- Perangkat utama pengguna adalah HP berspesifikasi tinggi. Jadikan perangkat tersebut sebagai target utama pengembangan, bukan HP kelas rendah.
+- Prioritaskan kualitas grafis, detail model, pencahayaan, bayangan, efek, animasi, serta interaksi yang kaya. Jangan membatasi peningkatan hanya karena asumsi batas RAM, ukuran APK, atau kemampuan HP murah.
+- Jangan menurunkan kualitas grafis secara otomatis atau menunda fitur visual karena kekhawatiran performa yang belum terbukti pada perangkat target.
+- Jangan mengulang peringatan spekulatif tentang lag, panas, baterai, atau penggunaan memori. Bahas masalah performa bila ada bukti pengujian pada perangkat target atau pengguna meminta pembahasannya.
+- Kelambatan emulator tanpa KVM maupun renderer desktop tidak mewakili performa HP pengguna dan tidak boleh dijadikan alasan menghentikan upgrade grafis. Gunakan build, tes logika, serta pratinjau renderer/shader untuk melanjutkan verifikasi saat pengujian HP belum tersedia.
+- Tetap perbaiki bug atau crash yang terbukti dan laporkan hasil pengujian secara faktual; jangan mengklaim uji perangkat yang belum dilakukan.
+
+## Persyaratan produk
+
+Pertahankan konsep dan batasan produk dalam README: permainan ramah anak usia 2–6 tahun, kontrol sederhana, offline, tanpa iklan/login/pembelian/analytics, tanpa izin yang tidak diperlukan, serta area orang tua dengan gestur tahan. Hormati lifecycle dan tombol kembali Android.
