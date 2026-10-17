@@ -1,22 +1,142 @@
-# Verifikasi alpha.8 — tabrakan kendaraan
+# Verifikasi alpha.14 — penggabungan fitur tabrakan dari `main`
 
-Tanggal: 18 Oktober 2026 (WIB). Package `com.dromadi.tinysim`; versionCode 8; versi `0.1.0-alpha.8`.
+Tanggal: 17 Oktober 2026. versionCode 14; versi `0.1.0-alpha.14`.
 
-## Yang dijalankan
+- `main` mendapat commit `9b9df77` (tabrakan antar kendaraan) yang dibuat ChatGPT di atas alpha.7. Commit itu digabung ke branch PR #1 dengan merge commit, tanpa menulis ulang riwayat.
+- `VehicleNavigation` diperluas:
+  - 4 kendaraan; crane mendapat radius 2,2 m;
+  - batas peta mengikuti jembatan;
+  - titik dan lintasan tidak boleh masuk sungai kecuali di lantai jembatan yang sudah jadi.
+- `GameState` memakai rute sungai/jembatan yang sudah ada, ditambah jalur memutar per leg:
+  - tunggu hingga 3 detik saat terhalang mesin yang masih bergerak;
+  - jembatan satu lajur dengan titik antre 6 m;
+  - tempat muat truk dipilih dari tepi sungai yang sama.
+- `Guide`: truk baru menuang ke fondasi/gudang bila sel tuangnya benar-benar di sasaran. Sebelum perbaikan ini, `GuideTest` macet karena truk parkir miring (heading 319°) dan menuang di luar fondasi.
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 85 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 67.671.950 byte.
+- Tes:
+  - 9 tes asli ChatGPT (`VehicleCollisionTest`) lulus tanpa diubah.
+  - `RiverCollisionTest` (baru, 3 tes) memeriksa jarak aman 4 kendaraan dan larangan masuk air di setiap frame:
+    - truk memutari crane yang parkir di tepi sungai;
+    - truk dan bulldozer menyeberang jembatan dari arah berlawanan;
+    - sentuhan acak di kedua tepi dengan langkah waktu besar.
+  - Empat tes lama ditata ulang karena kendaraan kini tidak boleh bertumpuk. Pengecekannya tidak dilemahkan:
+    - truk dipindah dulu sebelum bulldozer meratakan (sama seperti perubahan ChatGPT di `main`);
+    - crane dipindah dari pojok peta yang dituju truk;
+    - bulldozer ditaruh di lokasi jembatan tanpa menumpuk truk.
+  - Smoke test Android diberi cek tumpang-tindih dari versi ChatGPT, tetapi masih hanya dikompilasi.
+- Folder bukti ChatGPT `docs/verification/alpha8/` dipindah ke `docs/verification/collision-chatgpt/` karena nama alpha.8 di repo ini dipakai versi lain. Isinya tidak diubah, kecuali catatan di README-nya.
+- Pratinjau `bridge-open`, `crane-grab`, `construction-yard`, dan `house-materials` setelah penggabungan: GL error 0 (`docs/verification/alpha14/`).
 
-- Build bersih `clean testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` berhasil: **57 tes, 0 gagal/error/skipped**. Lint **0 error, 1 warning** landscape yang disengaja.
-- Sembilan tes baru memeriksa penghindaran kendaraan parkir, berpapasan, tujuan yang ditempati kendaraan, tiga kendaraan menuju satu titik, retarget sentuhan berulang, dt besar, pemeriksaan seluruh segmen, rotasi/blade, serta pemulihan save bertumpuk termasuk sudut map. Pemisahan bodi dan konservasi 5.492 unit material diperiksa setiap langkah simulasi.
-- Tes alur pengangkutan/penggalian/jalan diperbarui agar truk dan excavator meninggalkan area kerja sebelum bulldozer mendekati timbunan, sesuai tabrakan yang kini aktif. Bantuan Isi truk diuji pada 16 kombinasi sudut/batas map; hanya memilih parkir yang aman, terjangkau bucket, serta punya rute.
-- APK lokal **173.733.838 byte**; signature v2 valid, 0 Android permission. WAV/hash/CRC/daftar aset persis dan ukuran >100 MiB lulus verifier audio yang sama dengan CI.
-- Runner Android dikompilasi, dengan pemeriksaan jarak bodi selama alur MotionEvent dan pemindahan truk dari area kerja. Runner belum dieksekusi pada HP/emulator. Tidak ada klaim pengujian sentuh/performa perangkat dari tes JVM.
+**Batas:** belum dijalankan di HP. Perilaku menghindar dan antre di jembatan hanya diuji lewat tes JVM.
 
-## Batas dan pemasangan
+---
 
-Tabrakan memakai lingkaran konservatif yang menutup bodi/roda/track/blade dan tidak berubah saat rotasi. Rute visibility graph dan pemeriksaan swept segment memakai batas yang sama; kendaraan berhenti jika tidak ada rute aman. Lengan excavator tetap bisa mencapai bak untuk pemuatan; belum ada kontak fisik mesh lengan atau tabrakan bangunan/dekorasi.
+# Verifikasi alpha.13 — crane yang dikendalikan anak
 
-Kunci debug alpha.7 tidak tersedia setelah pembersihan otomatis lingkungan build. APK lokal alpha.8 memakai kunci baru; **tidak dapat memperbarui APK dengan signing key lama**. Uninstall menghapus save. Cadangan kunci baru disimpan privat, tidak dipublikasikan di repository atau artifact CI. Format save tetap `7|` agar data dunia tetap kompatibel bila dibangun dengan key yang sama.
+Tanggal: 17 Oktober 2026. versionCode 13; versi `0.1.0-alpha.13`.
 
-Bukti tersedia di [`docs/verification/alpha8/`](docs/verification/alpha8/). Grafik/audio alpha.7 dipertahankan; tidak dibuat screenshot perangkat untuk perubahan ini.
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 73 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 67.659.950 byte.
+- `CraneTest` (baru, 5 tes):
+  - sentuhan dalam jangkauan membuat grab mengambil 2 unit, dan sentuhan pada truk menuangnya ke bak;
+  - sentuhan jauh membuat crane berjalan mendekat lalu menyendok dari sumber;
+  - muatan masuk ke gudang jembatan dan tidak pernah jatuh ke sungai;
+  - tombol aksi membawa crane ke tepi sungai dan memasang ketiga tahap jembatan;
+  - save v9 menyimpan keadaan crane, dan save lama mendapat crane bawaan.
+  - Total material tetap sama di setiap tes.
+- `GuideTest`: simulasi anak yang hanya mengikuti tangan penunjuk kini menekan crane sendiri untuk tiap tahap jembatan, tanpa pembangunan otomatis.
+- Pratinjau `crane-grab` (`docs/verification/alpha13/`): GL error 0. Terlihat crane dengan boom terarah ke tumpukan, grab terangkat berisi pasir, kartu crane terpilih, dan ikon aksi "tuang". Ikon crane diberi garis tepi gelap karena sebelumnya hilang di kartu kuning yang terpilih.
+
+**Batas:** belum dijalankan di HP. Sentuhan crane hanya diuji lewat tes logika dan pratinjau.
+
+---
+
+# Verifikasi alpha.12 — sungai dan proyek jembatan
+
+Tanggal: 17 Oktober 2026. versionCode 12; versi `0.1.0-alpha.12`.
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 68 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 67.651.410 byte.
+- `BridgeTest` (baru):
+  - sungai menghalangi tepi timur sebelum jembatan jadi;
+  - 8 unit di gudang material membuat crane membangun 3 tahap;
+  - truk menyeberang pulang-pergi lewat lantai jembatan, dan di setiap frame tidak ada kendaraan di air selain di atas jembatan;
+  - lokasi dikosongkan sebelum tiap tahap;
+  - air tidak pernah menjadi tujuan;
+  - excavator mencapai tambang timur lalu menyendok;
+  - save v8 menyimpan jembatan dan posisi di timur;
+  - save alpha.7 (62 kolom) dimigrasikan tanpa kehilangan material;
+  - save yang menaruh kendaraan di timur tanpa jembatan ditolak.
+- `GuideTest`: simulasi anak yang hanya mengikuti tangan penunjuk kini berlanjut dari rumah sampai jembatan terbuka, dengan total material tetap di setiap langkah.
+- Tes lama yang menganggap pasir dunia 36 unit diperbarui ke `GameState.START_SAND` (36 + 24 tambang) dan `westSand()`. Isi pemeriksaannya sama.
+- Pratinjau `bridge-crane` dan `bridge-open` (`docs/verification/alpha12/`): GL error 0. Crane terlihat membawa balok baja di atas sungai, dan truk menyeberang jembatan jadi.
+
+**Batas:** belum dijalankan di HP. Animasi air dan crane hanya dilihat lewat pratinjau.
+
+---
+
+# Verifikasi alpha.11 — material foto CC0
+
+Tanggal: 17 Oktober 2026. versionCode 11; versi `0.1.0-alpha.11`.
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 63 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja).
+- APK debug **67.641.738 byte**. Isinya 27 file tekstur JPG asli Poly Haven (9 material × albedo/normal/roughness) yang disimpan tanpa kompresi ulang ("Stored", karena JPG sudah terkompresi), ditambah `index.json`. Total aset tekstur 66.694.041 byte.
+- `tools/textures/fetch_textures.py` memeriksa checksum MD5 dari API Poly Haven untuk setiap file. Lisensi semua aset: CC0 1.0.
+- Pratinjau (`tools/scene-preview`, gambar di `docs/verification/alpha11/`): renderer memuat 9 material dengan GL error 0. Tekstur tampak pada tanah lokasi, rumput, atap, dinding, pagar, aspal, dan kendaraan.
+
+**Batas:** belum dijalankan di HP. Waktu memuat 27 tekstur saat aplikasi dibuka belum diukur. Bila GPU tidak mendukung atau tekstur gagal dimuat, game otomatis memakai permukaan prosedural sebelumnya.
+
+---
+
+# Verifikasi alpha.10 — kendaraan yang hidup
+
+Tanggal: 17 Oktober 2026. versionCode 10; versi `0.1.0-alpha.10`.
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 63 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 943.872 byte.
+- `VehicleLifeTest` (baru):
+  - kecepatan mengikuti jarak tempuh;
+  - setelah berhenti ada pantulan teredam (bergoyang minimal 2 kali, 1–7 cm, lalu diam);
+  - frame pertama dan input tidak valid tidak menimbulkan lonjakan;
+  - suara mesin hening sampai ada kejadian, makin keras dengan tenaga, dan mati saat mesin dimatikan;
+  - klakson dan desir pasir terdengar lalu berhenti sendiri;
+  - hidrolik terdengar saat lengan bergerak;
+  - sampel suara selalu terbatas, dan tes `SoundscapeTest` lama tetap lulus.
+- Pratinjau `vehicle-life` (`tools/scene-preview`): truk melaju dengan asap knalpot, sopir excavator terlihat melambai di dalam kabin berkaca, dan sopir truk memegang setir. GL error 0.
+
+**Batas:** suara belum didengarkan di HP. Keras-lemah dan karakter suara mesin perlu disetel setelah didengar di perangkat. Bekas roda disimpan hanya di renderer (60 jejak per kendaraan) dan hilang saat aplikasi ditutup.
+
+---
+
+# Verifikasi alpha.9 — kontrol ramah balita
+
+Tanggal: 17 Oktober 2026. versionCode 9; versi `0.1.0-alpha.9`.
+
+## Hasil yang benar-benar dijalankan
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 58 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 934.088 byte.
+- `GuideTest` (baru): urutan petunjuk untuk alur pasir; **simulasi anak yang hanya mengikuti tangan penunjuk** (pilih kartu yang ditunjuk, tekan aksi, sentuh titik tanah yang ditunjuk) dari dunia baru sampai rumah tahap 3, dengan total material tetap 5.492 di setiap langkah; aksi bulldozer mendorong menembus tumpukan terdekat, dan tetap mengangkat/menurunkan blade bila tidak ada tumpukan. Simulasi ini menemukan dan membantu memperbaiki dua putaran tanpa akhir sebelum rilis: pasir yang sama terus dimuat ulang, dan tanah galian fondasi ditimbun kembali.
+- Pratinjau HUD (`tools/scene-preview`): layar anak hanya menampilkan 3 kartu, tombol aksi bergambar, kartu progres bergambar, dan gembok; tangan penunjuk tampil penuh di atas tombol aksi. GL error 0.
+- Runner instrumentasi Android disesuaikan (kontrol lanjutan diaktifkan, bantuan otomatis dimatikan selama skrip, rumah dirakit otomatis) dan berhasil dikompilasi, **tetapi belum dijalankan** di HP/emulator.
+
+## Batas pengujian
+
+Belum dicoba bersama anak dan belum dijalankan di perangkat. Batas waktu 5 detik (tangan) dan 14 detik (bantuan) adalah nilai awal yang perlu disesuaikan setelah uji nyata.
+
+---
+
+# Verifikasi alpha.8 — tanah inkremental & audio sintesis
+
+Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 8; versi `0.1.0-alpha.8`.
+
+## Hasil yang benar-benar dijalankan
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 55 tes, 0 gagal/error/skipped; lint 0 error dan satu warning `DiscouragedApi` (landscape yang disengaja, sama seperti sebelumnya).
+- **Mesh tanah.** Diukur di JVM desktop dengan kode asli: alpha.7 membangun ulang seluruh mesh 43.648 segitiga setiap kali tanah/pasir berubah, 46–107 ms per perubahan (satu frame 60 fps = 16,7 ms). Alpha.8 `TerrainMesh`: pembangunan penuh awal sekitar 4 ms setelah pemanasan JIT; saat bulldozer mendorong pasir, tiap perubahan 0,05–0,14 ms dan hanya 12 baris quad yang diperbarui. `TerrainMeshTest` membuktikan hasil update parsial **identik** dengan pembangunan ulang penuh setelah 44 perubahan acak termasuk sudut dan tepi peta, serta normal/winding menghadap ke atas.
+- **Pratinjau renderer** (`tools/scene-preview`): adegan awal, lubang galian, timbunan dan rumah lengkap lulus tanpa GL error. Adegan berikutnya memakai jalur `glBufferSubData`; hasil gambar sama dengan bukti alpha.7.
+- **Audio.** `SoundscapeTest`: tiga area terdengar (RMS 0,001–0,05), tidak pernah melewati batas ±0,35, deterministik, berbeda antar area, kicau burung muncul di jendela waktunya, fade-in mencapai volume 0,22, crossfade antar area tanpa lonjakan sampel besar, dan fade-out sampai hening.
+- APK debug lokal **987.732 byte** (alpha.7: 173.725.502 byte). Tidak ada aset WAV; CI tidak lagi mewajibkan APK >100 MiB.
+
+## Batas pengujian
+
+Alpha.8 belum dijalankan pada HP/emulator. Suara AudioTrack belum didengarkan di perangkat; tes membuktikan sinyal yang dihasilkan, bukan pengalaman mendengar. FPS di HP belum diukur; angka mesh di atas berasal dari JVM desktop.
 
 ---
 

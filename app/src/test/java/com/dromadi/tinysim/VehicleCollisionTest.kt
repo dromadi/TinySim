@@ -75,3 +75,46 @@ class VehicleCollisionTest {
         for(angle in 0..359 step 7) { g.dozerHeading=angle.toFloat();g.bladeDown=!g.bladeDown;g.truckHeading=(angle+90f)%360f;g.update(.04f);safe(g) }
     }
 }
+
+/** The same guarantees on the full map: four vehicles including the crane, the river and the bridge. */
+class RiverCollisionTest {
+    private fun safe(g:GameState) {
+        val all=GameState.Vehicle.entries.map(g::vehicleBody)
+        for(a in all) {
+            assertTrue("${a.unit} in the water at ${a.point}",VehicleNavigation.land(a.point,g.bridgeOpen))
+            for(b in all)if(a.unit.ordinal<b.unit.ordinal)
+                assertTrue("${a.unit} vs ${b.unit}: ${a.point} ${b.point}",a.point.distance(b.point)>=a.radius+b.radius+VehicleNavigation.GAP-.001f)
+        }
+        assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
+    }
+    /** Delivers eight units to the yard and lets the parked crane build all three stages. */
+    private fun bridged()=GameState().apply {
+        truckX=WorldMap.gameX(48f);truckZ=4.5f;truckHeading=0f;load=8;source-=8
+        selected=GameState.Vehicle.TRUCK;action();repeat(400) { update(.016f) };action();repeat(200) { update(.016f) }
+        while(bridgeStage<3) { assertTrue(buildBridge());repeat(3000) { if(driving)update(.016f) };repeat(260) { update(.016f) } }
+    }
+    @Test fun aDetourAroundTheParkedCraneNeverLeavesTheBank() {
+        val g=GameState();g.craneX=WorldMap.gameX(44f);g.craneZ=4.5f
+        g.truckX=WorldMap.gameX(38f);g.truckZ=4.5f
+        g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(47f),4.5f)
+        repeat(3000) { g.update(.016f);safe(g) }
+        assertFalse(g.driving);assertEquals(44f,WorldMap.worldX(g.craneX),0f)
+    }
+    @Test fun fourMachinesCrossingTheBridgeBothWaysStaySeparatedAndDry() {
+        val g=bridged();assertTrue(g.bridgeOpen)
+        g.truckX=WorldMap.gameX(40f);g.truckZ=4.5f;g.dozerX=WorldMap.gameX(62f);g.dozerZ=8f
+        g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(64f),4.5f)
+        g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(36f),4.5f)
+        g.driveTo(GameState.Vehicle.CRANE,WorldMap.gameX(60f),0f)
+        repeat(12000) { if(g.driving) { g.update(.016f);safe(g) } }
+        assertFalse(g.driving)
+        assertTrue(WorldMap.east(WorldMap.worldX(g.truckX)));assertFalse(WorldMap.east(WorldMap.worldX(g.dozerX)))
+    }
+    @Test fun randomTouchesAcrossBothBanksNeverOverlapOrSink() {
+        val g=bridged();val random=Random(4127)
+        repeat(1500) { frame->
+            if(frame%40==0)for(unit in GameState.Vehicle.entries)g.driveTo(unit,WorldMap.gameX(-2f+random.nextFloat()*72f),-2.5f+random.nextFloat()*13.5f)
+            g.update(if(frame%7==0)1f else .03f);safe(g)
+        }
+    }
+}

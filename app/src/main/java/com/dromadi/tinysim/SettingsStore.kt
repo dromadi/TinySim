@@ -5,6 +5,10 @@ class SettingsStore(context: Context) {
     var sound: Boolean
         get()=prefs.getBoolean("sound",true)
         set(value) { prefs.edit().putBoolean("sound",value).apply() }
+    /** Parent-enabled zoom, camera, minimap and stop buttons; the child HUD stays minimal without it. */
+    var advanced: Boolean
+        get()=prefs.getBoolean("advanced",false)
+        set(value) { prefs.edit().putBoolean("advanced",value).apply() }
     var camera: Int
         get()=prefs.getInt("camera",0).coerceIn(0,2)
         set(value) { prefs.edit().putInt("camera",value.coerceIn(0,2)).apply() }
@@ -18,7 +22,7 @@ class SettingsStore(context: Context) {
         get()=finite("zoom",1f,.45f,1.8f)
         set(value) { prefs.edit().putFloat("zoom",value).apply() }
     var panX:Float
-        get()=finite("panX",0f,-8f,44f)
+        get()=finite("panX",0f,-8f,68f)
         set(value) { prefs.edit().putFloat("panX",value).apply() }
     var panZ:Float
         get()=finite("panZ",0f,-3f,11f)

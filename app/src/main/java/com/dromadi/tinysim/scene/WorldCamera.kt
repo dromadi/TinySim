@@ -66,7 +66,7 @@ object WorldCamera {
     )
     fun spec(index: Int, yawOffset: Float=0f, pitchOffset: Float=0f, zoom: Float=1f,panX:Float=0f,panZ:Float=0f): CameraSpec {
         val original=presets[index.coerceIn(0,2)]
-        val shift=Vec3(panX.safe(0f,-8f,44f),0f,panZ.safe(0f,-3f,11f))
+        val shift=Vec3(panX.safe(0f,-8f,68f),0f,panZ.safe(0f,-3f,11f))
         val base=CameraSpec(original.eye+shift,original.target+shift)
         if(yawOffset==0f && pitchOffset==0f && zoom==1f)return base
         val d=base.eye-base.target

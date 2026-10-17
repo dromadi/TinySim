@@ -13,8 +13,8 @@ class ConstructionTest {
         assertTrue(g.digAt(36.5f,8.5f));assertNotNull(g.excavatorGoal)
         arrive(g);tick(g);assertTrue(g.scoop());assertEquals(2,g.bucket);assertEquals(2,g.sand[cell]);assertTrue(g.dug[cell]>0)
         assertEquals(36.5f,g.bucketPosition.first,.03f);assertEquals(8.5f,g.bucketPosition.second,.03f)
-        g.action();arrive(g);tick(g);assertTrue(g.pour());assertEquals(2,g.load);assertEquals(36,g.totalSand)
-        g.digAt(36.5f,8.5f);tick(g);assertTrue(g.scoop());assertEquals(0,g.sand[cell]);assertEquals(36,g.totalSand)
+        g.action();arrive(g);tick(g);assertTrue(g.pour());assertEquals(2,g.load);assertEquals(GameState.START_SAND,g.totalSand)
+        g.digAt(36.5f,8.5f);tick(g);assertTrue(g.scoop());assertEquals(0,g.sand[cell]);assertEquals(GameState.START_SAND,g.totalSand)
     }
     @Test fun bucketTracksTheMobileRotatedRigAndTruckZMatters() {
         for(heading in listOf(0f,90f,180f,270f,315f)) {
@@ -23,7 +23,7 @@ class ConstructionTest {
             g.source=34;g.sand[cell]=2;g.moveArm(365f,440f);tick(g)
             assertTrue("heading $heading",g.scoop());assertEquals(2,g.bucket)
             g.truckX=WorldMap.gameX(end.first);g.truckZ=end.second+4f;g.moveArm(365f,300f);tick(g)
-            assertFalse(g.pour());g.truckZ=end.second;assertTrue(g.pour());assertEquals(36,g.totalSand)
+            assertFalse(g.pour());g.truckZ=end.second;assertTrue(g.pour());assertEquals(GameState.START_SAND,g.totalSand)
         }
     }
     @Test fun roadRequiresSandAndLoweredBladeAndConservesInstalledMaterial() {
@@ -34,7 +34,7 @@ class ConstructionTest {
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(25f),8.5f);arrive(g);assertEquals(0,g.roadProgress)
         g.dozerX=WorldMap.gameX(13f);g.bladeDown=true;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(25f),8.5f);arrive(g)
-        assertEquals(4,g.roadProgress);assertEquals(0,g.sand.sum());assertEquals(4,g.road.sum());assertEquals(36,g.totalSand)
+        assertEquals(4,g.roadProgress);assertEquals(0,g.westSand());assertEquals(4,g.road.sum());assertEquals(GameState.START_SAND,g.totalSand)
         assertEquals(1,g.rewardSerial)
         val copy=GameState();copy.restore(g.snapshot());assertEquals(g.snapshot(),copy.snapshot())
     }
@@ -45,17 +45,18 @@ class ConstructionTest {
             g.moveArm(620f,300f);tick(g);assertTrue(g.pour())
         }
         g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(18.3f),8.5f);arrive(g)
-        g.selected=GameState.Vehicle.TRUCK;g.action();tick(g);assertEquals(4,g.sand.sum())
+        g.selected=GameState.Vehicle.TRUCK;g.action();tick(g);assertEquals(4,g.westSand())
         g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(40f),-2f);arrive(g)
         g.dozerX=WorldMap.gameX(13f);g.dozerZ=8.5f;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(25f),8.5f);arrive(g)
-        assertEquals(4,g.roadProgress);assertEquals(36,g.totalSand)
+        assertEquals(4,g.roadProgress);assertEquals(GameState.START_SAND,g.totalSand)
     }
     @Test fun alpha5SaveMigratesAndMalformedRoadOrMarksResetSafely() {
         val g=GameState();g.load=4;g.source=32
-        val parts=g.snapshot().removePrefix("7|").split(';')
-        val old="5|"+parts[0].split(',').take(20).joinToString(",")+";"+parts[1]
-        val copy=GameState();copy.restore(old);assertEquals(4,copy.load);assertEquals(200f,copy.excavatorX,0f);assertEquals(36,copy.totalSand)
+        val parts=g.snapshot().removePrefix("9|").split(';')
+        // A real alpha.5 save holds the 62-column map without the east-bank quarry.
+        val old="5|"+parts[0].split(',').take(20).joinToString(",")+";"+IntArray(WorldMap.LEGACY_COLUMNS*WorldMap.ROWS).joinToString(",")
+        val copy=GameState();copy.restore(old);assertEquals(4,copy.load);assertEquals(200f,copy.excavatorX,0f);assertEquals(GameState.START_SAND,copy.totalSand)
         copy.restore(g.snapshot().replace(";0,0,0,0;",";2,0,0,0;"));assertEquals(0,copy.load)
         copy.restore(g.snapshot().substringBeforeLast(';')+";0");assertEquals(0,copy.load)
     }
@@ -80,12 +81,12 @@ class ConstructionTest {
         for(x in listOf(0f,47f))for(z in listOf(-2.8f,11.5f))for(angle in listOf(0f,90f,180f,270f)) {
             val g=GameState();g.excavatorX=WorldMap.gameX(x);g.excavatorZ=z;g.excavatorHeading=angle
             g.bucket=2;g.source=34;g.action();arrive(g);tick(g)
-            if(g.bucket>0)assertTrue("pose $x $z $angle; truck=${g.truckX},${g.truckZ}, heading=${g.excavatorHeading}, bucket=${g.bucketPosition}, goal=${g.truckGoal}",g.pour());assertEquals(2,g.load);assertEquals(36,g.totalSand)
+            if(g.bucket>0)assertTrue("pose $x $z $angle",g.pour());assertEquals(2,g.load);assertEquals(GameState.START_SAND,g.totalSand)
         }
     }
     @Test fun roadMissionIsOptionalAndAlreadyBuiltRoadCanCompleteIt() {
         val g=GameState();g.source=32;g.road.fill(1);g.missionMode=true;g.mission=3
         val copy=GameState();copy.restore(g.snapshot());assertEquals(4,copy.missionProgress);assertEquals(1,copy.rewardSerial)
-        tick(copy);copy.nextMission();assertEquals(4,copy.mission);assertEquals(36,copy.totalSand)
+        tick(copy);copy.nextMission();assertEquals(4,copy.mission);assertEquals(GameState.START_SAND,copy.totalSand)
     }
 }

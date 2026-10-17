@@ -3,7 +3,7 @@ const fs=require('fs');
 (async()=>{
   fs.mkdirSync(process.argv[3],{recursive:true});
   const data=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
-  const browser=await chromium.launch({...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
+  const browser=await chromium.launch({...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--allow-file-access-from-files','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const results=[];
   const jpeg=process.env.PREVIEW_FORMAT==='jpeg';
   try {

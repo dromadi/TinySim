@@ -17,7 +17,7 @@ class TerrainHouseTest {
         val x=30.5f;val z=8.5f;val before=g.surface(x,z);dig(g,x,z)
         assertEquals(2,g.bucket);assertEquals(before-.44f,g.surface(x,z),.001f)
         assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
-        val mesh=Geometry.terrain(g.earth,g.sand).vertexData();var low=1f
+        val terrain=TerrainMesh();terrain.update(g.earth,g.sand);val mesh=terrain.vertices;var low=1f
         for(i in mesh.indices step 6) { low=minOf(low,mesh[i+1]);assertTrue(mesh[i+4]>0f);assertTrue(mesh[i+1].isFinite()) }
         assertTrue(low<0f)
     }
@@ -60,7 +60,7 @@ class TerrainHouseTest {
     @Test fun alpha6MigrationAndCorruptEarthOrHouseCannotCreateMaterial() {
         val g=GameState();val pieces=g.snapshot().removePrefix("7|").split(';')
         val old="6|"+pieces.take(4).joinToString(";");val copy=GameState();copy.restore(old)
-        assertEquals(36,copy.totalSand);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
+        assertEquals(GameState.START_SAND,copy.totalSand);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
         val damaged=g.snapshot().substringBeforeLast(';')+";8,3";copy.restore(damaged)
         assertEquals(0,copy.houseStage);assertEquals(0,copy.houseFill);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
         val terrain=g.snapshot().replaceFirst(";4,4,4,4,",";99,4,4,4,");copy.restore(terrain);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
