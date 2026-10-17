@@ -1,3 +1,36 @@
+# Verifikasi alpha.14 — penggabungan fitur tabrakan dari `main`
+
+Tanggal: 17 Oktober 2026. versionCode 14; versi `0.1.0-alpha.14`.
+
+- `main` mendapat commit `9b9df77` (tabrakan antar kendaraan) yang dibuat ChatGPT di atas alpha.7. Commit itu digabung ke branch PR #1 dengan merge commit, tanpa menulis ulang riwayat.
+- `VehicleNavigation` diperluas:
+  - 4 kendaraan; crane mendapat radius 2,2 m;
+  - batas peta mengikuti jembatan;
+  - titik dan lintasan tidak boleh masuk sungai kecuali di lantai jembatan yang sudah jadi.
+- `GameState` memakai rute sungai/jembatan yang sudah ada, ditambah jalur memutar per leg:
+  - tunggu hingga 3 detik saat terhalang mesin yang masih bergerak;
+  - jembatan satu lajur dengan titik antre 6 m;
+  - tempat muat truk dipilih dari tepi sungai yang sama.
+- `Guide`: truk baru menuang ke fondasi/gudang bila sel tuangnya benar-benar di sasaran. Sebelum perbaikan ini, `GuideTest` macet karena truk parkir miring (heading 319°) dan menuang di luar fondasi.
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 85 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 67.671.950 byte.
+- Tes:
+  - 9 tes asli ChatGPT (`VehicleCollisionTest`) lulus tanpa diubah.
+  - `RiverCollisionTest` (baru, 3 tes) memeriksa jarak aman 4 kendaraan dan larangan masuk air di setiap frame:
+    - truk memutari crane yang parkir di tepi sungai;
+    - truk dan bulldozer menyeberang jembatan dari arah berlawanan;
+    - sentuhan acak di kedua tepi dengan langkah waktu besar.
+  - Empat tes lama ditata ulang karena kendaraan kini tidak boleh bertumpuk. Pengecekannya tidak dilemahkan:
+    - truk dipindah dulu sebelum bulldozer meratakan (sama seperti perubahan ChatGPT di `main`);
+    - crane dipindah dari pojok peta yang dituju truk;
+    - bulldozer ditaruh di lokasi jembatan tanpa menumpuk truk.
+  - Smoke test Android diberi cek tumpang-tindih dari versi ChatGPT, tetapi masih hanya dikompilasi.
+- Folder bukti ChatGPT `docs/verification/alpha8/` dipindah ke `docs/verification/collision-chatgpt/` karena nama alpha.8 di repo ini dipakai versi lain. Isinya tidak diubah, kecuali catatan di README-nya.
+- Pratinjau `bridge-open`, `crane-grab`, `construction-yard`, dan `house-materials` setelah penggabungan: GL error 0 (`docs/verification/alpha14/`).
+
+**Batas:** belum dijalankan di HP. Perilaku menghindar dan antre di jembatan hanya diuji lewat tes JVM.
+
+---
+
 # Verifikasi alpha.13 — crane yang dikendalikan anak
 
 Tanggal: 17 Oktober 2026. versionCode 13; versi `0.1.0-alpha.13`.

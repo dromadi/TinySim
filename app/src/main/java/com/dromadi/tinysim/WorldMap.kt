@@ -42,4 +42,5 @@ object WorldMap {
         else (z+if(dz>=0)1 else -1).coerceIn(0,ROWS-1)*COLUMNS+x
     }
 }
-data class DriveGoal(val x:Float,val z:Float)
+/** A route leg in game units; [deck] marks the bridge legs: 1 drives onto the deck, 2 crosses it. */
+data class DriveGoal(val x:Float,val z:Float,val deck:Int=0)

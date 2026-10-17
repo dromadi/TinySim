@@ -44,6 +44,10 @@ Kesalahan berikut pernah terjadi. Jangan diulangi.
 8. Naikkan `versionCode`/`versionName`, perbarui README, VERIFICATION, PUBLISH, dan nama artifact workflow.
 9. Jangan langsung bekerja di `main` jika ada PR yang belum di-merge; lanjutkan dari branch PR terbaru agar tidak bentrok.
 
+## Identitas APK debug
+
+Pertahankan keystore debug lokal pengguna untuk pembaruan berikutnya. Jika lingkungan build dibersihkan, pulihkan cadangan privat sebelum build. Jangan memasukkan keystore atau private key ke Git/artifact publik. Jelaskan perubahan key bila pembaruan Android tidak bisa mempertahankan identitas lama.
+
 ## Kebiasaan kerja
 
 - Komunikasi dengan pemilik dalam Bahasa Indonesia.

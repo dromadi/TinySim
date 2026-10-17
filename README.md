@@ -1,11 +1,25 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.13**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.14**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
 ![Crane TinySim](docs/verification/alpha13/crane-grab.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.14: kendaraan tidak saling tabrak
+
+Fitur tabrakan ini dibuat ChatGPT di `main` (commit `9b9df77`) di atas alpha.7, lalu digabung dengan versi sungai, jembatan, dan crane.
+
+- **Tidak saling menembus.** Excavator, truk, bulldozer, dan crane punya batas bodi yang tidak mengecil saat berputar: radius 2,0 / 2,4 / 2,5 / 2,2 m ditambah celah 0,08 m. Lengan excavator dan boom crane tetap bisa menjangkau bak truk.
+- **Memutar menghindar.** Kendaraan memutari kendaraan lain yang parkir atau sedang lewat. Pergerakan dicek sepanjang lintasan, bukan hanya di titik tujuan, jadi tidak ada yang "tembus" walau langkahnya panjang.
+- Tujuan yang sudah ditempati diganti dengan tempat aman terdekat.
+- Save lama yang kendaraannya bertumpuk dipisahkan tanpa mengubah isi material.
+- **Sadar sungai.** Jalan memutar tidak pernah masuk ke air, dan baru boleh melewati sungai lewat lantai jembatan yang sudah jadi.
+- **Jembatan satu lajur.** Kendaraan yang akan menyeberang menunggu di 6 m sebelum ujung jembatan sampai lantainya kosong. Dua kendaraan yang berpapasan tidak lagi berhenti di tengah jembatan.
+- **Kendaraan yang terhalang menunggu sebentar.** Selama mesin lain masih bergerak, ia menunggu hingga 3 detik sebelum menyerah.
+- **Truk tidak lagi menuang miring.** Tangan penunjuk baru menyuruh truk menuang ke fondasi atau gudang jembatan kalau baknya benar-benar di atas sasaran. Kalau truk parkir miring di dekatnya, ia diarahkan ke titik sasaran dulu.
+- Truk dipanggil excavator ke tempat muat yang kosong, terjangkau, dan berada di tepi sungai yang sama.
 
 ## Alpha.13: crane yang dikendalikan anak
 
@@ -119,7 +133,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.13-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.14-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
 
 Runner pengujian sentuh terpisah:
 
@@ -133,7 +147,7 @@ Runner bukan bagian APK permainan. Hasil sukses harus berisi `result=PASS`. Liha
 ## Pengembangan berikutnya
 
 - Pemasangan pipa dan bangunan bertahap yang memakai crane.
-- Suspensi mengikuti kemiringan tanah, tabrakan bangunan, dan proyek jembatan tambahan.
+- Suspensi mengikuti kemiringan tanah, tabrakan dengan bangunan/dekorasi, dan proyek jembatan tambahan.
 - Misi antarzona dan tutorial sentuh berbasis gambar.
 - Pengujian langsung bersama anak/orang tua dan virtual accessibility nodes pada kontrol Canvas.
 - Dunia kebun serta kendaraan penyelamat.

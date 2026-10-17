@@ -46,6 +46,7 @@ class ConstructionTest {
         }
         g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(18.3f),8.5f);arrive(g)
         g.selected=GameState.Vehicle.TRUCK;g.action();tick(g);assertEquals(4,g.westSand())
+        g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(40f),-2f);arrive(g)
         g.dozerX=WorldMap.gameX(13f);g.dozerZ=8.5f;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(25f),8.5f);arrive(g)
         assertEquals(4,g.roadProgress);assertEquals(GameState.START_SAND,g.totalSand)

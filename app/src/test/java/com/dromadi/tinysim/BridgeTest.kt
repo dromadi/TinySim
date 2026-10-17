@@ -48,7 +48,8 @@ class BridgeTest {
     }
     @Test fun buildingClearsTheSiteFirstAndWaterIsNeverADestination() {
         val g=GameState();deliver(g)
-        g.dozerX=WorldMap.gameX(47f);g.dozerZ=4.5f
+        // Inside the work area, clear of the truck parked at the yard.
+        g.dozerX=WorldMap.gameX(43.6f);g.dozerZ=1.6f
         assertTrue(g.buildBridge());assertNotNull(g.dozerGoal);assertNotNull(g.truckGoal)
         arrive(g);run(g,260);assertEquals(1,g.bridgeStage)
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(52f),10f);arrive(g)

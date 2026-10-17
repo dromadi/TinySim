@@ -23,10 +23,14 @@ object Guide {
     const val YARD_X=46f;const val YARD_Z=4.5f
     fun next(g:GameState):Hint {
         fun use(vehicle:GameState.Vehicle)=if(g.selected==vehicle)Hint.Action else Hint.Card(vehicle)
-        fun driveTruck(x:Float,z:Float)=when {
-            g.selected!=GameState.Vehicle.TRUCK -> Hint.Card(GameState.Vehicle.TRUCK)
-            hypot(WorldMap.worldX(g.truckX)-x,g.truckZ-z)<2.5f -> Hint.Action
-            else -> Hint.Ground(x,z)
+        /** Near the target the truck tips only if its bed pours onto it; parked askew, it first drives onto the spot. */
+        fun driveTruck(x:Float,z:Float,fits:(Int)->Boolean={ true }):Hint {
+            val distance=hypot(WorldMap.worldX(g.truckX)-x,g.truckZ-z)
+            return when {
+                g.selected!=GameState.Vehicle.TRUCK -> Hint.Card(GameState.Vehicle.TRUCK)
+                distance<.3f || (distance<2.5f && fits(g.dumpCell)) -> Hint.Action
+                else -> Hint.Ground(x,z)
+            }
         }
         val house=(g.source==0 || g.delivered>=4) && g.houseStage==0
         // With the house finished, the next project is the bridge across the river.
@@ -40,8 +44,8 @@ object Guide {
             g.craneCargo>0 -> use(GameState.Vehicle.CRANE)
             // The child's crane lifts each bridge piece once the yard is full.
             g.bridgeReady && g.bridgeClock==0f -> use(GameState.Vehicle.CRANE)
-            house && g.houseReady && g.houseFill<8 && g.load>0 -> driveTruck(HOUSE_X,HOUSE_Z)
-            bridge && g.load>0 -> driveTruck(YARD_X,YARD_Z)
+            house && g.houseReady && g.houseFill<8 && g.load>0 -> driveTruck(HOUSE_X,HOUSE_Z,Terrain::foundation)
+            bridge && g.load>0 -> driveTruck(YARD_X,YARD_Z,WorldMap::bridgeYard)
             !house && !bridge && g.load>=4 -> use(GameState.Vehicle.TRUCK)
             !house && !bridge && g.sand.indices.any { g.sand[it]>1 && it !in Terrain.QUARRY } -> use(GameState.Vehicle.DOZER)
             digging -> {

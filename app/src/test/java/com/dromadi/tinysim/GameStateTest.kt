@@ -13,6 +13,7 @@ class GameStateTest {
         assertEquals(18f,WorldMap.worldX(g.truckX),.001f);assertEquals(6f,g.truckZ,.001f)
         g.selected=GameState.Vehicle.TRUCK;g.action();settle(g)
         assertEquals(0,g.load);assertEquals(4,g.delivered);assertEquals(4,g.westSand())
+        g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(40f),-2f);arrive(g)
         val pile=g.sand.indices.first { g.sand[it]>0 && !WorldMap.east(WorldMap.cellX(it)) };val px=WorldMap.cellX(pile);val pz=WorldMap.cellZ(pile)
         g.dozerX=WorldMap.gameX(px-3f);g.dozerZ=pz;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(px+4f),pz);arrive(g)
@@ -26,7 +27,8 @@ class GameStateTest {
         g.load=4;g.source+=4;g.truckZ=5f;assertFalse(g.pour());assertEquals(GameState.START_SAND,g.totalSand)
     }
     @Test fun mapRoutesClampAndStopAtTheDestinationWithoutOvershoot() {
-        val g=GameState()
+        // The parked crane would otherwise occupy the far corner the truck is clamped to.
+        val g=GameState();g.craneX=WorldMap.gameX(30f);g.craneZ=-2f
         g.driveTo(GameState.Vehicle.TRUCK,99999f,99999f);arrive(g)
         assertEquals(WorldMap.DRIVE_MAX_X,g.truckX,.001f);assertEquals(WorldMap.DRIVE_MAX_Z,g.truckZ,.001f)
         g.driveTo(GameState.Vehicle.DOZER,-99999f,-99999f);arrive(g)

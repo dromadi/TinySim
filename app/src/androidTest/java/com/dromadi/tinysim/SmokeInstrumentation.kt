@@ -24,7 +24,12 @@ class SmokeInstrumentation:Instrumentation() {
     private fun waitUntil(description:String,predicate:()->Boolean) {
         val end=SystemClock.uptimeMillis()+15000
         while(SystemClock.uptimeMillis()<end) {
-            var done=false;ui { done=predicate() };if(done)return
+            var done=false;ui {
+                done=predicate()
+                val bodies=GameState.Vehicle.entries.map(view.game::vehicleBody)
+                for(a in bodies)for(b in bodies)if(a.unit.ordinal<b.unit.ordinal)
+                    check(a.point.distance(b.point)>=a.radius+b.radius+VehicleNavigation.GAP-.001f) { "Vehicles overlap during Android smoke flow" }
+            };if(done)return
             SystemClock.sleep(100)
         }
         error("Timed out: $description")
@@ -84,6 +89,9 @@ class SmokeInstrumentation:Instrumentation() {
             ui { check(view.game.sand.sum()==4 && view.game.delivered==4 && view.game.totalSand==36) }
             var pileX=0f;var pileZ=0f
             ui { val cell=view.game.sand.indexOfFirst { it>0 };pileX=WorldMap.cellX(cell);pileZ=WorldMap.cellZ(cell) }
+            // Clear the parked truck before the blade approaches its freshly dumped pile.
+            tap(128f,355f);destination(40f,-2f)
+            waitUntil("truck clears the dozer work area") { view.game.truckGoal==null && kotlin.math.abs(WorldMap.worldX(view.game.truckX)-40f)<.1f }
             tap(475f,605f);tap(128f,355f)
             destination(pileX-4f,pileZ)
             waitUntil("dozer lines up behind the pile") { view.game.dozerGoal==null && kotlin.math.abs(WorldMap.worldX(view.game.dozerX)-(pileX-4f))<.1f }

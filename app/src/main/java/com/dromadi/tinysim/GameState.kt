@@ -5,6 +5,87 @@ import kotlin.math.*
 /** Deterministic, bounded simulation. Sand units are conserved, including the source. */
 class GameState {
     enum class Vehicle { EXCAVATOR, TRUCK, DOZER, CRANE }
+    /** Collision-free paths around the other vehicles, per leg of the river-aware route. */
+    private val paths=VehicleRoutes()
+    fun vehicleBody(unit:Vehicle)=VehicleNavigation.Body(unit,when(unit) {
+        Vehicle.EXCAVATOR->VehicleNavigation.Point(WorldMap.worldX(excavatorX),excavatorZ)
+        Vehicle.TRUCK->VehicleNavigation.Point(WorldMap.worldX(truckX),truckZ)
+        Vehicle.DOZER->VehicleNavigation.Point(WorldMap.worldX(dozerX),dozerZ)
+        Vehicle.CRANE->VehicleNavigation.Point(WorldMap.worldX(craneX),craneZ)
+    })
+    private fun setPose(unit:Vehicle,p:VehicleNavigation.Point) { when(unit) {
+        Vehicle.EXCAVATOR->{excavatorX=WorldMap.gameX(p.x);excavatorZ=p.z}
+        Vehicle.TRUCK->{truckX=WorldMap.gameX(p.x);truckZ=p.z}
+        Vehicle.DOZER->{dozerX=WorldMap.gameX(p.x);dozerZ=p.z}
+        Vehicle.CRANE->{craneX=WorldMap.gameX(p.x);craneZ=p.z}
+    } }
+    private fun others(unit:Vehicle)=Vehicle.entries.filter { it!=unit }.map { vehicleBody(it) }
+    /** Old saves may already contain overlaps. Keep inventory/heading; separate only the poses. */
+    private fun separateVehicles() {
+        val placed=mutableListOf<VehicleNavigation.Body>()
+        for(unit in Vehicle.entries) {
+            val body=vehicleBody(unit)
+            if(!VehicleNavigation.free(body.point,unit,placed)) {
+                val p=VehicleNavigation.nearestFree(body.point,body.point,unit,placed,bridgeOpen) ?: continue
+                setPose(unit,p);paths.clear(unit)
+            }
+            placed+=vehicleBody(unit)
+        }
+    }
+    private val blocked=FloatArray(4)
+    private fun goalOf(unit:Vehicle)=when(unit) { Vehicle.EXCAVATOR->excavatorGoal;Vehicle.TRUCK->truckGoal;Vehicle.DOZER->dozerGoal;Vehicle.CRANE->craneGoal }
+    private sealed class Travel {
+        object Arrived:Travel()
+        object Stuck:Travel()
+        class Moved(val dx:Float,val dz:Float,val step:Float):Travel()
+    }
+    /**
+     * One frame along the current leg, around parked or moving vehicles. Arrived snaps to the
+     * (possibly nudged) end point; Stuck means no safe path exists; a zero step waits for a
+     * moving vehicle to pass.
+     */
+    private fun travel(unit:Vehicle,goal:DriveGoal,speed:Float,dt:Float):Travel {
+        if(goal.deck==1)when(claimDeck(unit)) {
+            false -> return Travel.Moved(0f,0f,0f)
+            null -> return Travel.Stuck
+            true -> {}
+        }
+        return when(val result=step(unit,goal,speed,dt)) {
+            Travel.Arrived -> { if(goal.deck==2 && deckOwner==unit)deckOwner=null;result }
+            Travel.Stuck -> { if(deckOwner==unit)deckOwner=null;result }
+            is Travel.Moved -> result
+        }
+    }
+    /** The vehicle holding the one-lane bridge deck; transient, like the routes. */
+    private var deckOwner:Vehicle?=null
+    private fun onDeck(p:VehicleNavigation.Point)=p.x>WorldMap.WEST_BANK_X-.2f && p.x<WorldMap.EAST_BANK_X+.2f
+    /** True once [unit] holds the deck, false while it waits its turn, null if a parked machine blocks it. */
+    private fun claimDeck(unit:Vehicle):Boolean? {
+        deckOwner?.let { if(it!=unit && goalOf(it)==null)deckOwner=null }
+        if(deckOwner!=null && deckOwner!=unit)return false
+        val onIt=Vehicle.entries.filter { it!=unit && onDeck(vehicleBody(it).point) }
+        if(onIt.any { goalOf(it)==null })return null
+        if(onIt.isNotEmpty())return false
+        deckOwner=unit;return true
+    }
+    private fun step(unit:Vehicle,goal:DriveGoal,speed:Float,dt:Float):Travel {
+        val here=vehicleBody(unit).point
+        val target=paths.next(unit,here,VehicleNavigation.Point(WorldMap.worldX(goal.x),goal.z),others(unit),bridgeOpen)
+        if(target==null) {
+            // A machine that is still driving may clear the way; a parked blockade ends the trip.
+            blocked[unit.ordinal]+=dt
+            val moving=Vehicle.entries.any { it!=unit && goalOf(it)!=null }
+            if(moving && blocked[unit.ordinal]<BLOCKED_SECONDS)return Travel.Moved(0f,0f,0f)
+            blocked[unit.ordinal]=0f;return Travel.Stuck
+        }
+        blocked[unit.ordinal]=0f
+        val dx=target.x-here.x;val dz=target.z-here.z;val distance=hypot(dx,dz)
+        if(distance<.025f && paths.last(unit)) { setPose(unit,target);paths.clear(unit);return Travel.Arrived }
+        if(distance<1e-6f)return Travel.Moved(0f,0f,0f)
+        val step=min(distance,speed*dt);val next=VehicleNavigation.Point(here.x+dx/distance*step,here.z+dz/distance*step)
+        if(!VehicleNavigation.clear(here,next,unit,others(unit),bridgeOpen)) { paths.clear(unit);return Travel.Moved(0f,0f,0f) }
+        setPose(unit,next);return Travel.Moved(dx,dz,step)
+    }
     var selected = Vehicle.EXCAVATOR
     // Arm coordinates stay local to the excavator; its pose moves/rotates the rig in 3D.
     var excavatorX=200f
@@ -21,6 +102,8 @@ class GameState {
         private set
     var buildClock=0f
         private set
+    /** The cell the tipped bed pours into, behind the truck. */
+    val dumpCell get()=(truckHeading*PI.toFloat()/180f).let { a->WorldMap.cell(WorldMap.worldX(truckX)-cos(a)*1.8f,truckZ+sin(a)*1.8f) }
     val foundationProgress get()=earth.indices.count { Terrain.foundation(it) && earth[it]<Terrain.INITIAL_EARTH }.coerceAtMost(4)
     val houseReady get()=foundationProgress>=4
     val totalMaterial get()=totalSand+earth.sum()
@@ -94,18 +177,17 @@ class GameState {
     private fun advanceCrane(dt:Float) {
         val goal=craneGoal
         if(goal!=null) {
-            val dx=(goal.x-craneX)/60f;val dz=goal.z-craneZ;val distance=hypot(dx,dz)
-            if(distance<.025f) {
-                craneX=goal.x;craneZ=goal.z;craneGoal=nextLeg(Vehicle.CRANE)
-                if(craneGoal==null) {
-                    pendingCrane?.let { (x,z)->pendingCrane=null;if(hypot(x-craneWorldX,z-craneZ) in CRANE_MIN_REACH..CRANE_MAX_REACH)craneTask=CraneTask(x,z,craneCargo>0) }
-                    if(pendingBridge) { pendingBridge=false;buildBridge() }
+            when(val move=travel(Vehicle.CRANE,goal,2.6f,dt)) {
+                Travel.Arrived -> {
+                    craneGoal=nextLeg(Vehicle.CRANE)
+                    if(craneGoal==null) {
+                        pendingCrane?.let { (x,z)->pendingCrane=null;if(hypot(x-craneWorldX,z-craneZ) in CRANE_MIN_REACH..CRANE_MAX_REACH)craneTask=CraneTask(x,z,craneCargo>0) }
+                        if(pendingBridge) { pendingBridge=false;buildBridge() }
+                    }
                 }
-                return
+                Travel.Stuck -> { craneGoal=null;routes[Vehicle.CRANE.ordinal].clear();pendingCrane=null;pendingBridge=false }
+                is Travel.Moved -> if(move.step>0f) { craneHeading=heading(craneHeading,move.dx,move.dz,dt);craneTravel+=move.step }
             }
-            craneHeading=heading(craneHeading,dx,dz,dt)
-            val step=min(distance,2.6f*dt)
-            craneX+=dx/distance*step*60f;craneZ+=dz/distance*step;craneTravel+=step
             return
         }
         val task=craneTask
@@ -228,6 +310,7 @@ class GameState {
      */
     fun driveTo(vehicle:Vehicle,x:Float,z:Float) {
         if(!x.isFinite() || !z.isFinite())return
+        separateVehicles();paths.clear(vehicle);if(deckOwner==vehicle)deckOwner=null
         if(vehicle==Vehicle.EXCAVATOR)digTarget=null
         val currentX=WorldMap.worldX(when(vehicle) { Vehicle.EXCAVATOR->excavatorX;Vehicle.TRUCK->truckX;Vehicle.DOZER->dozerX;Vehicle.CRANE->craneX })
         var gx=x.coerceIn(if(vehicle==Vehicle.EXCAVATOR)90f else WorldMap.DRIVE_MIN_X,if(bridgeOpen)WorldMap.EAST_MAX_X else WorldMap.DRIVE_MAX_X)
@@ -242,7 +325,10 @@ class GameState {
         if(bridgeOpen && WorldMap.east(currentX)!=WorldMap.east(WorldMap.worldX(gx))) {
             val entry=if(WorldMap.east(currentX))WorldMap.EAST_BANK_X+.8f else WorldMap.WEST_BANK_X-.8f
             val exit=if(WorldMap.east(currentX))WorldMap.WEST_BANK_X-.8f else WorldMap.EAST_BANK_X+.8f
-            legs.add(DriveGoal(WorldMap.gameX(entry),WorldMap.BRIDGE_Z));legs.add(DriveGoal(WorldMap.gameX(exit),WorldMap.BRIDGE_Z))
+            // The deck is one lane: a far-off vehicle first queues where an oncoming one can pass it.
+            val queue=entry+if(WorldMap.east(currentX))BRIDGE_QUEUE else -BRIDGE_QUEUE
+            if(abs(currentX-entry)>BRIDGE_QUEUE)legs.add(DriveGoal(WorldMap.gameX(queue),WorldMap.BRIDGE_Z))
+            legs.add(DriveGoal(WorldMap.gameX(entry),WorldMap.BRIDGE_Z,1));legs.add(DriveGoal(WorldMap.gameX(exit),WorldMap.BRIDGE_Z,2))
         }
         legs.add(DriveGoal(gx,gz))
         val goal=legs.removeAt(0);route.addAll(legs)
@@ -255,7 +341,7 @@ class GameState {
     }
     /** The next waypoint once the current one is reached, or null at the destination. */
     private fun nextLeg(vehicle:Vehicle)=routes[vehicle.ordinal].removeFirstOrNull()
-    fun stopMovement() { truckGoal=null;dozerGoal=null;excavatorGoal=null;craneGoal=null;craneTask=null;pendingCrane=null;pendingBridge=false;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() } }
+    fun stopMovement() { truckGoal=null;dozerGoal=null;excavatorGoal=null;craneGoal=null;craneTask=null;pendingCrane=null;pendingBridge=false;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() };paths.clear();deckOwner=null }
     val driving get()=truckGoal!=null || dozerGoal!=null || excavatorGoal!=null || craneGoal!=null || craneTask!=null
     var bladeDown = true
     var dozerFacing = 1
@@ -322,6 +408,7 @@ class GameState {
     }
     private fun digY(x:Float,z:Float)=(480f-(surface(x,z)+.6f-excavatorHeight)*60f).coerceIn(390f,550f)
     fun action() {
+        separateVehicles()
         when(selected) {
             Vehicle.EXCAVATOR -> if(bucket==0) {
                 if(!scoop()) {
@@ -330,14 +417,20 @@ class GameState {
                     else digAt(WorldMap.worldX(365f),0f)
                 }
             } else if(!pour()) {
-                // Park the truck at the local pouring point, even at the far work sites.
-                var desired=armWorld(620f)
-                if(desired.first !in WorldMap.worldX(WorldMap.DRIVE_MIN_X)..WorldMap.worldX(driveMaxX) || desired.second !in WorldMap.DRIVE_MIN_Z..WorldMap.DRIVE_MAX_Z) {
-                    excavatorHeading=(excavatorHeading+180f)%360f;desired=armWorld(620f)
+                // Choose a reachable, unoccupied loading bay on land; clamp before checking map edges.
+                val desired=VehicleNavigation.Point(armWorld(620f).first,armWorld(620f).second)
+                val origin=vehicleBody(Vehicle.EXCAVATOR).point;val truck=vehicleBody(Vehicle.TRUCK).point
+                val candidates=mutableListOf(VehicleNavigation.bounded(desired,Vehicle.TRUCK,bridgeOpen))
+                for(i in 0 until 32) {
+                    val angle=i*2*PI/32
+                    candidates+=VehicleNavigation.bounded(VehicleNavigation.Point(origin.x+cos(angle).toFloat()*7f,origin.z+sin(angle).toFloat()*7f),Vehicle.TRUCK,bridgeOpen)
                 }
-                val point=WorldMap.worldX(WorldMap.gameX(desired.first).coerceIn(WorldMap.DRIVE_MIN_X,driveMaxX)) to desired.second.coerceIn(WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z)
-                driveTo(Vehicle.TRUCK,WorldMap.gameX(point.first),point.second)
-                aimAt(point.first,point.second,300f)
+                // Stay on the truck's own bank: the route planner handles the bridge, not the bay choice.
+                val point=candidates.filter { it.distance(origin) in 4.5f..7.4f && WorldMap.east(it.x)==WorldMap.east(truck.x) && VehicleNavigation.land(it,bridgeOpen) && VehicleNavigation.free(it,Vehicle.TRUCK,others(Vehicle.TRUCK)) }
+                    .sortedBy { it.distance(desired)+.01f*it.distance(truck) }
+                    .firstOrNull { VehicleNavigation.plan(truck,it,Vehicle.TRUCK,others(Vehicle.TRUCK),bridgeOpen).isNotEmpty() } ?: return
+                driveTo(Vehicle.TRUCK,WorldMap.gameX(point.x),point.z)
+                aimAt(point.x,point.z,300f)
             }
             Vehicle.TRUCK -> { truckGoal=null;tipping=!tipping }
             Vehicle.DOZER -> if(!pushNearestPile())bladeDown=!bladeDown
@@ -358,6 +451,8 @@ class GameState {
     fun update(rawDt: Float) {
         if(!rawDt.isFinite())return
         val dt = rawDt.coerceIn(0f, .04f)
+        if(dt==0f)return
+        separateVehicles()
         celebrating = max(0f, celebrating-dt)
         if(buildClock>0f && !siteOccupied) {
             buildClock=max(0f,buildClock-dt)
@@ -381,8 +476,7 @@ class GameState {
             tipClock += dt
             if(tipClock >= .18f) {
                 tipClock=0f; load--; delivered++
-                val a=truckHeading*PI.toFloat()/180f
-                val cell=WorldMap.cell(WorldMap.worldX(truckX)-cos(a)*1.8f,truckZ+sin(a)*1.8f)
+                val cell=dumpCell
                 if(Terrain.foundation(cell) && houseReady && houseFill<8)houseFill++
                 else if(WorldMap.bridgeYard(cell) && bridgeStage==0 && bridgeFill<8)bridgeFill++
                 else sand[cell]++
@@ -397,15 +491,16 @@ class GameState {
     }
     private fun advanceExcavator(dt:Float) {
         val goal=excavatorGoal ?: return
-        val dx=(goal.x-excavatorX)/60f;val dz=goal.z-excavatorZ;val distance=hypot(dx,dz)
-        if(distance<.025f) { excavatorX=goal.x;excavatorZ=goal.z;excavatorGoal=nextLeg(Vehicle.EXCAVATOR)
-            if(excavatorGoal!=null)return
-            val target=digTarget;digTarget=null
-            if(target!=null)aimAt(target.first,target.second,digY(target.first,target.second))
-            return }
-        excavatorHeading=heading(excavatorHeading,dx,dz,dt)
-        val step=min(distance,2.4f*dt)
-        excavatorX+=dx/distance*step*60f;excavatorZ+=dz/distance*step;excavatorTravel+=step
+        when(val move=travel(Vehicle.EXCAVATOR,goal,2.4f,dt)) {
+            Travel.Arrived -> {
+                excavatorGoal=nextLeg(Vehicle.EXCAVATOR)
+                if(excavatorGoal!=null)return
+                val target=digTarget;digTarget=null
+                if(target!=null)aimAt(target.first,target.second,digY(target.first,target.second))
+            }
+            Travel.Stuck -> { excavatorGoal=null;digTarget=null;routes[Vehicle.EXCAVATOR.ordinal].clear() }
+            is Travel.Moved -> if(move.step>0f) { excavatorHeading=heading(excavatorHeading,move.dx,move.dz,dt);excavatorTravel+=move.step }
+        }
     }
     private fun compactRoad(index:Int):Boolean {
         val section=WorldMap.roadSection(index)
@@ -417,19 +512,23 @@ class GameState {
     private fun advanceTruck(dt:Float) {
         val goal=truckGoal ?: return
         if(tipping || bedAngle < -8f)return
-        val dx=(goal.x-truckX)/60f;val dz=goal.z-truckZ;val distance=hypot(dx,dz)
-        if(distance<.025f) { truckX=goal.x;truckZ=goal.z;truckGoal=nextLeg(Vehicle.TRUCK);return }
-        truckHeading=heading(truckHeading,dx,dz,dt)
-        val step=min(distance,3.5f*dt)
-        truckX+=dx/distance*step*60f;truckZ+=dz/distance*step;truckTravel+=step
+        when(val move=travel(Vehicle.TRUCK,goal,3.5f,dt)) {
+            Travel.Arrived -> truckGoal=nextLeg(Vehicle.TRUCK)
+            Travel.Stuck -> { truckGoal=null;routes[Vehicle.TRUCK.ordinal].clear() }
+            is Travel.Moved -> if(move.step>0f) { truckHeading=heading(truckHeading,move.dx,move.dz,dt);truckTravel+=move.step }
+        }
     }
     private fun advanceDozer(dt:Float) {
         val goal=dozerGoal ?: return
-        val dx=(goal.x-dozerX)/60f;val dz=goal.z-dozerZ;val distance=hypot(dx,dz)
-        if(distance<.025f) { dozerX=goal.x;dozerZ=goal.z;dozerGoal=nextLeg(Vehicle.DOZER);return }
+        val move=when(val result=travel(Vehicle.DOZER,goal,2.8f,dt)) {
+            Travel.Arrived -> { dozerGoal=nextLeg(Vehicle.DOZER);return }
+            Travel.Stuck -> { dozerGoal=null;routes[Vehicle.DOZER.ordinal].clear();return }
+            is Travel.Moved -> result
+        }
+        if(move.step<=0f)return
+        val dx=move.dx;val dz=move.dz;val distance=hypot(dx,dz)
         dozerHeading=heading(dozerHeading,dx,dz,dt);dozerFacing=if(dx<0)-1 else 1
-        val step=min(distance,2.8f*dt);if(step<=0f)return
-        dozerX+=dx/distance*step*60f;dozerZ+=dz/distance*step;dozerTravel+=step
+        dozerTravel+=move.step
         if(bladeDown) {
             val ux=dx/distance;val uz=dz/distance
             val touched=HashSet<Int>()
@@ -521,7 +620,7 @@ class GameState {
                 }
                 if(!bridgeOpen)require(listOf(truckX,dozerX,excavatorX,craneX).all { it<=WorldMap.DRIVE_MAX_X })
             } else Terrain.QUARRY.forEach { sand[it]=Terrain.QUARRY_SAND }
-            require(totalMaterial==Terrain.INITIAL_MASS);checkMission()
+            require(totalMaterial==Terrain.INITIAL_MASS);separateVehicles();checkMission()
         }.onFailure { reset() }
     }
     companion object {
@@ -530,6 +629,10 @@ class GameState {
         const val CRANE_SPOT_X=46.5f;const val CRANE_SPOT_Z=9.2f
         const val CRANE_MIN_REACH=2.5f;const val CRANE_MAX_REACH=9f
         const val HOOK_REST=2.6f;const val HOOK_SWING=3.1f
+        /** How long a vehicle with no free path waits for a moving machine before giving up. */
+        const val BLOCKED_SECONDS=3f
+        /** Metres before the bridge end where a crossing vehicle waits for the deck to clear. */
+        const val BRIDGE_QUEUE=6f
         /** Loose sand in a new world: the 36-unit source plus the east-bank quarry. */
         const val START_SAND=36+6*Terrain.QUARRY_SAND
     }
