@@ -1,0 +1,55 @@
+[
+  {
+    "args": [
+      "shell",
+      "input tap 353 605\ninput swipe 562 605 562 605 9000\ninput swipe 707 605 707 605 5000"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "input",
+      "keyevent",
+      "3"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "run-as",
+      "com.dromadi.tinysim",
+      "cat",
+      "shared_prefs/tinysim.xml"
+    ],
+    "exit": 0,
+    "stdout": "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n    <string name=\"world\">749.6002,1023.5501,619.99994,300.00003,0,0,32,4,4,0,0,2;0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</string>\n    <boolean name=\"sound\" value=\"false\" />\n</map>\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "logcat",
+      "-d",
+      "-s",
+      "AndroidRuntime:E"
+    ],
+    "exit": 0,
+    "stdout": "--------- beginning of kernel\n--------- beginning of main\n--------- beginning of system\n",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,129 @@
+[
+  {
+    "args": [
+      "shell",
+      "input",
+      "tap",
+      "400",
+      "400"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "settings",
+      "put",
+      "global",
+      "device_provisioned",
+      "1"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "settings",
+      "put",
+      "secure",
+      "user_setup_complete",
+      "1"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "input",
+      "keyevent",
+      "82"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "install",
+      "-r",
+      "/workspace/scratch/250fb4835a8a/TinySim/app/build/outputs/apk/debug/app-debug.apk"
+    ],
+    "exit": 0,
+    "stdout": "Performing Streamed Install\nSuccess\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "cmd",
+      "package",
+      "resolve-activity",
+      "--brief",
+      "com.dromadi.tinysim"
+    ],
+    "exit": 0,
+    "stdout": "priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=false\ncom.dromadi.tinysim/.MainActivity\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "pm",
+      "path",
+      "com.dromadi.tinysim"
+    ],
+    "exit": 0,
+    "stdout": "package:/data/app/~~KfNQgIWfwFgWYcRRIH_skA==/com.dromadi.tinysim-ig3m3uVlOB7Gs9inx8xUcQ==/base.apk\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-n",
+      "com.dromadi.tinysim/com.dromadi.tinysim.MainActivity"
+    ],
+    "exit": 0,
+    "stdout": "Starting: Intent { cmp=com.dromadi.tinysim/.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: com.dromadi.tinysim/.MainActivity\nTotalTime: 10599\nWaitTime: 11248\nComplete\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "pidof",
+      "com.dromadi.tinysim"
+    ],
+    "exit": 0,
+    "stdout": "3081\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "logcat",
+      "-d",
+      "-s",
+      "AndroidRuntime:E"
+    ],
+    "exit": 0,
+    "stdout": "--------- beginning of kernel\n--------- beginning of main\n--------- beginning of system\n",
+    "stderr": ""
+  }
+]

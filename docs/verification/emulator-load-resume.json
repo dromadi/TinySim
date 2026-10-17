@@ -1,0 +1,67 @@
+[
+  {
+    "args": [
+      "shell",
+      "input tap 1020 605\nsleep 2\ninput tap 1020 605\nsleep 2\ninput tap 1020 605\nsleep 2\ninput tap 1020 605\nsleep 2"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "input",
+      "keyevent",
+      "3"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "run-as",
+      "com.dromadi.tinysim",
+      "cat",
+      "shared_prefs/tinysim.xml"
+    ],
+    "exit": 0,
+    "stdout": "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n    <string name=\"world\">620.0,1000.0,619.99994,300.00003,0,4,32,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</string>\n</map>\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-n",
+      "com.dromadi.tinysim/.MainActivity"
+    ],
+    "exit": 0,
+    "stdout": "Starting: Intent { cmp=com.dromadi.tinysim/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: HOT\nActivity: com.dromadi.tinysim/.MainActivity\nTotalTime: 2739\nWaitTime: 3001\nComplete\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  }
+]
