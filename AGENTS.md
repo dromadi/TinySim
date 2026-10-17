@@ -9,6 +9,10 @@
 - Kelambatan emulator tanpa KVM maupun renderer desktop tidak mewakili performa HP pengguna dan tidak boleh dijadikan alasan menghentikan upgrade grafis. Gunakan build, tes logika, serta pratinjau renderer/shader untuk melanjutkan verifikasi saat pengujian HP belum tersedia.
 - Tetap perbaiki bug atau crash yang terbukti dan laporkan hasil pengujian secara faktual; jangan mengklaim uji perangkat yang belum dilakukan.
 
+## Kontrol utama
+
+Prioritaskan sentuhan langsung: ketuk tujuan, seret kendaraan/bucket, pan/pinch pada map, dan minimap. Jangan menjadikan joystick analog atau tombol arah sebagai kontrol utama.
+
 ## Persyaratan produk
 
 Pertahankan konsep dan batasan produk dalam README: permainan ramah anak usia 2–6 tahun, kontrol sederhana, offline, tanpa iklan/login/pembelian/analytics, tanpa izin yang tidak diperlukan, serta area orang tua dengan gestur tahan. Hormati lifecycle dan tombol kembali Android.

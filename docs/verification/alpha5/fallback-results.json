@@ -1,0 +1,79 @@
+[
+  {
+    "name": "start-cam1",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1041,
+    "triangles": 173632
+  },
+  {
+    "name": "start-cam2",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1041,
+    "triangles": 173632
+  },
+  {
+    "name": "start-cam3",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1041,
+    "triangles": 173632
+  },
+  {
+    "name": "orbit-close",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1041,
+    "triangles": 173632
+  },
+  {
+    "name": "orbit-wide",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1041,
+    "triangles": 173632
+  },
+  {
+    "name": "map-overview",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1041,
+    "triangles": 173632
+  },
+  {
+    "name": "construction-yard",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1051,
+    "triangles": 171128
+  },
+  {
+    "name": "building-site",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1036,
+    "triangles": 170068
+  },
+  {
+    "name": "loaded",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1049,
+    "triangles": 178328
+  },
+  {
+    "name": "dump",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1029,
+    "triangles": 165848
+  },
+  {
+    "name": "dozer",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1038,
+    "triangles": 171020
+  }
+]

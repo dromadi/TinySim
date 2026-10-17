@@ -1,4 +1,4 @@
-<!doctype html><html><body style="margin:0;background:#000"><canvas id="c" width="1200" height="675"></canvas><script>
+<!doctype html><html><body style="margin:0;background:#000"><div id="scene" style="position:relative;width:1200px;height:675px"><canvas id="c" width="1200" height="675"></canvas><canvas id="hud" width="1200" height="675" style="position:absolute;left:0;top:0;pointer-events:none"></canvas></div><script>
 async function run(name){
   const data=window.DATA; const c=document.getElementById('c');
   const gl=c.getContext('webgl',{antialias:true,preserveDrawingBuffer:true});
@@ -46,6 +46,28 @@ async function run(name){
     case'activeTexture':gl.activeTexture(a[0]);break;
     default:throw new Error('op '+n);}};
   data.init.forEach(exec); data.frames[name].forEach(exec);
+  const ctx=document.getElementById('hud').getContext('2d');
+  const setPaint=(p)=>{
+    const color=p[0]>>>0;
+    const css=`rgba(${(color>>>16)&255},${(color>>>8)&255},${color&255},${(color>>>24)/255})`;
+    ctx.fillStyle=ctx.strokeStyle=css;ctx.lineWidth=p[2];ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.font=`bold ${p[3]}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    return p[1]==='STROKE';
+  };
+  for(const [op,...a] of (data.hud?.[name]||[])) {
+    if(op==='save'){ctx.save();continue;}if(op==='restore'){ctx.restore();continue;}
+    if(op==='translate'){ctx.translate(...a);continue;}if(op==='scale'){ctx.scale(...a);continue;}
+    if(op==='rotate'){ctx.rotate(a[0]*Math.PI/180);continue;}
+    const stroke=setPaint(a[a.length-1]);ctx.beginPath();
+    if(op==='roundRect')ctx.roundRect(a[0],a[1],a[2],a[3],a[4]);
+    else if(op==='circle')ctx.arc(a[0],a[1],a[2],0,Math.PI*2);
+    else if(op==='line'){ctx.moveTo(a[0],a[1]);ctx.lineTo(a[2],a[3]);ctx.stroke();continue;}
+    else if(op==='text'){ctx.fillText(a[0],a[1],a[2]);continue;}
+    else if(op==='path'){const p=a[0];ctx.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)ctx.lineTo(p[i],p[i+1]);ctx.closePath();}
+    else if(op==='arc')ctx.ellipse((a[0]+a[2])/2,(a[1]+a[3])/2,(a[2]-a[0])/2,(a[3]-a[1])/2,0,a[4]*Math.PI/180,(a[4]+a[5])*Math.PI/180);
+    else throw new Error('HUD op '+op);
+    if(stroke)ctx.stroke();else ctx.fill();
+  }
   const e=gl.getError(); return e;
 }
 </script></body></html>

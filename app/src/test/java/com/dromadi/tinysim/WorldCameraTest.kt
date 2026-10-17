@@ -38,6 +38,16 @@ class WorldCameraTest {
         assertTrue(camera.eye.x.isFinite());assertTrue(camera.eye.y.isFinite());assertTrue(camera.eye.z>0f)
         assertNotNull(camera.armPlane(600f,337.5f))
     }
+    @Test fun groundPickingRoundTripsAcrossExpandedMapAndCameraPan() {
+        for(index in 0..2)for(panX in listOf(0f,19f,40f))for(panZ in listOf(0f,8f))for(zoom in listOf(.45f,1f,1.8f)) {
+            val camera=WorldCamera.spec(index,12f,8f,zoom,panX,panZ)
+            for(dx in listOf(-5f,0f,5f))for(dz in listOf(-2f,0f,3f)) {
+                val point=Vec3(panX+dx,.07f,panZ+dz)
+                val screen=camera.project(point);val picked=camera.ground(screen.first,screen.second)!!
+                assertEquals(point.x,picked.x,.001f);assertEquals(point.z,picked.z,.001f)
+            }
+        }
+    }
     @Test fun glSnapshotOwnsSandArray() {
         val game=GameState();game.sand[0]=2
         val frame=SceneFrame.capture(game,2,1f)

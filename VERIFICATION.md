@@ -1,3 +1,32 @@
+# Verifikasi TinySim 3D — 0.1.0-alpha.5
+
+Tanggal: 17 Oktober 2026. Target pengembangan tetap HP pengguna berspesifikasi tinggi sesuai `AGENTS.md`. Perubahan: lahan 62 × 22 unit dunia dengan tiga zona, perjalanan truk/bulldozer di bidang X/Z, pasir dua dimensi, kontrol sentuh langsung, pan/minimap/follow camera, dan migrasi save.
+
+## Hasil aktual
+
+- `gradle --no-daemon --max-workers=2 testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: **BUILD SUCCESSFUL**, 40 detik pada build akhir.
+- **31 tes unit lulus**, tanpa gagal/error/skipped: 9 GameState, 10 TouchController, 7 WorldCamera, 3 Geometry, 2 ArmRig.
+- GameState: rute menuju zona kedua, tiba tanpa overshoot, batas lahan, Stop, penurunan bak sebelum berjalan, pembuangan sesuai arah kendaraan pada empat arah, perataan pasir, bantuan pemanggilan truk, migrasi save dan konservasi 36 unit.
+- TouchController: state machine yang sama dipakai adapter Android. Diuji ketuk tanah, seret kendaraan, pan ruang kosong, drag bucket hingga titik akhir, isolasi pinch dari bucket/perjalanan, pembatalan jari ketiga, cancel rute, minimap, gerbang orang tua 3 detik, dan kehilangan pointer/keluar tombol.
+- WorldCamera: ground picking di berbagai pan/zoom pada map luas, ditambah tes lengan, proyeksi, snapshot thread GL dan save sebelumnya.
+- Lint: **0 error, 1 warning** landscape `DiscouragedApi` yang disengaja.
+- APK `com.dromadi.tinysim`, versi `0.1.0-alpha.5`, versionCode 5, min SDK 26, target SDK 35. `apksigner verify --verbose` berhasil; `aapt dump permissions` tidak mencantumkan permission.
+- SHA-256 APK lokal: `4f46f02dc8fff7352be44b0bd3d4a0cb9dc28136a8243a84fa7ce8a70131f991`.
+- Sertifikat debug lokal alpha.5 sama dengan APK lokal alpha.4: SHA-256 `19b7382005d729a9b2e7887a8801ea95290673c4959e4716f92eb48a0fcb3049`. Signature/package/version mendukung pembaruan tanpa pergantian key; pemasangan native alpha.5 belum dijalankan dalam pemeriksaan ini.
+- Capture JVM memakai **renderer dan HUD asli**. Sebelas fixture, masing-masing dengan inventaris 36, mencakup tiga preset, orbit dekat/jauh, overview map, halaman konstruksi, fondasi pembangunan, muatan, bak terangkat dan bulldozer.
+- Replay Chromium headless/WebGL + Canvas: **11/11 PASS** dengan shadow map 4096 px, **11/11 PASS** pada fallback tanpa highp, GL error 0, tanpa error kompilasi/link shader. Default scene mempunyai 1508 draw call, atau 1041 pada fallback.
+- HUD asli direkam melalui stub Canvas lalu diputar ulang dengan Canvas browser. Ini memeriksa susunan minimap/kontrol; metrik font browser bisa berbeda dari Android. Gambar di folder ini adalah pratinjau desktop, bukan screenshot HP.
+
+Bukti mentah ada di `docs/verification/alpha5/`: log build, XML tes, lint, metadata/signature/hash APK, capture/replay, hasil setiap skenario, dan tiga gambar map/HUD. Status CI harus diperiksa pada run commit yang dipublikasikan.
+
+## Batas pemeriksaan
+
+APK instrumentasi sentuh berhasil dikompilasi dan diperbarui untuk minimap, tujuan antarzona, serta bulldozer di zona kedua, tetapi **belum dijalankan pada Android untuk alpha.5**. Uji unit memeriksa logika gestur/perjalanan dan pratinjau memeriksa rendering; keduanya tidak diklaim sebagai pengujian native sentuhan atau lifecycle HP. Integrasi pause menghentikan rute, menyimpan posisi/pengaturan, serta menghentikan audio dan GL; resume mengatur ulang jam frame.
+
+Truk/bulldozer memakai rute garis lurus di permukaan datar; bangunan ditempatkan di luar jalur utama. Dekorasi tidak memakai rigid-body collision. Excavator tetap di stasiun pemuatan. Pasir menggunakan grid deterministik 62 × 22 sel; partikel adalah respons visual, sedangkan unit pasir yang dipindahkan tetap dihitung oleh simulasi.
+
+---
+
 # Verifikasi TinySim 3D — 0.1.0-alpha.4
 
 Tanggal: 17 Oktober 2026. Integrasi melanjutkan commit alpha.3 `bbaa04f6529f77d495c0b73f9235d91b99f75262` dari branch `ccr-8d3a4508-l85vrd`. Grafik/material/model alpha.3 dipertahankan; alpha.4 menambah orbit/pinch/zoom, save kamera, lengan dua ruas, jangkauan fisik, serta fallback shader yang lebih aman.

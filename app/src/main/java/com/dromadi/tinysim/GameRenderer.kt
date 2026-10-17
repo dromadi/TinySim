@@ -21,7 +21,7 @@ class GameRenderer {
     private fun star(c:Canvas,x:Float,y:Float,r:Float,color:Int) {
         val a=FloatArray(20);for(i in 0..9) {val t=i*PI/5-PI/2;val rad=if(i%2==0)r else r*.48f;a[i*2]=x+(cos(t)*rad).toFloat();a[i*2+1]=y+(sin(t)*rad).toFloat()};poly(c,a,color)
     }
-    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,orbitMode:Boolean=false,zoom:Float=1f) {
+    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f) {
         // Top navigation and mission card.
         rect(c,24f,20f,201f,64f,white,22f)
         if(g.missionMode) { star(c,56f,52f,17f,yellow);text(c,"Misi",133f,60f,24f) }
@@ -49,6 +49,9 @@ class GameRenderer {
             text(c,if(i==0)"+" else "−",60f,151f+i*88,36f)
             text(c,if(i==0)"Dekat" else "Jauh",60f,175f+i*88,13f,teal)
         }
+        rect(c,1098f,282f,80f,76f,white,22f)
+        text(c,"⊙",1138f,320f,32f,teal);text(c,"Ikuti",1138f,344f,14f)
+        minimap(c,g,panX,panZ)
         if(orbitMode) {
             rect(c,364f,492f,472f,40f,white,18f)
             text(c,"Geser untuk putar • cubit untuk zoom",600f,518f,17f,teal)
@@ -58,9 +61,12 @@ class GameRenderer {
         button(c,20f,125f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,81f,615f)
         button(c,155f,125f,g.selected==GameState.Vehicle.TRUCK);truck(c,218f,620f,.44f,2,0f)
         button(c,290f,125f,g.selected==GameState.Vehicle.DOZER);dozer(c,353f,620f,.44f,1)
-        val enabled=g.selected!=GameState.Vehicle.EXCAVATOR
-        button(c,500f,125f,false);button(c,645f,125f,false)
-        arrow(c,562f,605f,false,if(enabled)ink else col("#BCC8BE"));arrow(c,707f,605f,true,if(enabled)ink else col("#BCC8BE"))
+        circle(c,480f,592f,13f,teal);circle(c,480f,592f,6f,white)
+        line(c,480f,602f,480f,619f,ink,5f)
+        text(c,if(g.selected==GameState.Vehicle.EXCAVATOR)"Seret bucket" else "Ketuk tujuan",610f,595f,21f,teal)
+        text(c,"Geser map • cubit zoom",595f,627f,15f,ink)
+        rect(c,720f,557f,90f,98f,white,24f)
+        rect(c,751f,582f,28f,28f,ink,5f);text(c,"Stop",765f,638f,15f)
         rect(c,850f,557f,325f,98f,teal,26f)
         when(g.selected) {
             GameState.Vehicle.EXCAVATOR -> {
@@ -85,6 +91,24 @@ class GameRenderer {
             text(c,"Kembali bermain",600f,487f,25f,white)
             text(c,"Offline • tanpa iklan • tanpa pengumpulan data",600f,550f,17f)
         }
+    }
+    private fun minimap(c:Canvas,g:GameState,panX:Float,panZ:Float) {
+        rect(c,20f,298f,216f,122f,white,18f)
+        rect(c,32f,314f,192f,82f,col("#D9DAB7"),9f)
+        fun mx(x:Float)=32f+(x-WorldMap.MIN_X)/(WorldMap.MAX_X-WorldMap.MIN_X)*192f
+        fun mz(z:Float)=314f+(z-WorldMap.MIN_Z)/(WorldMap.MAX_Z-WorldMap.MIN_Z)*82f
+        line(c,mx(-8f),mz(0f),mx(47f),mz(0f),col("#F6E9C5"),9f)
+        line(c,mx(18f),mz(0f),mx(18f),mz(10f),col("#F6E9C5"),7f)
+        line(c,mx(36f),mz(0f),mx(36f),mz(10f),col("#F6E9C5"),7f)
+        rect(c,mx(14f),mz(4f),20f,20f,teal,3f);rect(c,mx(32f),mz(4f),20f,20f,orange,3f)
+        circle(c,mx(-6.67f),mz(0f),6f,yellow)
+        circle(c,mx(WorldMap.worldX(g.truckX)),mz(g.truckZ),5f,teal)
+        circle(c,mx(WorldMap.worldX(g.dozerX)),mz(g.dozerZ),5f,ink)
+        val goal=if(g.selected==GameState.Vehicle.TRUCK)g.truckGoal else if(g.selected==GameState.Vehicle.DOZER)g.dozerGoal else null
+        if(goal!=null)star(c,mx(WorldMap.worldX(goal.x)),mz(goal.z),6f,white)
+        val fx=mx(panX-.3f).coerceIn(37f,219f);val fz=mz(panZ).coerceIn(319f,391f)
+        p.style=Paint.Style.STROKE;p.strokeWidth=2f;p.color=white;c.drawCircle(fx,fz,9f,p);p.style=Paint.Style.FILL
+        text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
     }
     private fun button(c:Canvas,x:Float,w:Float,selected:Boolean) { rect(c,x,557f,w,98f,if(selected)yellow else col("#E6EBDD"),24f) }
     private fun arrow(c:Canvas,x:Float,y:Float,right:Boolean,color:Int) { val d=if(right)1 else -1;line(c,x-d*24,y,x+d*23,y,color,11f);poly(c,floatArrayOf(x+d*30,y,x+d*5,y-23,x+d*5,y+23),color) }

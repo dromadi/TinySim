@@ -1,0 +1,11 @@
+start-cam1 PASS 1041 draw calls
+start-cam2 PASS 1041 draw calls
+start-cam3 PASS 1041 draw calls
+orbit-close PASS 1041 draw calls
+orbit-wide PASS 1041 draw calls
+map-overview PASS 1041 draw calls
+construction-yard PASS 1051 draw calls
+building-site PASS 1036 draw calls
+loaded PASS 1049 draw calls
+dump PASS 1029 draw calls
+dozer PASS 1038 draw calls

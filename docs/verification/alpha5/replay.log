@@ -1,0 +1,11 @@
+start-cam1 PASS 1508 draw calls
+start-cam2 PASS 1508 draw calls
+start-cam3 PASS 1508 draw calls
+orbit-close PASS 1508 draw calls
+orbit-wide PASS 1508 draw calls
+map-overview PASS 1508 draw calls
+construction-yard PASS 1520 draw calls
+building-site PASS 1506 draw calls
+loaded PASS 1518 draw calls
+dump PASS 1498 draw calls
+dozer PASS 1510 draw calls

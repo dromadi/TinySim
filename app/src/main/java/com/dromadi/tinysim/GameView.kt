@@ -31,16 +31,61 @@ class GameView(context: Context): FrameLayout(context) {
     private var yaw=settings.yaw
     private var pitch=settings.pitch
     private var zoom=settings.zoom
+    private var panX=settings.panX
+    private var panZ=settings.panZ
+    private var following=false
+    fun cameraSpec()=WorldCamera.spec(camera,yaw,pitch,zoom,panX,panZ)
+    fun followSelected() { following=true }
+    fun pan(fromX:Float,fromY:Float,toX:Float,toY:Float) {
+        val camera=cameraSpec();val a=camera.ground(fromX,fromY) ?: return;val b=camera.ground(toX,toY) ?: return
+        following=false;panX=(panX+a.x-b.x).coerceIn(-8f,44f);panZ=(panZ+a.z-b.z).coerceIn(-3f,11f)
+    }
+    fun jumpMap(x:Float,y:Float) {
+        following=false
+        panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,44f)
+        panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,11f)
+    }
+    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus }
+    fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
+        val camera=cameraSpec()
+        val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,-6.67f,0f),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ))
+        return candidates.mapNotNull { (unit,wx,wz)->
+            val p=runCatching { camera.project(com.dromadi.tinysim.scene.Vec3(wx,1.1f,wz)) }.getOrNull() ?: return@mapNotNull null
+            val distance=kotlin.math.hypot(x-p.first,y-p.second)
+            if(distance<68f)unit to distance else null
+        }.minByOrNull { it.second }?.first
+    }
+    fun driveAt(x:Float,y:Float) {
+        val point=cameraSpec().ground(x,y) ?: return
+        if(point.x !in WorldMap.MIN_X..WorldMap.MAX_X || point.z !in WorldMap.MIN_Z..WorldMap.MAX_Z)return
+        following=false;game.driveTo(game.selected,WorldMap.gameX(point.x),point.z)
+    }
+    fun sceneTap(x:Float,y:Float) {
+        val unit=vehicleAt(x,y)
+        if(unit!=null) {
+            if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket>0 && unit==GameState.Vehicle.TRUCK)game.action()
+            else if(unit==game.selected && unit!=GameState.Vehicle.EXCAVATOR) {
+                game.stopMovement();game.action()
+            } else selectUnit(unit)
+            return
+        }
+        if(game.selected!=GameState.Vehicle.EXCAVATOR) { driveAt(x,y);followSelected() }
+        else {
+            val point=cameraSpec().ground(x,y) ?: return
+            if(kotlin.math.hypot(point.x-WorldMap.worldX(365f),point.z)<2f)game.action()
+        }
+    }
     fun orbit(dx:Float,dy:Float,ratio:Float=1f) {
+        following=false
         val base=WorldCamera.spec(camera)
         val d=base.eye-base.target
         val baseYaw=kotlin.math.atan2(d.x,d.z)*180f/kotlin.math.PI.toFloat()
         val basePitch=kotlin.math.asin(d.y/kotlin.math.sqrt(d.dot(d)))*180f/kotlin.math.PI.toFloat()
         yaw=(yaw+dx*.15f).coerceIn(-55f-baseYaw,55f-baseYaw)
         pitch=(pitch+dy*.1f).coerceIn(22f-basePitch,55f-basePitch)
-        if(ratio.isFinite())zoom=(zoom*ratio).coerceIn(.8f,1.45f)
+        if(ratio.isFinite())zoom=(zoom*ratio).coerceIn(.45f,1.8f)
     }
-    fun saveCamera() { settings.yaw=yaw;settings.pitch=pitch;settings.zoom=zoom }
+    fun saveCamera() { settings.yaw=yaw;settings.pitch=pitch;settings.zoom=zoom;settings.panX=panX;settings.panZ=panZ }
     private var running=false
     private var previous=0L
     private var lastTransfer=0
@@ -66,7 +111,7 @@ class GameView(context: Context): FrameLayout(context) {
         running=true;previous=0;audio.resume();surface.onResume();hud.invalidate()
     }
     fun pause() {
-        input.cancel()
+        input.cancel();game.stopMovement()
         if(running) { running=false;surface.onPause();audio.pause() }
         saveCamera();settings.save(game)
     }
@@ -77,7 +122,7 @@ class GameView(context: Context): FrameLayout(context) {
     fun worldX(x: Float)=(x-offsetX)/scale
     fun worldY(y: Float)=(y-offsetY)/scale
     fun dragArm(x: Float,y: Float) {
-        val point=WorldCamera.spec(camera,yaw,pitch,zoom).armPlane(x,y) ?: return
+        val point=cameraSpec().armPlane(x,y) ?: return
         game.moveArm(WorldCamera.gameX(point.x),WorldCamera.gameY(point.y))
     }
     private fun drawHud(canvas: Canvas) {
@@ -94,11 +139,18 @@ class GameView(context: Context): FrameLayout(context) {
             else if(game.transferSerial!=lastTransfer)audio.play(settings.sound)
             lastTransfer=game.transferSerial
         }
+        if(following && !parents) {
+            val targetX=when(game.selected) { GameState.Vehicle.EXCAVATOR -> 0f;GameState.Vehicle.TRUCK->WorldMap.worldX(game.truckX)+.3f;GameState.Vehicle.DOZER->WorldMap.worldX(game.dozerX)+.3f }
+            val targetZ=when(game.selected) { GameState.Vehicle.EXCAVATOR->0f;GameState.Vehicle.TRUCK->game.truckZ;GameState.Vehicle.DOZER->game.dozerZ }
+            val dt=if(previous==0L)0f else ((now-previous)/1000f).coerceIn(0f,.04f)
+            val ease=1f-kotlin.math.exp(-4f*dt)
+            panX+=(targetX.coerceIn(-8f,44f)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,11f)-panZ)*ease
+        }
         previous=now
-        sceneRenderer.submit(SceneFrame.capture(game,camera,now/1000f,yaw,pitch,zoom))
+        sceneRenderer.submit(SceneFrame.capture(game,camera,now/1000f,yaw,pitch,zoom,panX,panZ))
         surface.requestRender()
         canvas.save();canvas.translate(offsetX,offsetY);canvas.scale(scale,scale)
-        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,orbitMode,zoom)
+        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,orbitMode,zoom,panX,panZ)
         canvas.restore()
         if(running)hud.postInvalidateOnAnimation()
     }
@@ -121,31 +173,38 @@ class GameView(context: Context): FrameLayout(context) {
         if(x in 1098f..1178f && y in 194f..270f)return "orbitToggle"
         if(x in 20f..100f && y in 110f..186f)return "zoomIn"
         if(x in 20f..100f && y in 198f..274f)return "zoomOut"
+        if(x in 20f..236f && y in 298f..420f)return "map"
+        if(x in 1098f..1178f && y in 282f..358f)return "focus"
         if(y in 557f..655f)return when {
             x in 20f..145f -> "excavator"
             x in 155f..280f -> "truck"
             x in 290f..415f -> "dozer"
-            x in 500f..625f -> "left"
-            x in 645f..770f -> "right"
+            x in 720f..810f -> "stop"
             x in 850f..1175f -> "action"
             else -> null
         }
         if(y in 100f..535f) {
             if(orbitMode)return "orbit"
-            if(game.selected==GameState.Vehicle.EXCAVATOR)return "arm"
+            if(game.selected==GameState.Vehicle.EXCAVATOR) {
+                val pin=runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(WorldCamera.x(game.armX),WorldCamera.y(game.armY),0f)) }.getOrNull()
+                if(pin!=null && kotlin.math.hypot(x-pin.first,y-pin.second)<54f)return "arm"
+            }
+            return "scene"
         }
         return null
     }
     fun activate(action: String) {
         when(action) {
             "sound" -> settings.sound=!settings.sound
-            "camera" -> { camera=(camera+1)%3;settings.camera=camera;yaw=0f;pitch=0f;zoom=1f;saveCamera();input.cancel() }
+            "camera" -> { camera=(camera+1)%3;settings.camera=camera;yaw=0f;pitch=0f;zoom=1f;panX=0f;panZ=0f;following=false;saveCamera();input.cancel() }
             "orbitToggle" -> { orbitMode=!orbitMode;input.cancel() }
             "zoomIn" -> { orbit(0f,0f,1.12f);saveCamera() }
             "zoomOut" -> { orbit(0f,0f,1f/1.12f);saveCamera() }
-            "excavator" -> { game.selected=GameState.Vehicle.EXCAVATOR;game.direction=0 }
-            "truck" -> { game.selected=GameState.Vehicle.TRUCK;game.direction=0 }
-            "dozer" -> { game.selected=GameState.Vehicle.DOZER;game.direction=0 }
+            "focus" -> followSelected()
+            "stop" -> game.stopMovement()
+            "excavator" -> selectUnit(GameState.Vehicle.EXCAVATOR)
+            "truck" -> selectUnit(GameState.Vehicle.TRUCK)
+            "dozer" -> selectUnit(GameState.Vehicle.DOZER)
             "action" -> game.action()
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")
@@ -154,7 +213,7 @@ class GameView(context: Context): FrameLayout(context) {
                 .setNegativeButton("Batal",null).show()
             "close" -> parents=false
         }
-        if(action !in listOf("left","right","sound"))audio.play(settings.sound)
+        if(action !in listOf("sound"))audio.play(settings.sound)
     }
     override fun onInterceptTouchEvent(event: MotionEvent)=true
     override fun onTouchEvent(event: MotionEvent): Boolean {

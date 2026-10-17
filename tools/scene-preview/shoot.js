@@ -16,7 +16,7 @@ const fs=require('fs');
         await page.evaluate(d=>{window.DATA=d},data);
         const error=await page.evaluate(n=>run(n),name);
         if(error!==0)throw new Error(`GL error ${error}`);
-        await page.locator('#c').screenshot({path:`${process.argv[3]}/${name}.${jpeg?'jpg':'png'}`,...(jpeg?{type:'jpeg',quality:90}:{})});
+        await page.locator('#scene').screenshot({path:`${process.argv[3]}/${name}.${jpeg?'jpg':'png'}`,...(jpeg?{type:'jpeg',quality:90}:{})});
         const draws=data.frames[name].filter(op=>op[0]==='drawArrays');
         results.push({name,status:'PASS',glError:error,drawCalls:draws.length,triangles:draws.reduce((sum,op)=>sum+op[2]/3,0)});
         console.log(name,'PASS',draws.length,'draw calls');

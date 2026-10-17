@@ -68,19 +68,31 @@ class SmokeInstrumentation:Instrumentation() {
             }
             ui { check(view.game.load==4 && view.game.source==32 && view.game.totalSand==36) }
             tap(218f,605f)
+            // Minimap moves the camera to the second zone, then a real ground touch sets a route.
+            tap(128f,355f)
+            fun destination(wx:Float,wz:Float) {
+                var point=0f to 0f
+                ui { point=view.cameraSpec().project(com.dromadi.tinysim.scene.Vec3(wx,.07f,wz)) }
+                tap(point.first,point.second)
+            }
+            destination(18f,6f)
+            waitUntil("truck reaches second zone") { view.game.truckGoal==null && kotlin.math.abs(WorldMap.worldX(view.game.truckX)-18f)<.1f }
+            ui { check(kotlin.math.abs(view.game.truckZ-6f)<.1f) }
             tap(1020f,605f);waitUntil("dump") { view.game.load==0 }
             ui { check(view.game.sand.sum()==4 && view.game.delivered==4 && view.game.totalSand==36) }
-            tap(353f,605f)
-            ui { event(MotionEvent.ACTION_DOWN,listOf(562f to 605f)) }
-            waitUntil("dozer travels left") { view.game.dozerX<550f }
-            ui { event(MotionEvent.ACTION_UP,listOf(562f to 605f)) }
-            ui { event(MotionEvent.ACTION_DOWN,listOf(707f to 605f)) }
-            waitUntil("dozer spreads sand") { view.game.flattened>0 }
-            ui { event(MotionEvent.ACTION_UP,listOf(707f to 605f));check(view.game.totalSand==36) }
+            var pileX=0f;var pileZ=0f
+            ui { val cell=view.game.sand.indexOfFirst { it>0 };pileX=WorldMap.cellX(cell);pileZ=WorldMap.cellZ(cell) }
+            tap(353f,605f);tap(128f,355f)
+            destination(pileX-4f,pileZ)
+            waitUntil("dozer lines up behind the pile") { view.game.dozerGoal==null && kotlin.math.abs(WorldMap.worldX(view.game.dozerX)-(pileX-4f))<.1f }
+            tap(128f,355f);destination(pileX+6f,pileZ)
+            waitUntil("dozer spreads sand in second zone") { view.game.flattened>0 }
+            tap(765f,605f)
+            ui { check(!view.game.driving && view.game.totalSand==36) }
             // A cancelled hold and a short tap may not open the parent area.
             tap(1138f,52f);ui { check(!view.parents) }
             ui { event(MotionEvent.ACTION_DOWN,listOf(1138f to 52f));event(MotionEvent.ACTION_CANCEL,listOf(1138f to 52f));check(!view.parents) }
-            result.putString("stream","PASS: pinch/orbit isolation, zoom, scoop -> load 4 -> dump 4 -> dozer, conserved 36, parent tap/cancel.\n")
+            result.putString("stream","PASS: pinch/orbit isolation, zoom, tap destination, minimap, scoop -> load 4 -> dump 4 -> dozer in expanded map, conserved 36, parent tap/cancel.\n")
             result.putString("result","PASS")
             finish(Activity.RESULT_OK,result)
         } catch(t:Throwable) {

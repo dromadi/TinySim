@@ -6,6 +6,7 @@ import android.opengl.Matrix
 import android.util.Log
 import com.dromadi.tinysim.GameState
 import com.dromadi.tinysim.ArmRig
+import com.dromadi.tinysim.WorldMap
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.*
@@ -36,6 +37,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private val model get()=stack[depth]
     private var viewportX=0;private var viewportY=0;private var viewportW=1200;private var viewportH=675
     private var transferSeen=0;private var streamStart=-10f;private var streamX=0f;private var streamY=0f
+    private var streamZ=0f;private var streamGround=0f
+    private var lastDozerZ=Float.NaN
     private var lastDozerX=Float.NaN;private var dustUntil=-10f;private var dustX=0f
     private var drawCalls=0
     // Shadow map: depth is packed into RGBA8 because depth textures are optional on OpenGL ES 2.0.
@@ -114,9 +117,9 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         GL.glEnable(GL.GL_BLEND);GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA)
         createShadowMap()
         // The sun is fixed, so its orthographic frustum is fitted once around the work site.
-        val c=Vec3(.5f,0f,-1f)
-        Matrix.setLookAtM(lightView,0,c.x+sun.x*30f,c.y+sun.y*30f,c.z+sun.z*30f,c.x,c.y,c.z,0f,1f,0f)
-        Matrix.orthoM(lightProjection,0,-17f,17f,-11f,11f,5f,60f)
+        val c=Vec3(19f,0f,3f)
+        Matrix.setLookAtM(lightView,0,c.x+sun.x*75f,c.y+sun.y*75f,c.z+sun.z*75f,c.x,c.y,c.z,0f,1f,0f)
+        Matrix.orthoM(lightProjection,0,-42f,42f,-28f,28f,5f,170f)
         Matrix.multiplyMM(lightVp,0,lightProjection,0,lightView,0)
         transferSeen=frame.transferSerial;streamStart=-10f;lastDozerX=Float.NaN
         Log.i("TinySim3D","EGL scene ready: ${GL.glGetString(GL.GL_RENDERER)}, shadows=$shadowsEnabled ${shadowSize}px, procedural meshes uploaded")
@@ -128,7 +131,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         catch(e:IllegalStateException) { Log.w("TinySim3D","Shadow shader unavailable; using unshadowed lighting: ${e.message}");return }
         depthPosition=GL.glGetAttribLocation(depthProgram,"aPosition");uDepthMvp=GL.glGetUniformLocation(depthProgram,"uMvp")
         val max=IntArray(1);GL.glGetIntegerv(GL.GL_MAX_TEXTURE_SIZE,max,0)
-        shadowSize=if(max[0]>=4096)2048 else 1024
+        shadowSize=if(max[0]>=4096)4096 else 1024
         val ids=IntArray(1)
         GL.glGenTextures(1,ids,0);shadowTexture=ids[0]
         GL.glBindTexture(GL.GL_TEXTURE_2D,shadowTexture)
@@ -174,7 +177,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         GL.glClear(GL.GL_COLOR_BUFFER_BIT or GL.GL_DEPTH_BUFFER_BIT)
         GL.glViewport(viewportX,viewportY,viewportW,viewportH)
         GL.glEnable(GL.GL_SCISSOR_TEST);GL.glScissor(viewportX,viewportY,viewportW,viewportH)
-        val camera=WorldCamera.spec(f.camera,f.yaw,f.pitch,f.zoom)
+        val camera=WorldCamera.spec(f.camera,f.yaw,f.pitch,f.zoom,f.panX,f.panZ)
         Matrix.setLookAtM(view,0,camera.eye.x,camera.eye.y,camera.eye.z,camera.target.x,camera.target.y,camera.target.z,0f,1f,0f)
         Matrix.perspectiveM(projection,0,camera.fov,WorldCamera.ASPECT,.8f,260f)
         Matrix.multiplyMM(vp,0,projection,0,view,0)
@@ -195,6 +198,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     /** Shared by the shadow and colour passes so every caster also appears on screen. */
     private fun scene(f:SceneFrame) {
         environment()
+        destination(f)
         contactShadows(f)
         sand(f)
         excavator(f)
@@ -210,8 +214,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         GL.glDepthMask(true);GL.glEnable(GL.GL_CULL_FACE)
     }
     private fun updateEffects(f:SceneFrame) {
-        if(!lastDozerX.isNaN() && abs(f.dozerX-lastDozerX)>.5f && f.bladeDown) { dustUntil=f.seconds+.7f;dustX=f.dozerX }
-        lastDozerX=f.dozerX
+        if(!lastDozerX.isNaN() && hypot((f.dozerX-lastDozerX)/60f,f.dozerZ-lastDozerZ)>.008f && f.bladeDown) { dustUntil=f.seconds+.7f;dustX=f.dozerX }
+        lastDozerX=f.dozerX;lastDozerZ=f.dozerZ
     }
     private inline fun noCast(block:()->Unit) { val was=casting;casting=false;block();casting=was }
     private fun environment() {
@@ -227,24 +231,25 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             cloud(-14f,15f,-46f,1.4f);cloud(6f,17f,-58f,1.8f);cloud(26f,14f,-44f,1.2f)
         }
         // Raised sandbox island with an earthen rim.
-        noCast { box(0f,-.4f,0f,22.8f,.8f,9.1f,soilSide,SOIL) }
-        box(0f,-.03f,0f,22.5f,.14f,8.8f,soil,SOIL)
+        noCast { box(19f,-.4f,4f,62f,.8f,22f,soilSide,SOIL) }
+        box(19f,-.03f,4f,61.8f,.14f,21.8f,soil,SOIL)
         noCast {
-            box(3.4f,.05f,0f,15.2f,.025f,3.1f,rgba(196,166,118),SOIL)
-            box(3.4f,.05f,2.6f,15.2f,.025f,1.65f,rgba(204,172,120),SOIL)
-            for(i in 0..9) {
+            box(21f,.05f,0f,55f,.025f,3.8f,rgba(196,166,118),SOIL)
+            box(21f,.05f,8f,55f,.025f,3.8f,rgba(204,172,120),SOIL)
+            for(i in 0..37) {
                 box(-1.2f+i*1.2f,.07f,1.6f,.55f,.012f,.07f,paintWhite,MATTE)
                 box(-1.2f+i*1.2f,.07f,-1.6f,.55f,.012f,.07f,paintWhite,MATTE)
             }
         }
         // Concrete kerb around the site; too low to cast a visible shadow.
         noCast {
-            for(i in 0..17) {
+            for(i in 0..48) {
                 val x=-10.6f+i*1.25f
-                box(x,.075f,-4.22f,1.08f,.09f,.22f,stone,MATTE)
-                box(x,.075f,4.22f,1.08f,.09f,.22f,stone,MATTE)
+                box(x,.075f,-6.65f,1.08f,.09f,.22f,stone,MATTE)
+                box(x,.075f,14.65f,1.08f,.09f,.22f,stone,MATTE)
             }
         }
+        expandedSite()
         // Garden behind the work site keeps foreground controls clear.
         tree(-10f,-5.6f,1.0f);tree(-7f,-6f,1.2f);tree(0f,-6.7f,.95f);tree(6f,-6.1f,1.1f);tree(10.8f,-5.5f,.9f)
         // Background tree line sits outside the shadow frustum, so it skips the depth pass.
@@ -256,11 +261,11 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         }
         for(z in floatArrayOf(-5f,-8.5f)) { tree(-15.5f,z,1.1f);tree(15.8f,z-1f,1.25f) }
         // Wooden site fence.
-        for(i in 0..7) {
+        for(i in 0..19) {
             val x=-10.5f+i*3f
-            box(x,.55f,-3.85f,.14f,1.05f,.14f,bark,WOOD)
+            box(x,.55f,-6.5f,.14f,1.05f,.14f,bark,WOOD)
         }
-        box(0f,.35f,-3.85f,21f,.09f,.06f,paintWhite,MATTE);box(0f,.8f,-3.85f,21f,.09f,.06f,orange,PAINT)
+        box(19f,.35f,-6.5f,59f,.09f,.06f,paintWhite,MATTE);box(19f,.8f,-6.5f,59f,.09f,.06f,orange,PAINT)
         for(x in floatArrayOf(-1.9f,9.9f))for(z in floatArrayOf(-2.35f,3.75f))trafficCone(x,z)
         noCast {
             for(i in 0..24) {
@@ -270,9 +275,76 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             }
         }
     }
+    private fun expandedSite() {
+        // Continuous roads and low work pads remain driveable and accept real sand deposits.
+        noCast {
+            for(x in floatArrayOf(18f,36f)) {
+                box(x,.065f,5f,3.8f,.025f,13f,rgba(204,172,120),SOIL)
+                box(x,.078f,7f,11f,.025f,10f,if(x==18f)rgba(194,185,151) else rgba(210,187,146),SOIL)
+                for(i in 0..7) {
+                    box(x-4.5f+i*1.3f,.1f,12.3f,.6f,.04f,.12f,paintWhite,MATTE)
+                    box(x-4.5f+i*1.3f,.1f,1.9f,.6f,.04f,.12f,paintWhite,MATTE)
+                }
+            }
+            // Loading bay under the excavator's pouring point.
+            for(z in floatArrayOf(-1.45f,1.45f))box(.35f,.095f,z,4.1f,.02f,.1f,teal,PAINT)
+        }
+        // Workshop is outside the driveable band, leaving the playing surface open.
+        panel(21f,1f,-5.6f,5f,2f,2.1f,teal)
+        panel(21f,2.08f,-5.6f,5.4f,.18f,2.45f,tealDark)
+        box(20f,.85f,-4.53f,1.5f,1.7f,.05f,ink,MATTE)
+        box(22.2f,1.15f,-4.51f,1.4f,.8f,.06f,glass,GLASS)
+        for(i in 0..4)box(19f+i,2.22f,-5.6f,.06f,.14f,2.35f,metal,METAL)
+        // Crane lattice and its fixed hanging hook: scenery, never an input obstacle.
+        push();translate(13f,0f,-5.65f)
+        panel(0f,.17f,0f,1.6f,.34f,1.6f,metal)
+        for(x in floatArrayOf(-.35f,.35f))for(z in floatArrayOf(-.35f,.35f))box(x,3f,z,.13f,6f,.13f,yellow,PAINT)
+        for(i in 0..8) {
+            box(0f,.5f+i*.65f,.35f,.83f,.08f,.08f,yellowDark,PAINT)
+            push();translate(0f,.8f+i*.65f,.35f);rotate(if(i%2==0)42f else -42f,0f,0f,1f)
+            box(0f,0f,0f,1f,.07f,.08f,yellow,PAINT);pop()
+        }
+        box(2.2f,6f,0f,7f,.13f,.7f,yellow,PAINT)
+        box(2.2f,6.6f,0f,7f,.11f,.7f,yellow,PAINT)
+        for(i in 0..10) {
+            push();translate(-.8f+i*.6f,6.3f,.35f);rotate(if(i%2==0)48f else -48f,0f,0f,1f)
+            box(0f,0f,0f,.8f,.07f,.07f,yellowDark,PAINT);pop()
+        }
+        panel(-.7f,5.7f,0f,.7f,.6f,1f,metal)
+        panel(.3f,5.55f,.1f,.75f,.8f,.8f,glass)
+        box(4.8f,4.8f,0f,.035f,2.4f,.035f,ink,METAL)
+        shape(cylinder,4.8f,3.6f,0f,.2f,.3f,.2f,yellow,PAINT)
+        pop()
+        // A low foundation and garden borders mark the third work area.
+        for(z in floatArrayOf(3f,10f))for(i in 0..9)panel(31.5f+i,.16f,z,.85f,.22f,.32f,paintWhite)
+        for(i in 0..5)for(k in 0..1)panel(28f+i*.45f,.25f+k*.24f,-5.5f,.4f,.21f,.6f,orange)
+        for(i in 0..2) { push();translate(35f+i*.65f,.35f,-5.5f);rotate(90f,0f,0f,1f);shape(cylinder,0f,0f,0f,.6f,2.2f,.6f,metal,METAL);pop() }
+        for(x in floatArrayOf(25f,31f,38f,45f,49f)) { tree(x,-6f,1f);tree(x,17f,1.4f) }
+        for(x in floatArrayOf(11f,25f,30f,44f))for(z in floatArrayOf(2.5f,11.5f))trafficCone(x,z)
+    }
+    private fun destination(f:SceneFrame) {
+        if(shadowPass)return
+        noCast {
+            GL.glDepthMask(false)
+            val sx=when(f.selected) { GameState.Vehicle.EXCAVATOR->-6.67f;GameState.Vehicle.TRUCK->WorldMap.worldX(f.truckX);GameState.Vehicle.DOZER->WorldMap.worldX(f.dozerX) }
+            val sz=when(f.selected) { GameState.Vehicle.EXCAVATOR->0f;GameState.Vehicle.TRUCK->f.truckZ;GameState.Vehicle.DOZER->f.dozerZ }
+            disk(sx,.092f,sz,4.5f,3f,rgba(53,196,180,.16f),DECAL)
+            val goal=when(f.selected) { GameState.Vehicle.TRUCK->f.truckGoal;GameState.Vehicle.DOZER->f.dozerGoal;else->null }
+            if(goal!=null) {
+                val gx=WorldMap.worldX(goal.x)
+                disk(gx,.105f,goal.z,1.1f,1.1f,rgba(24,178,163,.85f),DECAL)
+                disk(gx,.12f,goal.z,.28f,.28f,paintWhite,DECAL)
+                for(i in 1..14) {
+                    val t=i/15f
+                    disk(sx+(gx-sx)*t,.11f,sz+(goal.z-sz)*t,.1f,.1f,rgba(255,248,220,.7f),DECAL)
+                }
+            }
+            GL.glDepthMask(true)
+        }
+    }
     /** Trees vary by position: broadleaf crowns built from irregular clusters, or layered conifers. */
     private fun tree(x:Float,z:Float,s:Float) {
-        val ground=if(abs(x)<11.4f && abs(z)<4.55f)0f else GRASS_Y
+        val ground=if(x in WorldMap.MIN_X..WorldMap.MAX_X && z in WorldMap.MIN_Z..WorldMap.MAX_Z)0f else GRASS_Y
         val seed=abs((x*12.9898f+z*78.233f)*43.7585f)
         fun rnd(k:Int)=((seed*(k+1)*.6180339f)%1f)
         push();translate(x,ground,z);scale(s,s*(.9f+rnd(1)*.35f),s);rotate(rnd(2)*360f,0f,1f,0f)
@@ -314,8 +386,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             for(k in 0..2) {
                 val g=1f-k*.18f
                 disk(-6.6f,.075f,0f,3.6f*g,2.3f*g,contact,DECAL)
-                disk(WorldCamera.x(f.truckX),.075f,0f,4.3f*g,2.2f*g,contact,DECAL)
-                disk(WorldCamera.x(f.dozerX),.075f,2.25f,4.0f*g,2.4f*g,contact,DECAL)
+                disk(WorldCamera.x(f.truckX),.075f,f.truckZ,4.3f*g,2.2f*g,contact,DECAL)
+                disk(WorldCamera.x(f.dozerX),.075f,f.dozerZ,4.0f*g,2.4f*g,contact,DECAL)
             }
             GL.glDepthMask(true)
         }
@@ -324,7 +396,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         noCast { disk(WorldCamera.x(365f),.08f,0f,3.4f,2.85f,sandWet,SAND) }
         if(f.source>0)mound(WorldCamera.x(365f),.07f,0f,3.1f,.25f+f.source/30f,2.6f,sandColor)
         for(i in f.sand.indices)if(f.sand[i]>0) {
-            mound(WorldCamera.x(495f+i*30),.07f,1.35f,.85f,.1f+f.sand[i]*.13f,3.1f,sandColor)
+            mound(WorldMap.cellX(i),.07f,WorldMap.cellZ(i),1.2f,.1f+f.sand[i]*.13f,1.2f,sandColor)
         }
     }
     private fun excavator(f:SceneFrame) {
@@ -370,9 +442,9 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun truck(f:SceneFrame) {
         val tx=WorldCamera.x(f.truckX)
-        push();translate(tx,0f,0f)
+        push();translate(tx,0f,f.truckZ);rotate(f.truckHeading,0f,1f,0f)
         box(0f,.67f,0f,3.85f,.25f,1.25f,darkSteel,METAL)
-        val spin=-tx/.47f*180f/PI.toFloat()
+        val spin=-f.truckTravel/.47f*180f/PI.toFloat()
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.91f,.91f))wheel(x,.48f,z,spin)
         // Mudguards and fuel tank.
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.92f,.92f))panel(x,1.0f,z,1.08f,.07f,.36f,ink)
@@ -409,9 +481,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun bulldozer(f:SceneFrame) {
         val dx=WorldCamera.x(f.dozerX)
-        push();translate(dx,0f,2.25f)
-        if(f.dozerFacing<0)rotate(180f,0f,1f,0f)
-        tracks(2.7f,dx*f.dozerFacing)
+        push();translate(dx,0f,f.dozerZ);rotate(f.dozerHeading,0f,1f,0f)
+        tracks(2.7f,f.dozerTravel)
         panel(0f,.98f,0f,2.7f,.55f,1.55f,yellow)
         panel(-.5f,1.8f,0f,1.2f,1.12f,1.4f,yellow)
         cabWindows(-.5f,1.86f,1.2f,1.4f)
@@ -430,7 +501,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         panel(1.83f,.53f,0f,.16f,.91f,2.15f,yellow)
         box(1.95f,.13f,0f,.16f,.1f,2.25f,metal,METAL)
         for(z in floatArrayOf(-1.02f,1.02f))box(1.79f,.5f,z,.35f,.84f,.08f,yellowDark,PAINT)
-        if(f.bladeDown && f.sand.any { it>0 })mound(2.1f,.05f,0f,.5f,.18f,1.6f,sandColor)
+        if(f.bladeDown && f.sand[WorldMap.cell(dx+cos(f.dozerHeading*PI.toFloat()/180)*1.8f,f.dozerZ-sin(f.dozerHeading*PI.toFloat()/180)*1.8f)]>0)mound(2.1f,.05f,0f,.5f,.18f,1.6f,sandColor)
         pop();pop()
     }
     private fun beaconLight(x:Float,y:Float,z:Float,seconds:Float) {
@@ -486,7 +557,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun guide(f:SceneFrame) {
         noCast {
-            val start=WorldCamera.x(365f);val end=WorldCamera.x(f.truckX)
+            val start=WorldCamera.x(365f);val end=WorldCamera.x(if(abs(f.truckX-620f)<80f && abs(f.truckZ)<1.3f)f.truckX else 620f)
             for(i in 0..12) {
                 val t=i/12f
                 val x=start+(end-start)*t
@@ -500,18 +571,22 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private fun particles(f:SceneFrame) {
         if(!shadowPass && f.transferSerial!=transferSeen) {
             transferSeen=f.transferSerial;streamStart=f.seconds
-            streamX=if(f.tipping)WorldCamera.x(f.truckX)-1.8f else WorldCamera.x(f.armX)
-            streamY=if(f.tipping)2f else WorldCamera.y(f.armY)
+            val dumping=f.transferKind==3
+            val angle=f.truckHeading*PI.toFloat()/180f
+            streamX=if(dumping)WorldCamera.x(f.truckX)-cos(angle)*1.8f else WorldCamera.x(f.armX)
+            streamZ=if(dumping)f.truckZ+sin(angle)*1.8f else 0f
+            streamY=if(dumping)2f else WorldCamera.y(f.armY)
+            streamGround=if(f.transferKind==2)1.25f else .1f
         }
         val elapsed=f.seconds-streamStart
         if(elapsed !in 0f.. .6f)return
         for(i in 0..23) {
             val phase=(elapsed/.6f+i*.043f)%1f
-            val ground=if(!f.tipping && f.bucket==0)1.2f else .1f
+            val ground=streamGround
             val y=streamY+(ground-streamY)*phase*phase
             val x=streamX+sin(i*7f)*.18f
             val r=.05f+(i%3)*.025f
-            blob(x,y,(if(f.tipping).7f else 0f)+cos(i*3f)*.3f,r,r,r,sandColor,SAND)
+            blob(x,y,streamZ+cos(i*3f)*.3f,r,r,r,sandColor,SAND)
         }
     }
     private fun dustCloud(f:SceneFrame) {
@@ -523,7 +598,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             val t=(f.seconds*1.3f+i*.17f)%1f
             val s=.4f+t*.9f
             val c=floatArrayOf(dust[0],dust[1],dust[2],dust[3]*(1f-t)*min(left/.3f,1f))
-            blob(x+sin(i*2.3f)*1.1f-.8f*f.dozerFacing,.3f+t*.8f,2.25f+cos(i*1.7f)*.9f,s,s*.7f,s,c,DECAL)
+            blob(x+sin(i*2.3f)*1.1f,.3f+t*.8f,f.dozerZ+cos(i*1.7f)*.9f,s,s*.7f,s,c,DECAL)
         }
         GL.glDepthMask(true)
     }

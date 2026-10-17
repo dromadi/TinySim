@@ -23,6 +23,15 @@ data class CameraSpec(val eye: Vec3, val target: Vec3, val fov: Float=40f) {
         return (600f+600f*d.dot(right)/(depth*tangent*WorldCamera.ASPECT)) to
             (337.5f-337.5f*d.dot(up)/(depth*tangent))
     }
+    private fun ray(screenX:Float,screenY:Float):Vec3 {
+        val nx=screenX/600f-1f;val ny=1f-screenY/337.5f
+        return (forward+right*(nx*WorldCamera.ASPECT*tangent)+up*(ny*tangent)).normalized()
+    }
+    fun ground(screenX:Float,screenY:Float):Vec3? {
+        val ray=ray(screenX,screenY);if(ray.y>=-.02f)return null
+        val distance=(.07f-eye.y)/ray.y
+        return if(distance>0f && distance<200f)eye+ray*distance else null
+    }
     fun armPlane(screenX: Float, screenY: Float): Vec3? {
         val nx=screenX/600f-1f;val ny=1f-screenY/337.5f
         val ray=(forward+right*(nx*WorldCamera.ASPECT*tangent)+up*(ny*tangent)).normalized()
@@ -38,11 +47,13 @@ object WorldCamera {
         CameraSpec(Vec3(0f,15f,25f),Vec3(-.3f,.7f,0f)),
         CameraSpec(Vec3(-12f,11f,24f),Vec3(-.3f,.7f,0f))
     )
-    fun spec(index: Int, yawOffset: Float=0f, pitchOffset: Float=0f, zoom: Float=1f): CameraSpec {
-        val base=presets[index.coerceIn(0,2)]
+    fun spec(index: Int, yawOffset: Float=0f, pitchOffset: Float=0f, zoom: Float=1f,panX:Float=0f,panZ:Float=0f): CameraSpec {
+        val original=presets[index.coerceIn(0,2)]
+        val shift=Vec3(panX.safe(0f,-8f,44f),0f,panZ.safe(0f,-3f,11f))
+        val base=CameraSpec(original.eye+shift,original.target+shift)
         if(yawOffset==0f && pitchOffset==0f && zoom==1f)return base
         val d=base.eye-base.target
-        val radius=sqrt(d.dot(d))/zoom.safe(1f,.8f,1.45f)
+        val radius=sqrt(d.dot(d))/zoom.safe(1f,.45f,1.8f)
         val yaw=(atan2(d.x,d.z)*180f/PI.toFloat()+yawOffset.safe(0f,-110f,110f)).coerceIn(-55f,55f)*PI.toFloat()/180f
         val pitch=(asin(d.y/sqrt(d.dot(d)))*180f/PI.toFloat()+pitchOffset.safe(0f,-40f,40f)).coerceIn(22f,55f)*PI.toFloat()/180f
         return CameraSpec(base.target+Vec3(sin(yaw)*cos(pitch),sin(pitch),cos(yaw)*cos(pitch))*radius,base.target)
