@@ -16,6 +16,6 @@ class ArmRigTest {
     @Test fun invalidInputDoesNotPoisonSimulation() {
         val g=GameState();val before=g.snapshot()
         g.moveArm(Float.NaN,Float.POSITIVE_INFINITY);g.update(.016f)
-        assertEquals(before,g.snapshot());assertEquals(36,g.totalSand)
+        assertEquals(before,g.snapshot());assertEquals(GameState.START_SAND,g.totalSand)
     }
 }

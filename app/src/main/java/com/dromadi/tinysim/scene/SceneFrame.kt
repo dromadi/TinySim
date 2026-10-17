@@ -18,12 +18,13 @@ data class SceneFrame(
     val excavatorGoal:com.dromadi.tinysim.DriveGoal?=null,val road:IntArray=IntArray(4),val dug:IntArray=IntArray(com.dromadi.tinysim.WorldMap.CELL_COUNT),
     val earth:IntArray=IntArray(com.dromadi.tinysim.WorldMap.CELL_COUNT){com.dromadi.tinysim.Terrain.INITIAL_EARTH},
     val houseFill:Int=0,val houseStage:Int=0,val foundationProgress:Int=0,val buildClock:Float=0f,
+    val bridgeFill:Int=0,val bridgeStage:Int=0,val bridgeClock:Float=0f,
     val greetSerial:Int=0,val greetVehicle:GameState.Vehicle=GameState.Vehicle.EXCAVATOR
 ) {
     companion object {
         fun capture(g: GameState,camera: Int,seconds: Float,yaw: Float=0f,pitch: Float=0f,zoom: Float=1f,panX:Float=0f,panZ:Float=0f)=SceneFrame(
             g.truckX,g.dozerX,g.armX,g.armY,g.targetX,g.targetY,g.bucket,g.load,g.source,g.sand.copyOf(),
-            g.bedAngle,g.tipping,g.bladeDown,g.dozerFacing,g.selected,g.transferSerial,camera,seconds,yaw,pitch,zoom,panX,panZ,g.truckZ,g.dozerZ,g.truckHeading,g.dozerHeading,g.truckTravel,g.dozerTravel,g.truckGoal,g.dozerGoal,g.transferKind,g.excavatorX,g.excavatorZ,g.excavatorHeading,g.excavatorTravel,g.excavatorGoal,g.road.copyOf(),g.dug.copyOf(),g.earth.copyOf(),g.houseFill,g.houseStage,g.foundationProgress,g.buildClock,g.greetSerial,g.greetVehicle
+            g.bedAngle,g.tipping,g.bladeDown,g.dozerFacing,g.selected,g.transferSerial,camera,seconds,yaw,pitch,zoom,panX,panZ,g.truckZ,g.dozerZ,g.truckHeading,g.dozerHeading,g.truckTravel,g.dozerTravel,g.truckGoal,g.dozerGoal,g.transferKind,g.excavatorX,g.excavatorZ,g.excavatorHeading,g.excavatorTravel,g.excavatorGoal,g.road.copyOf(),g.dug.copyOf(),g.earth.copyOf(),g.houseFill,g.houseStage,g.foundationProgress,g.buildClock,g.bridgeFill,g.bridgeStage,g.bridgeClock,g.greetSerial,g.greetVehicle
         )
     }
 }

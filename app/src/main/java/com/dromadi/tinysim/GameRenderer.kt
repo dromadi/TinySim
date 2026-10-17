@@ -83,7 +83,9 @@ class GameRenderer {
             poly(c,floatArrayOf(50f,40f,96f,40f,86f,68f,60f,68f),yellow);line(c,73f,22f,73f,38f,ink,6f)
             dots=4;done=g.foundationProgress
         } else if(g.houseFill<8 && g.houseStage==0) { truck(c,72f,73f,.32f,4,0f);dots=8;done=g.houseFill }
-        else { houseIcon(c,72f,51f);dots=3;done=g.houseStage }
+        else if(g.houseStage<3) { houseIcon(c,72f,51f);dots=3;done=g.houseStage }
+        else if(g.bridgeFill<8 && g.bridgeStage==0) { truck(c,72f,73f,.32f,4,0f);bridgeIcon(c,112f,51f,.6f);dots=8;done=g.bridgeFill }
+        else { bridgeIcon(c,72f,51f,1f);dots=3;done=g.bridgeStage }
         val step=if(dots>4)22f else 34f
         for(i in 0 until dots)circle(c,140f+i*step,55f,if(dots>4)7f else 9f,if(done>i)teal else col("#DDE5DC"))
     }
@@ -133,6 +135,8 @@ class GameRenderer {
         line(c,mx(18f),mz(0f),mx(18f),mz(10f),col("#F6E9C5"),7f)
         line(c,mx(36f),mz(0f),mx(36f),mz(10f),col("#F6E9C5"),7f)
         rect(c,mx(14f),mz(4f),20f,20f,teal,3f);rect(c,mx(32f),mz(4f),20f,20f,orange,3f)
+        rect(c,mx(WorldMap.RIVER_MIN_X),mz(WorldMap.MIN_Z),mx(WorldMap.RIVER_MAX_X)-mx(WorldMap.RIVER_MIN_X),82f,col("#5DA9D6"),0f)
+        if(g.bridgeOpen)line(c,mx(WorldMap.WEST_BANK_X),mz(WorldMap.BRIDGE_Z),mx(WorldMap.EAST_BANK_X),mz(WorldMap.BRIDGE_Z),orange,6f)
         line(c,mx(16f),mz(8f),mx(24f),mz(8f),yellow,5f)
         circle(c,mx(WorldMap.worldX(g.excavatorX)),mz(g.excavatorZ),6f,yellow)
         circle(c,mx(WorldMap.worldX(g.truckX)),mz(g.truckZ),5f,teal)
@@ -144,6 +148,13 @@ class GameRenderer {
         text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
     }
     companion object { const val PARENT_TOP=160f;const val PARENT_STEP=70f }
+    /** Arched bridge over blue water, as a pictogram. */
+    private fun bridgeIcon(c:Canvas,x:Float,y:Float,s:Float) {
+        rect(c,x-30f*s,y+10f*s,60f*s,12f*s,col("#5DA9D6"),4f)
+        p.style=Paint.Style.STROKE;p.strokeWidth=6f*s;p.color=orange
+        c.drawArc(x-28f*s,y-14f*s,x+28f*s,y+30f*s,180f,180f,false,p);p.style=Paint.Style.FILL
+        rect(c,x-32f*s,y-2f*s,64f*s,7f*s,ink,3f)
+    }
     private fun houseIcon(c:Canvas,x:Float,y:Float) {
         rect(c,x-19f,y-3f,38f,28f,teal,3f)
         poly(c,floatArrayOf(x-27f,y-4f,x,y-26f,x+27f,y-4f),orange)

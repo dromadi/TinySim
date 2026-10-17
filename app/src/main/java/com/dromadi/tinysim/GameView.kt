@@ -47,11 +47,11 @@ class GameView(context: Context): FrameLayout(context) {
     fun followSelected() { following=true }
     fun pan(fromX:Float,fromY:Float,toX:Float,toY:Float) {
         val camera=cameraSpec();val a=camera.ground(fromX,fromY,game::surface) ?: return;val b=camera.ground(toX,toY,game::surface) ?: return
-        following=false;panX=(panX+a.x-b.x).coerceIn(-8f,44f);panZ=(panZ+a.z-b.z).coerceIn(-3f,11f)
+        following=false;panX=(panX+a.x-b.x).coerceIn(-8f,PAN_MAX_X);panZ=(panZ+a.z-b.z).coerceIn(-3f,11f)
     }
     fun jumpMap(x:Float,y:Float) {
         following=false
-        panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,44f)
+        panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,PAN_MAX_X)
         panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,11f)
     }
     fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus;game.greet(vehicle) }
@@ -163,7 +163,7 @@ class GameView(context: Context): FrameLayout(context) {
             val targetZ=when(game.selected) { GameState.Vehicle.EXCAVATOR->game.excavatorZ;GameState.Vehicle.TRUCK->game.truckZ;GameState.Vehicle.DOZER->game.dozerZ }
             val dt=if(previous==0L)0f else ((now-previous)/1000f).coerceIn(0f,.04f)
             val ease=1f-kotlin.math.exp(-4f*dt)
-            panX+=(targetX.coerceIn(-8f,44f)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,11f)-panZ)*ease
+            panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,11f)-panZ)*ease
         }
         if(running && !parents)houseAndHelp(now)
         audio.update(settings.sound,if(panX<10f)0 else if(panX<28f)1 else 2)
@@ -233,8 +233,10 @@ class GameView(context: Context): FrameLayout(context) {
         if(game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
             following=false;panX=36.3f;panZ=7f
         }
+        // The crane builds the bridge stage by stage once the yard holds all eight units.
+        if(game.bridgeReady && game.bridgeClock==0f && game.buildBridge()) { following=false;panX=50f;panZ=5f }
         val idle=now-lastTouch
-        val quiet=game.celebrating<=0f && !game.driving && game.buildClock==0f
+        val quiet=game.celebrating<=0f && !game.driving && game.buildClock==0f && game.bridgeClock==0f
         hint=if(helpEnabled && quiet && idle>HINT_AFTER_MS)Guide.next(game) else null
         if(quiet && idle>ASSIST_AFTER_MS && !assisted) { assisted=true;hint?.let(::perform) }
     }
@@ -290,6 +292,6 @@ class GameView(context: Context): FrameLayout(context) {
         return handled
     }
     override fun performClick(): Boolean { super.performClick();return true }
-    private companion object { const val HINT_AFTER_MS=5000L;const val ASSIST_AFTER_MS=14000L }
+    private companion object { const val HINT_AFTER_MS=5000L;const val ASSIST_AFTER_MS=14000L;const val PAN_MAX_X=68f }
     override fun onDetachedFromWindow() { pause();super.onDetachedFromWindow() }
 }

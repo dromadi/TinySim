@@ -22,7 +22,7 @@ class SettingsStore(context: Context) {
         get()=finite("zoom",1f,.45f,1.8f)
         set(value) { prefs.edit().putFloat("zoom",value).apply() }
     var panX:Float
-        get()=finite("panX",0f,-8f,44f)
+        get()=finite("panX",0f,-8f,68f)
         set(value) { prefs.edit().putFloat("panX",value).apply() }
     var panZ:Float
         get()=finite("panZ",0f,-3f,11f)

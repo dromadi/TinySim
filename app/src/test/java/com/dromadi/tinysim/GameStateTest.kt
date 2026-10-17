@@ -12,18 +12,18 @@ class GameStateTest {
         g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(18f),6f);arrive(g)
         assertEquals(18f,WorldMap.worldX(g.truckX),.001f);assertEquals(6f,g.truckZ,.001f)
         g.selected=GameState.Vehicle.TRUCK;g.action();settle(g)
-        assertEquals(0,g.load);assertEquals(4,g.delivered);assertEquals(4,g.sand.sum())
-        val pile=g.sand.indexOfFirst { it>0 };val px=WorldMap.cellX(pile);val pz=WorldMap.cellZ(pile)
+        assertEquals(0,g.load);assertEquals(4,g.delivered);assertEquals(4,g.westSand())
+        val pile=g.sand.indices.first { g.sand[it]>0 && !WorldMap.east(WorldMap.cellX(it)) };val px=WorldMap.cellX(pile);val pz=WorldMap.cellZ(pile)
         g.dozerX=WorldMap.gameX(px-3f);g.dozerZ=pz;g.dozerHeading=0f
         g.driveTo(GameState.Vehicle.DOZER,WorldMap.gameX(px+4f),pz);arrive(g)
-        assertTrue(g.flattened>0);assertTrue(g.sand.count { it>0 }>1);assertEquals(36,g.totalSand)
+        assertTrue(g.flattened>0);assertTrue(g.sand.count { it>0 }>1);assertEquals(GameState.START_SAND,g.totalSand)
     }
     @Test fun invalidTransfersAndFullTruckNeverLoseSand() {
         val g=GameState();g.moveArm(650f,230f);settle(g)
         assertFalse(g.scoop());assertFalse(g.pour());fill(g);fill(g);assertEquals(8,g.load)
         g.moveArm(365f,440f);settle(g);assertTrue(g.scoop());g.moveArm(620f,300f);settle(g)
-        assertFalse(g.pour());assertEquals(2,g.bucket);assertEquals(36,g.totalSand)
-        g.load=4;g.source+=4;g.truckZ=5f;assertFalse(g.pour());assertEquals(36,g.totalSand)
+        assertFalse(g.pour());assertEquals(2,g.bucket);assertEquals(GameState.START_SAND,g.totalSand)
+        g.load=4;g.source+=4;g.truckZ=5f;assertFalse(g.pour());assertEquals(GameState.START_SAND,g.totalSand)
     }
     @Test fun mapRoutesClampAndStopAtTheDestinationWithoutOvershoot() {
         val g=GameState()
@@ -50,15 +50,15 @@ class GameStateTest {
             g.selected=GameState.Vehicle.TRUCK;g.action();settle(g)
             val a=angle*PI.toFloat()/180
             val expected=WorldMap.cell(20f-cos(a)*1.8f,6f+sin(a)*1.8f)
-            assertEquals(4,g.sand[expected]);assertEquals(36,g.totalSand)
+            assertEquals(4,g.sand[expected]);assertEquals(GameState.START_SAND,g.totalSand)
         }
     }
     @Test fun snapshotRestoresExpandedWorldAndRejectsCorruption() {
         val g=GameState();fill(g);g.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(38f),9f);arrive(g)
         g.missionMode=true
         val restored=GameState();restored.restore(g.snapshot())
-        assertEquals(g.snapshot(),restored.snapshot());assertEquals(36,restored.totalSand);assertFalse(restored.driving)
-        restored.restore("broken");assertEquals(36,restored.totalSand);assertEquals(0,restored.load)
+        assertEquals(g.snapshot(),restored.snapshot());assertEquals(GameState.START_SAND,restored.totalSand);assertFalse(restored.driving)
+        restored.restore("broken");assertEquals(GameState.START_SAND,restored.totalSand);assertEquals(0,restored.load)
         val invalid=g.snapshot().replaceFirst("2880.0","NaN")
         restored.restore(invalid);assertEquals(620f,restored.truckX,0f)
     }
@@ -66,15 +66,15 @@ class GameStateTest {
         val cells=IntArray(24);cells[3]=4;cells[4]=2
         val old="620.0,1000.0,365.0,340.0,0,0,30,6,0,0,0,1,1,0,1,0.0;"+cells.joinToString(",")
         val g=GameState();g.restore(old)
-        assertEquals(36,g.totalSand);assertEquals(6,g.sand.sum())
+        assertEquals(GameState.START_SAND,g.totalSand);assertEquals(6,g.westSand())
         assertEquals(4,g.sand[WorldMap.cell(WorldMap.worldX(585f),1.35f)])
         assertEquals(2,g.sand[WorldMap.cell(WorldMap.worldX(615f),1.35f)])
-        assertTrue(g.snapshot().startsWith("7|"))
+        assertTrue(g.snapshot().startsWith("8|"))
     }
     @Test fun loadActionCanBringADistantTruckBackToTheExcavator() {
         val g=GameState();g.moveArm(365f,440f);settle(g);g.scoop()
         g.truckX=WorldMap.gameX(38f);g.truckZ=9f;g.action()
-        assertNotNull(g.truckGoal);arrive(g);settle(g);assertTrue(g.pour());assertEquals(2,g.load);assertEquals(36,g.totalSand)
+        assertNotNull(g.truckGoal);arrive(g);settle(g);assertTrue(g.pour());assertEquals(2,g.load);assertEquals(GameState.START_SAND,g.totalSand)
     }
     @Test fun missionsRewardAndAdvanceWithoutTimerPressure() {
         val g=GameState();g.missionMode=true;fill(g)

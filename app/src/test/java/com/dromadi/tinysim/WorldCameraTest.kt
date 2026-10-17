@@ -57,7 +57,7 @@ class WorldCameraTest {
     @Test fun legacySaveUpgradesWithoutLosingSand() {
         val old="620.0,1000.0,365.0,340.0,0,4,32,0,0,0,0,0;"+IntArray(24).joinToString(",")
         val game=GameState();game.restore(old)
-        assertEquals(4,game.load);assertEquals(36,game.totalSand)
+        assertEquals(4,game.load);assertEquals(GameState.START_SAND,game.totalSand)
         game.bladeDown=false;game.tipping=true;game.bedAngle=-32f;game.dozerFacing=-1
         val copy=GameState();copy.restore(game.snapshot())
         assertEquals(game.snapshot(),copy.snapshot())

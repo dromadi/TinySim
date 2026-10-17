@@ -27,3 +27,5 @@ Alpha.8 renders the ground through `TerrainMesh`: the first frame uploads the fu
 Alpha.10 adds `vehicle-life`: 36 warm-up frames let the truck drive (dust, smoke, suspension) and greet the excavator driver, then the last frame is captured with the driver mid-wave.
 
 Alpha.11 loads the real CC0 material textures: the JVM side records `texImageAsset` with each asset path and the replay page decodes those JPGs (`--allow-file-access-from-files`) before replaying. The preview build needs `org.json` from Maven Central.
+
+Alpha.12 adds `bridge-crane` (the crane mid-swing carrying a steel girder over the river) and `bridge-open` (finished bridge with the truck crossing toward the east-bank quarry).

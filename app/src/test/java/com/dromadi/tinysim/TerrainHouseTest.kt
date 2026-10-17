@@ -58,7 +58,7 @@ class TerrainHouseTest {
     @Test fun alpha6MigrationAndCorruptEarthOrHouseCannotCreateMaterial() {
         val g=GameState();val pieces=g.snapshot().removePrefix("7|").split(';')
         val old="6|"+pieces.take(4).joinToString(";");val copy=GameState();copy.restore(old)
-        assertEquals(36,copy.totalSand);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
+        assertEquals(GameState.START_SAND,copy.totalSand);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
         val damaged=g.snapshot().substringBeforeLast(';')+";8,3";copy.restore(damaged)
         assertEquals(0,copy.houseStage);assertEquals(0,copy.houseFill);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
         val terrain=g.snapshot().replaceFirst(";4,4,4,4,",";99,4,4,4,");copy.restore(terrain);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)

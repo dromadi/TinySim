@@ -19,7 +19,7 @@ import kotlin.math.*
 class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private val textures=MaterialTextures(uploader)
     private var uAlbedoMap=0;private var uNormalMap=0;private var uRoughMap=0
-    private var uTexOn=0;private var uTexScale=0;private var uTexMean=0;private var uTexFrame=0;private var uTexRot=0
+    private var uTime=0;private var uTexOn=0;private var uTexScale=0;private var uTexMean=0;private var uTexFrame=0;private var uTexRot=0
     // Texture frame: identity for the static world, the inverse vehicle pose while drawing a vehicle,
     // so photo materials stick to moving bodies instead of sliding across them.
     private val texFrame=FloatArray(16).also { Matrix.setIdentityM(it,0) }
@@ -35,7 +35,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private val plane=Geometry.plane()
     private val gable=Geometry.gable()
     private val terrain=TerrainMesh()
-    private fun support(f:SceneFrame,x:Float,z:Float)=Terrain.height(f.earth,f.sand,x,z)-.07f
+    private fun support(f:SceneFrame,x:Float,z:Float)=Terrain.height(f.earth,f.sand,x,z,f.bridgeStage>=3)-.07f
     private var program=0;private var depthProgram=0
     private var position=0;private var normal=0;private var depthPosition=0
     private var uMvp=0;private var uModel=0;private var uNormal=0;private var uColor=0
@@ -116,6 +116,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private val SAND=floatArrayOf(.07f,12f,26f,.04f,7f,MaterialTextures.SAND.toFloat(),2.4f)
     private val SOIL=floatArrayOf(.05f,8f,6f,.05f,7f,MaterialTextures.SOIL.toFloat(),3.2f)
     private val FOLIAGE=floatArrayOf(.12f,12f,2.6f,.28f,0f)
+    private val WATER=floatArrayOf(0f,1f,0f,0f,9f)
     private val BARK=floatArrayOf(.06f,10f,7f,.18f,0f)
     private val CONCRETE=floatArrayOf(.06f,10f,4f,.03f,0f,MaterialTextures.CONCRETE.toFloat(),2.6f)
     private val ASPHALT=floatArrayOf(.08f,14f,4f,.02f,0f,MaterialTextures.ASPHALT.toFloat(),3f)
@@ -144,6 +145,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         uViewport=GL.glGetUniformLocation(program,"uViewport")
         uAlbedoMap=GL.glGetUniformLocation(program,"uAlbedoMap");uNormalMap=GL.glGetUniformLocation(program,"uNormalMap");uRoughMap=GL.glGetUniformLocation(program,"uRoughMap")
         uTexOn=GL.glGetUniformLocation(program,"uTexOn");uTexScale=GL.glGetUniformLocation(program,"uTexScale");uTexMean=GL.glGetUniformLocation(program,"uTexMean")
+        uTime=GL.glGetUniformLocation(program,"uTime")
         uTexFrame=GL.glGetUniformLocation(program,"uTexFrame");uTexRot=GL.glGetUniformLocation(program,"uTexRot")
         textures.load()
         for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane,gable)) { mesh.contextLost();mesh.upload() }
@@ -153,9 +155,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         GL.glEnable(GL.GL_BLEND);GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA)
         createShadowMap()
         // The sun is fixed, so its orthographic frustum is fitted once around the work site.
-        val c=Vec3(19f,0f,3f)
+        val c=Vec3(31f,0f,3f)
         Matrix.setLookAtM(lightView,0,c.x+sun.x*75f,c.y+sun.y*75f,c.z+sun.z*75f,c.x,c.y,c.z,0f,1f,0f)
-        Matrix.orthoM(lightProjection,0,-42f,42f,-28f,28f,5f,170f)
+        Matrix.orthoM(lightProjection,0,-52f,52f,-30f,30f,5f,170f)
         Matrix.multiplyMM(lightVp,0,lightProjection,0,lightView,0)
         transferSeen=frame.transferSerial;streamStart=-10f;lastDozerX=Float.NaN
         Log.i("TinySim3D","EGL scene ready: ${GL.glGetString(GL.GL_RENDERER)}, shadows=$shadowsEnabled ${shadowSize}px, procedural meshes uploaded")
@@ -225,6 +227,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         GL.glUniform1f(uShadowOn,if(shadowsEnabled)1f else 0f);GL.glUniform2f(uShadowTexel,1f/shadowSize,1f/shadowSize)
         GL.glUniform4f(uViewport,viewportX.toFloat(),viewportY.toFloat(),viewportW.toFloat(),viewportH.toFloat())
         GL.glActiveTexture(GL.GL_TEXTURE0);GL.glBindTexture(GL.GL_TEXTURE_2D,if(shadowsEnabled)shadowTexture else 0);GL.glUniform1i(uShadowMap,0)
+        GL.glUniform1f(uTime,f.seconds%600f)
         GL.glUniform1i(uAlbedoMap,1);GL.glUniform1i(uNormalMap,2);GL.glUniform1i(uRoughMap,3);boundSlot=-2
         depth=0;Matrix.setIdentityM(model,0)
         skyDome(camera.eye)
@@ -241,6 +244,10 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         contactShadows(f)
         treadMarks(f)
         sand(f)
+        sandCaps(f)
+        bridgeYard(f)
+        bridge(f)
+        crane(f)
         house(f)
         excavator(f)
         truck(f)
@@ -248,6 +255,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         if(f.selected==GameState.Vehicle.EXCAVATOR)guide(f)
         particles(f)
         dustCloud(f)
+        water(f)
     }
     private fun skyDome(eye:Vec3) {
         GL.glDisable(GL.GL_CULL_FACE);GL.glDepthMask(false)
@@ -292,8 +300,8 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         }
         // Open-top soil volume: the heightfield can dip below the original surface.
         noCast {
-            for(z in floatArrayOf(-7f,15f))box(19f,-.8f,z,62f,1.7f,.08f,soilSide,SOIL)
-            for(x in floatArrayOf(-12f,50f))box(x,-.8f,4f,.08f,1.7f,22f,soilSide,SOIL)
+            for(z in floatArrayOf(-7f,15f))box(31f,-.8f,z,86f,1.7f,.08f,soilSide,SOIL)
+            for(x in floatArrayOf(-12f,74f))box(x,-.8f,4f,.08f,1.7f,22f,soilSide,SOIL)
         }
         draw(terrain,soil,SOIL)
         noCast { for(i in 0..37)for(z in floatArrayOf(-1.6f,1.6f)) {
@@ -301,8 +309,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         } }
         // Concrete kerb around the site; too low to cast a visible shadow.
         noCast {
-            for(i in 0..48) {
+            for(i in 0..67) {
                 val x=-10.6f+i*1.25f
+                if(x>WorldMap.WEST_BANK_X+.6f && x<WorldMap.EAST_BANK_X-.6f)continue
                 box(x,.075f,-6.65f,1.08f,.09f,.22f,stone,CONCRETE)
                 box(x,.075f,14.65f,1.08f,.09f,.22f,stone,CONCRETE)
             }
@@ -324,6 +333,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
             box(x,.55f,-6.5f,.14f,1.05f,.14f,bark,WOOD)
         }
         box(19f,.35f,-6.5f,59f,.09f,.06f,paintWhite,MATTE);box(19f,.8f,-6.5f,59f,.09f,.06f,orange,PAINT)
+        for(i in 0..5)box(56f+i*3f,.55f,-6.5f,.14f,1.05f,.14f,bark,WOOD)
+        box(64f,.35f,-6.5f,16f,.09f,.06f,paintWhite,MATTE);box(64f,.8f,-6.5f,16f,.09f,.06f,orange,PAINT)
+        eastBank(f)
         for(x in floatArrayOf(-1.9f,9.9f))for(z in floatArrayOf(-2.35f,3.75f))trafficCone(x,z)
         noCast {
             for(i in 0..24) {
@@ -621,6 +633,142 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         if(f.bladeDown && f.sand[WorldMap.cell(dx+cos(f.dozerHeading*PI.toFloat()/180)*1.8f,f.dozerZ-sin(f.dozerHeading*PI.toFloat()/180)*1.8f)]>0)mound(2.1f,.05f,0f,.5f,.18f,1.6f,sandColor)
         pop();endTexFrame();pop()
     }
+    /** Sand-coloured piles on every cell holding loose sand (the heightfield alone reads as soil). */
+    private fun sandCaps(f:SceneFrame) {
+        for(i in f.sand.indices) {
+            val n=f.sand[i];if(n<=0 || WorldMap.river(i))continue
+            val x=WorldMap.cellX(i);val z=WorldMap.cellZ(i)
+            val base=.07f+(f.earth[i]-Terrain.INITIAL_EARTH)*.22f
+            val h=n.coerceAtMost(24)*.13f+.06f
+            mound(x,base,z,1.3f+min(n,8)*.03f,h,1.3f+min(n,8)*.03f,sandColor)
+        }
+    }
+    /** Animated river surface between the banks; drawn last because it is translucent. */
+    private fun water(f:SceneFrame) {
+        if(shadowPass)return
+        GL.glDepthMask(false)
+        push();translate((WorldMap.RIVER_MIN_X+WorldMap.RIVER_MAX_X)/2,-.38f,4f);scale(WorldMap.RIVER_MAX_X-WorldMap.RIVER_MIN_X+1.2f,1f,22.1f)
+        draw(plane,rgba(40,118,128,.86f),WATER);pop()
+        GL.glDepthMask(true)
+    }
+    /** River banks and the east bank: quarry flag, picnic garden, trees and flowers. */
+    private fun eastBank(f:SceneFrame) {
+        noCast {
+            for(i in 0..21) {
+                val z=-6.5f+i+((i*37)%10)/20f
+                if(abs(z-WorldMap.BRIDGE_Z)<2.2f)continue
+                for(x in floatArrayOf(WorldMap.RIVER_MIN_X-.25f,WorldMap.RIVER_MAX_X+.25f)) {
+                    blob(x+sin(i*2.1f)*.2f,-.05f,z,.45f+(i%3)*.12f,.3f,.5f,stone,CONCRETE)
+                    for(k in 0..2)shape(cone,x+(if(x<52f)-.55f else .55f)+k*.12f,0f,z+.3f+k*.15f,.08f,.7f+(k%2)*.3f,.08f,leafLight,FOLIAGE)
+                }
+            }
+        }
+        // Quarry marker beside the sand waiting across the river.
+        box(66.2f,1.2f,2.6f,.08f,2.4f,.08f,metal,METAL)
+        box(66.65f,2.15f,2.6f,.8f,.5f,.04f,orange,PAINT)
+        // Picnic garden.
+        for(t in 0..1) {
+            val x=60f+t*5f;val z=9.5f
+            surface(x,.75f,z,1.8f,.08f,.8f,bark,WOOD)
+            for(dz in floatArrayOf(-.7f,.7f))surface(x,.45f,z+dz,1.8f,.06f,.3f,bark,WOOD)
+            for(dx in floatArrayOf(-.7f,.7f))box(x+dx,.4f,z,.08f,.7f,.08f,bark,WOOD)
+        }
+        noCast {
+            for(i in 0..23) {
+                val x=57f+((i*29)%150)/10f;val z=7.6f+((i*17)%35)/10f
+                val petal=when(i%4) { 0->rgba(240,90,110);1->rgba(255,214,70);2->rgba(250,250,245);else->rgba(170,120,230) }
+                shape(cylinder,x,.12f,z,.03f,.24f,.03f,leaf,FOLIAGE);blob(x,.28f,z,.13f,.08f,.13f,petal,MATTE)
+            }
+        }
+        for(x in floatArrayOf(58f,63f,68f,72f)) { tree(x,-5.6f,1.05f);tree(x+1.5f,13.5f,1.2f) }
+        tree(72.5f,6f,1.3f)
+        for(z in floatArrayOf(1.2f,7.8f))trafficCone(56.2f,z)
+    }
+    /** West-bank material yard: frame turns teal once all eight units have arrived. */
+    private fun bridgeYard(f:SceneFrame) {
+        val full=f.bridgeFill>=8
+        if(f.bridgeStage<3)noCast {
+            for(x in floatArrayOf(44f,48f))box(x,.12f,4.5f,.08f,.08f,5f,if(full)teal else orange,PAINT)
+            for(z in floatArrayOf(2f,7f))box(46f,.12f,z,4f,.08f,.08f,if(full)teal else orange,PAINT)
+        }
+        val stock=if(f.bridgeStage==0 && f.bridgeClock==0f)f.bridgeFill else max(0,8-(f.bridgeStage+1)*3)
+        for(i in 0 until stock)surface(45.2f+(i%2)*1.6f,.15f+(i/2)*.17f,4.5f,1.2f,.15f,2.6f,stone,CONCRETE)
+    }
+    /** Bridge stages: 1 abutments and piers, 2 steel girders, 3 asphalt deck with railings and lamps. */
+    private fun bridge(f:SceneFrame) {
+        val z=WorldMap.BRIDGE_Z
+        if(f.bridgeStage>=1) {
+            for(x in floatArrayOf(49.1f,54.9f))surface(x,-.3f,z,1.1f,1.25f,3.5f,stone,CONCRETE)
+            for(x in floatArrayOf(51.3f,52.7f)) {
+                surface(x,-.42f,z,.55f,.95f,2.6f,stone,CONCRETE)
+                surface(x,.02f,z,.75f,.14f,3.1f,stone,CONCRETE)
+            }
+        }
+        if(f.bridgeStage>=2) {
+            for(dz in floatArrayOf(-1.05f,1.05f))surface(52f,.13f,z+dz,6.7f,.2f,.28f,orange,PAINT)
+            for(i in 0..6)box(48.9f+i*1.03f,.13f,z,.1f,.12f,2.2f,darkSteel,METAL)
+        }
+        if(f.bridgeStage>=3) {
+            surface(52f,.27f,z,6.8f,.1f,3.3f,rgba(104,102,100),ASPHALT)
+            noCast { for(i in 0..5)box(49.3f+i*1.08f,.325f,z,.5f,.008f,.08f,paintWhite,MATTE) }
+            for(side in floatArrayOf(-1f,1f)) {
+                val rz=z+side*1.62f
+                surface(52f,.37f,rz,6.8f,.1f,.16f,stone,CONCRETE)
+                for(i in 0..8)box(48.8f+i*.85f,.64f,rz,.07f,.5f,.07f,paintWhite,PAINT)
+                box(52f,.88f,rz,6.9f,.08f,.08f,orange,PAINT);box(52f,.62f,rz,6.9f,.05f,.05f,paintWhite,PAINT)
+                for(x in floatArrayOf(48.6f,55.4f)) {
+                    shape(cylinder,x,1.2f,rz+side*.15f,.09f,2.2f,.09f,darkSteel,METAL)
+                    blob(x,2.35f,rz+side*.15f,.22f,.22f,.22f,lamp,EMISSIVE)
+                }
+            }
+        }
+    }
+    /** Mobile crane on the west bank; while a stage builds it lifts the next piece from the yard. */
+    private fun crane(f:SceneFrame) {
+        val cx=46.5f;val cz=9.2f
+        push();translate(cx,support(f,cx,cz),cz);beginTexFrame()
+        panel(0f,.75f,0f,4.4f,.5f,1.9f,yellow)
+        for(x in floatArrayOf(-1.5f,1.5f))for(z in floatArrayOf(-.85f,.85f))wheel(x,.48f,z,0f)
+        for(x in floatArrayOf(-1.9f,1.9f))for(z in floatArrayOf(-1.4f,1.4f)) {
+            box(x,.62f,z*.8f,.14f,.14f,.9f,darkSteel,METAL);surface(x,.07f,z,.5f,.08f,.5f,darkSteel,CONCRETE)
+        }
+        panel(1.75f,1.45f,.55f,.9f,.95f,.8f,yellow)
+        box(2.21f,1.55f,.55f,.02f,.55f,.6f,glass,GLASS)
+        endTexFrame();pop()
+        // Hook path: lift at the yard, slew over the river, lower onto the bridge.
+        val yardX=46f;val yardZ=4.5f;val spanX=52f;val spanZ=WorldMap.BRIDGE_Z
+        val building=f.bridgeClock>0f
+        val p=if(building)1f-f.bridgeClock/com.dromadi.tinysim.GameState.BRIDGE_STAGE_SECONDS else 0f
+        val lift=(p/.3f).coerceIn(0f,1f);val swing=((p-.3f)/.4f).coerceIn(0f,1f);val lower=((p-.7f)/.3f).coerceIn(0f,1f)
+        val ease={ t:Float-> t*t*(3f-2f*t) }
+        val pivotX=cx-.4f;val pivotY=support(f,cx,cz)+1.55f;val pivotZ=cz
+        val a0=atan2(yardZ-pivotZ,yardX-pivotX);val a1=atan2(spanZ-pivotZ,spanX-pivotX)
+        val r0=hypot(yardX-pivotX,yardZ-pivotZ);val r1=hypot(spanX-pivotX,spanZ-pivotZ)
+        val s=ease(swing);val angle=a0+(a1-a0)*s;val radius=r0+(r1-r0)*s
+        val hx=pivotX+cos(angle)*radius;val hz=pivotZ+sin(angle)*radius
+        val hy=if(!building)2.6f else if(swing<=0f)(.5f+2.6f*ease(lift)) else if(lower<=0f)3.1f else 3.1f-2.7f*ease(lower)
+        val tipX=pivotX+cos(angle)*(radius+.2f);val tipZ=pivotZ+sin(angle)*(radius+.2f);val tipY=max(hy+2.2f,5.2f)
+        // Slewing turret, telescopic boom, cable, hook block and the carried piece.
+        push();translate(pivotX,pivotY-.25f,pivotZ);rotate(-angle*180f/PI.toFloat(),0f,1f,0f)
+        surface(0f,0f,0f,1.6f,.5f,1.3f,yellowDark,PAINT);panel(-.75f,.35f,0f,.6f,.4f,1.2f,ink)
+        pop()
+        val midX=pivotX+(tipX-pivotX)*.55f;val midY=pivotY+(tipY-pivotY)*.55f;val midZ=pivotZ+(tipZ-pivotZ)*.55f
+        rod3(pivotX,pivotY,pivotZ,midX,midY,midZ,.24f,yellow,PAINT)
+        rod3(midX,midY,midZ,tipX,tipY,tipZ,.16f,yellowDark,PAINT)
+        rod3(pivotX+.3f,pivotY-.3f,pivotZ,pivotX+(midX-pivotX)*.5f,pivotY+(midY-pivotY)*.5f-.25f,pivotZ+(midZ-pivotZ)*.5f,.08f,chrome,METAL)
+        rod3(tipX,tipY,tipZ,hx,hy+.25f,hz,.02f,ink,METAL)
+        box(hx,hy+.15f,hz,.22f,.22f,.18f,yellow,PAINT)
+        if(building) {
+            val piece=f.bridgeStage
+            push();translate(hx,hy-.15f,hz)
+            when(piece) {
+                0->surface(0f,-.3f,0f,.55f,.6f,1.4f,stone,CONCRETE)
+                1->surface(0f,-.1f,0f,3.2f,.2f,.28f,orange,PAINT)
+                else->surface(0f,-.08f,0f,2.4f,.1f,1.6f,rgba(104,102,100),ASPHALT)
+            }
+            pop()
+        }
+    }
     /** Photo materials on a vehicle follow its body: texture space = the vehicle's local space. */
     private fun beginTexFrame() { Matrix.invertM(texFrame,0,model,0) }
     private fun endTexFrame() { Matrix.setIdentityM(texFrame,0) }
@@ -695,14 +843,14 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         GL.glDepthMask(true)
     }
     /** Cylinder between two arbitrary 3D points in the current model space. */
-    private fun rod3(ax:Float,ay:Float,az:Float,bx:Float,by:Float,bz:Float,radius:Float,color:FloatArray) {
+    private fun rod3(ax:Float,ay:Float,az:Float,bx:Float,by:Float,bz:Float,radius:Float,color:FloatArray,material:FloatArray=MATTE) {
         val dx=bx-ax;val dy=by-ay;val dz=bz-az;val length=sqrt(dx*dx+dy*dy+dz*dz)
         if(length<1e-4f)return
         push();translate((ax+bx)/2,(ay+by)/2,(az+bz)/2)
         val axis=hypot(dz,dx)
         if(axis>1e-5f)rotate(acos((dy/length).coerceIn(-1f,1f))*180f/PI.toFloat(),dz/axis,0f,-dx/axis)
         else if(dy<0f)rotate(180f,1f,0f,0f)
-        scale(radius*2,length,radius*2);draw(cylinder,color,MATTE);pop()
+        scale(radius*2,length,radius*2);draw(cylinder,color,material);pop()
     }
     private fun beaconLight(x:Float,y:Float,z:Float,seconds:Float) {
         shape(cylinder,x,y-.04f,z,.16f,.06f,.16f,ink,METAL)
@@ -962,6 +1110,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
             uniform sampler2D uNormalMap;
             uniform sampler2D uRoughMap;
             uniform float uTexOn;
+            uniform float uTime;
             uniform float uTexScale;
             uniform vec3 uTexMean;
             uniform mat3 uTexRot;
@@ -1027,6 +1176,21 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
                 if(uKind>2.5&&uKind<3.5) { gl_FragColor=uColor;return; }
                 vec3 albedo=pow(uColor.rgb,vec3(2.2));
                 if(uKind>0.5&&uKind<1.5) { gl_FragColor=vec4(finish(albedo*3.2),uColor.a);return; }
+                if(uKind>8.5&&uKind<9.5) {
+                    // River: ripples flowing south, sky reflection by Fresnel, sun glints and light foam.
+                    vec2 q=vWorld.xz;
+                    float n1=noise(vec3(q.x*1.6,q.y*0.9-uTime*0.8,uTime*0.15));
+                    float n2=noise(vec3(q.x*3.7+5.0,q.y*2.3-uTime*1.6,uTime*0.3));
+                    vec3 wn=normalize(vec3((n1-0.5)*0.35+(n2-0.5)*0.18,1.0,(n2-0.5)*0.35));
+                    float fr=0.04+0.96*pow(1.0-max(dot(wn,view),0.0),5.0);
+                    vec3 deep=albedo*vec3(0.42,0.5,0.55);
+                    float lit=shadow(wn);
+                    vec3 col=mix(deep*(0.5+0.5*lit),skyColor(reflect(-view,wn)),fr);
+                    col+=vec3(1.0,0.9,0.75)*pow(max(dot(reflect(-uSun,wn),view),0.0),160.0)*5.0*lit;
+                    float foam=smoothstep(0.74,0.92,noise(vec3(q.x*2.5,q.y*1.2-uTime*1.1,0.0)));
+                    col=mix(col,vec3(0.85),foam*0.22);
+                    gl_FragColor=vec4(finish(col),uColor.a+0.12*fr);return;
+                }
                 vec3 n=normalize(vNormal);
                 float fade=clamp(1.0-dist/60.0,0.0,1.0);
                 float specScale=1.0;

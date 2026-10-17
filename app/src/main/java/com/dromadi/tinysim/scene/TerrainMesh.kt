@@ -100,7 +100,7 @@ class TerrainMesh: Mesh {
     }
     companion object {
         const val STEP=.25f
-        const val QUADS_X=248;const val QUADS_Z=88
+        const val QUADS_X=WorldMap.COLUMNS*4;const val QUADS_Z=WorldMap.ROWS*4
         const val POINTS_X=QUADS_X+1;const val POINTS_Z=QUADS_Z+1
         const val FLOATS_PER_QUAD=36
     }

@@ -1,3 +1,26 @@
+# Verifikasi alpha.12 — sungai dan proyek jembatan
+
+Tanggal: 17 Oktober 2026. versionCode 12; versi `0.1.0-alpha.12`.
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 68 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja). APK debug 67.651.410 byte.
+- `BridgeTest` (baru):
+  - sungai menghalangi tepi timur sebelum jembatan jadi;
+  - 8 unit di gudang material membuat crane membangun 3 tahap;
+  - truk menyeberang pulang-pergi lewat lantai jembatan, dan di setiap frame tidak ada kendaraan di air selain di atas jembatan;
+  - lokasi dikosongkan sebelum tiap tahap;
+  - air tidak pernah menjadi tujuan;
+  - excavator mencapai tambang timur lalu menyendok;
+  - save v8 menyimpan jembatan dan posisi di timur;
+  - save alpha.7 (62 kolom) dimigrasikan tanpa kehilangan material;
+  - save yang menaruh kendaraan di timur tanpa jembatan ditolak.
+- `GuideTest`: simulasi anak yang hanya mengikuti tangan penunjuk kini berlanjut dari rumah sampai jembatan terbuka, dengan total material tetap di setiap langkah.
+- Tes lama yang menganggap pasir dunia 36 unit diperbarui ke `GameState.START_SAND` (36 + 24 tambang) dan `westSand()`. Isi pemeriksaannya sama.
+- Pratinjau `bridge-crane` dan `bridge-open` (`docs/verification/alpha12/`): GL error 0. Crane terlihat membawa balok baja di atas sungai, dan truk menyeberang jembatan jadi.
+
+**Batas:** belum dijalankan di HP. Animasi air dan crane hanya dilihat lewat pratinjau.
+
+---
+
 # Verifikasi alpha.11 — material foto CC0
 
 Tanggal: 17 Oktober 2026. versionCode 11; versi `0.1.0-alpha.11`.

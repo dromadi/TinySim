@@ -17,6 +17,7 @@ class GuideTest {
         arrive(g);settle(g)
         if(g.selected==GameState.Vehicle.EXCAVATOR) { g.scoop();g.pour() }
         if(g.houseReady && g.houseFill>=8 && g.houseStage<3 && g.buildClock==0f)g.buildHouse()
+        if(g.bridgeReady && g.bridgeClock==0f && g.buildBridge()) { arrive(g);settle(g) }
     }
     @Test fun firstHintsWalkThroughTheSandLoop() {
         val g=GameState()
@@ -36,6 +37,12 @@ class GuideTest {
         }
         repeat(400) { g.update(.016f) }
         assertEquals(3,g.houseStage)
+        // The hand then leads to the bridge: deliver to the yard, the crane builds three stages.
+        while(!g.bridgeOpen) {
+            follow(g,Guide.next(g))
+            assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
+            assertTrue("bridge: fill=${g.bridgeFill} stage=${g.bridgeStage} load=${g.load}",++steps<600)
+        }
     }
     @Test fun dozerActionDrivesThroughTheNearestTallPileWithTheBladeDown() {
         val g=GameState();g.bladeDown=false
