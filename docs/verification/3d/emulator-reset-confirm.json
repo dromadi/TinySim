@@ -1,0 +1,57 @@
+[
+  {
+    "args": [
+      "shell",
+      "svc wifi disable\nsvc data disable\ninput swipe 1138 52 1138 52 3800\ninput tap 600 307\ninput tap 845 389"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "input",
+      "keyevent",
+      "3"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "run-as",
+      "com.dromadi.tinysim",
+      "cat",
+      "shared_prefs/tinysim.xml"
+    ],
+    "exit": 0,
+    "stdout": "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n    <string name=\"world\">620.0,1000.0,365.0,340.0,0,0,36,0,0,0,1,2,1,0,1,0.0;0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</string>\n    <boolean name=\"sound\" value=\"false\" />\n    <int name=\"camera\" value=\"2\" />\n</map>\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-n",
+      "com.dromadi.tinysim/.MainActivity"
+    ],
+    "exit": 0,
+    "stdout": "Starting: Intent { cmp=com.dromadi.tinysim/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: HOT\nActivity: com.dromadi.tinysim/.MainActivity\nTotalTime: 2812\nWaitTime: 2922\nComplete\n",
+    "stderr": ""
+  }
+]

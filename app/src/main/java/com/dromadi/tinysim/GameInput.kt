@@ -21,19 +21,20 @@ class GameInput(private val view: GameView) {
                 when(held) {
                     "left" -> view.game.direction=-1
                     "right" -> view.game.direction=1
-                    "arm" -> view.game.moveArm(x,y)
+                    "arm" -> view.dragArm(x,y)
                 }
             }
             MotionEvent.ACTION_MOVE -> {
                 val i=event.findPointerIndex(pointer)
                 if(i<0) { cancel(); return true }
                 val px=view.worldX(event.getX(i)); val py=view.worldY(event.getY(i))
-                if(held=="arm") view.game.moveArm(px,py)
+                if(held=="arm") view.dragArm(px,py)
                 else if(view.hit(px,py)!=held) cancel()
             }
             MotionEvent.ACTION_POINTER_UP -> if(event.getPointerId(event.actionIndex)==pointer) cancel()
             MotionEvent.ACTION_UP -> {
                 val action=held
+                if(action=="arm")view.dragArm(x,y)
                 if(action!=null && action==view.hit(x,y) && action!="parents" && action!="arm") view.activate(action)
                 cancel()
             }

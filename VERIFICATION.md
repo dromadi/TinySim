@@ -1,42 +1,48 @@
-# Verifikasi TinySim 0.1.0-alpha.1
+# Verifikasi TinySim 3D — 0.1.0-alpha.2
 
-Tanggal: 17 Oktober 2026. Build lokal Linux, JDK 17, Gradle 8.9, AGP 8.7.3, Kotlin 2.0.21, compile/target SDK 35, min SDK 26.
+Tanggal: 17 Oktober 2026. Kotlin 2.0.21, AGP 8.7.3, Gradle 8.9, JDK 17. Compile/target SDK 35; min SDK 26; OpenGL ES 2.0.
 
-## Hasil final build bersih
+## Build dan tes lokal
 
-Perintah aktual: `gradle --no-daemon --max-workers=2 clean testDebugUnitTest lintDebug assembleDebug` (menggunakan distribusi Gradle 8.9 yang sama dengan wrapper).
+Perintah aktual: `gradle --no-daemon --max-workers=2 clean testDebugUnitTest lintDebug assembleDebug`, menggunakan distribusi Gradle yang sama dengan wrapper.
 
-- **BUILD SUCCESSFUL**, 34 detik, 50 task dieksekusi.
-- **5 tes unit lulus**, 0 gagal, 0 error, 0 dilewati.
-- **Lint: 0 error, 1 warning** `DiscouragedApi` karena `sensorLandscape` yang disengaja untuk desain game landscape.
-- APK terverifikasi menggunakan APK Signature Scheme v2, 1 signer debug.
-- Badging: `com.dromadi.tinysim`, `0.1.0-alpha.1`, versionCode 1; launchable activity `com.dromadi.tinysim.MainActivity`.
-- `aapt dump permissions` tidak mencantumkan `uses-permission` apa pun, termasuk INTERNET.
-- Bukti mentah tersedia dalam `docs/verification/`: hasil Gradle, JUnit XML, lint, signature, manifest badging, izin dan SHA-256 APK.
+- **BUILD SUCCESSFUL**, 38 detik; 50 task dieksekusi.
+- **9 tes lulus**, 0 gagal, 0 error, 0 dilewati: 5 tes GameState dan 4 tes WorldCamera/snapshot.
+- Lint: **0 error, 1 warning** `DiscouragedApi` untuk landscape yang disengaja.
+- APK debug terverifikasi melalui `apksigner`, signature v2, satu signer.
+- `aapt dump permissions` tidak mencantumkan izin apa pun, termasuk INTERNET.
+- Versi aplikasi `0.1.0-alpha.2`, versionCode 2, package `com.dromadi.tinysim`.
 
-Tes unit menjalankan alur ambil→muat→gerakkan truk→tuang→ratakan serta konservasi 36 unit pasir; kapasitas truk dan transfer di lokasi tidak valid; pembatasan gerak/delta waktu; round-trip snapshot dan input snapshot rusak; serta progres/perayaan misi.
+Tes mencakup siklus ambil→muat→gerakkan truk→tuang→ratakan dan konservasi 36 unit pasir; kapasitas truk; transfer tidak valid; batas gerak dan delta waktu; round-trip save dan save rusak; progres misi; migrasi save alpha.1; state bak/blade/arah yang disimpan; kepemilikan salinan array untuk thread GL; serta round-trip proyeksi dan ray-plane picking pada ketiga kamera.
 
-## Pengujian emulator Android 11 (API 30)
+Bukti mentah alpha.2 tersimpan dalam `docs/verification/3d/`. Bukti alpha.1 tetap berada pada folder induk untuk riwayat; gambar alpha.1 tidak digunakan sebagai bukti rendering 3D.
 
-Emulator x86_64 1200×675, tanpa akselerasi KVM. Boot awal sangat lambat dan System UI sempat ANR; setelah setup emulator selesai, TinySim berhasil diinstal dan diluncurkan (`Status: ok`, `LaunchState: COLD`). Wi-Fi dan data emulator dimatikan sebelum pengujian aplikasi. Tidak ada crash TinySim pada log AndroidRuntime yang diperiksa.
+## Rendering dan interaksi emulator
 
-Interaksi menggunakan event sentuh Android (`input tap` / `input swipe`), bukan perubahan langsung ke GameState:
+Emulator Android 11/API 30, x86_64, layar 1200×675, Google SwiftShader, tanpa KVM. Rendering menggunakan mesh/VBO, perspektif, depth test, normal permukaan, shader pencahayaan, dan GL thread yang sesungguhnya. Screenshot adalah hasil aplikasi yang berjalan, bukan mockup.
 
-- Empat tap tombol bantuan excavator menjalankan dua siklus ambil/isi. Snapshot setelah Home: sumber 32, ember 0, muatan truk 4, tanah 0, total 36.
-- Home → buka lagi menghasilkan `LaunchState: HOT`, dengan screenshot identik dan muatan tetap 4.
-- Pilih truk → tahan panah kanan → angkat bak. Posisi truk berubah dari 620 ke 749,6002; muatan menjadi 0, delivered 4, dan satu sel tanah berisi 4. Total tetap 36.
-- Setelah Home dan force-stop, buka lagi menghasilkan `LaunchState: COLD` dan dunia kembali dengan posisi serta pasir yang tersimpan.
+- Upgrade APK di atas alpha.1 berhasil. Save lama berisi sumber 32 dan tanah 4 tetap terbaca, total 36; format save baru ditulis dengan state tambahan.
+- Ketiga tombol kamera berhasil mengganti sudut pandang. Screenshot tersedia untuk perspektif kanan, depan, dan kiri.
+- Pada kamera 3, event sentuh Android menyeret bucket ke pasir dan ke bak dua kali. Muatan menjadi **4**, sumber **32**, ember/tanah **0**, total **36**. Misi bergambar maju ke tahap menuang.
+- Home → buka lagi menghasilkan `LaunchState: HOT`; dunia GL kembali terlihat dengan muatan tersimpan.
+- Pilih truk → tahan kanan → angkat bak: posisi berubah dari 620 ke 749,6002; muatan menjadi **0**, delivered **4**, tanah **4**. Misi maju ke tahap meratakan.
+- Setelah Home dan force-stop, cold launch berhasil. Kamera 3, posisi kendaraan, pasir, tipping, serta sudut bak sekitar −42° dipulihkan. Log menunjukkan mesh dibuat ulang pada konteks EGL baru.
 
-- Tap singkat pada gembok tidak membuka panel (screenshot identik dengan dunia). Tahan 3,8 detik membuka area orang tua. Back menutupnya; tap speaker mengubah pengaturan suara menjadi `false` dan tersimpan di SharedPreferences.
+- Bulldozer berhasil menyebarkan satu tumpukan 4 unit menjadi empat sel masing-masing 1 unit. Misi meratakan selesai dan kembali ke misi mengisi.
+- Tap singkat pada gembok tidak membuka area orang tua; tahan 3,8 detik membukanya. Back menutup panel. Dialog reset dapat dibatalkan tanpa mengubah pasir; konfirmasi reset mengembalikan sumber 36, ember/muatan/tanah 0 dan posisi awal. Pengaturan suara nonaktif tersimpan.
+- Wi-Fi dan data emulator dimatikan saat pemeriksaan; APK tidak memiliki izin INTERNET.
+- Finishing visual memisahkan jalur truk dan bulldozer, memperbaiki bayangan kontak, memberi latar judul, dan menerapkan posisi jari pada akhir drag. APK hasil finishing dibangun bersih lagi, lalu diuji ulang melalui sentuhan Android.
 
-- Pilih bulldozer → tahan kiri lalu kanan: `flattened = 4`; tumpukan 4 unit menjadi empat sel dengan masing-masing 1 unit. Sumber tetap 32, muatan/ember 0, total pasir 36. Log AndroidRuntime setelah seluruh alur tidak menunjukkan crash aplikasi.
+Pada APK final, rangkaian sentuhan ulang menghasilkan muatan 4/sumber 32, kemudian tanah 4/muatan 0. Setelah mode bebas dipilih dan bulldozer dijalankan, `flattened = 4` dan empat sel tanah masing-masing berisi 1 unit. Total selalu 36. Ketiga hasil akhir tersedia sebagai `emulator-final-*.json`; log final tidak menunjukkan `OpenGL error` atau `FATAL EXCEPTION`. Screenshot menuang dan cold restore identik, sementara log mencatat pembuatan resource EGL pada proses baru.
 
-## Catatan pengujian
+Pada boot awal emulator, **System UI** sempat ANR dan satu pemanggilan launcher timeout. Setelah dialog sistem ditutup dan emulator selesai startup, peluncuran berikutnya mengembalikan `Status: ok`. Catatan ini tidak diperlakukan sebagai hasil performa HP nyata.
 
-Kelayakan untuk anak usia 2–6 tahun dan kualitas suara pada volume perangkat nyata belum divalidasi bersama pengguna. Emulator dijalankan tanpa output audio; tombol pengaturan dapat diuji, tetapi kualitas bunyi belum didengarkan. Emulator perangkat lunak tidak cukup untuk mengukur FPS atau kelancaran pada HP nyata. Pengujian Android 16/Samsung, cutout, multi-jari dan TalkBack masih perlu dilakukan. Kontrol Canvas belum menyediakan virtual accessibility nodes per tombol.
+## Batas verifikasi
 
-## GitHub
+Belum diuji pada Samsung/Android 16 atau bersama anak usia 2–6 tahun. Emulator berjalan tanpa output audio; kualitas bunyi pada perangkat nyata belum didengarkan. FPS, penggunaan baterai, dan temperatur perangkat nyata belum diukur. Multi-jari dan TalkBack perlu uji perangkat; kontrol Canvas belum menyediakan virtual accessibility nodes per tombol.
 
-Repository `https://github.com/dromadi/TinySim` dibuat manual oleh pengguna pada 17 Oktober 2026. Pemeriksaan awal memastikan repository kosong, akun koneksi `dromadi` memiliki akses push, dan visibility repository adalah public. Tidak ada kode remote sebelumnya yang ditimpa.
+Dunia ditampilkan dalam 3D, sedangkan lintasan kendaraan dan bidang gerak lengan tetap dibatasi untuk kemudahan kontrol anak. Pasir menggunakan sel deterministik; tidak ada simulasi rigid-body/granular 3D bebas. Bayangan kontak memakai geometri transparan, bukan shadow mapping.
 
-Workflow `Android debug` disertakan untuk menjalankan tes, lint, dan build APK pada push/pull request atau workflow_dispatch. Hasil build lokal di atas berdiri sendiri; status CI remote harus diperiksa pada halaman Actions untuk commit terkait.
+## GitHub dan CI
+
+Repository: https://github.com/dromadi/TinySim. Source, model prosedural, shader, dan workflow tersedia di repository. Workflow **Android debug** menjalankan tes, lint, dan build, lalu menyimpan artifact **TinySim-0.1.0-alpha.2-debug**. Status remote harus diperiksa untuk commit terkait; hasil lokal di atas berdiri sendiri.

@@ -2,13 +2,9 @@ package com.dromadi.tinysim
 import android.graphics.*
 import kotlin.math.*
 
-/** All artwork is original vector geometry rendered locally, without external assets. */
+/** Canvas HUD and original vehicle pictograms; the world is drawn by SceneRenderer3D. */
 class GameRenderer {
     private val p=Paint(Paint.ANTI_ALIAS_FLAG)
-    private var transferSeen=0
-    private var streamStart=-10f
-    private var streamX=0f
-    private var streamY=0f
     private val ink=Color.rgb(36,70,80)
     private val white=Color.rgb(255,253,243)
     private val yellow=Color.rgb(250,190,63)
@@ -25,47 +21,12 @@ class GameRenderer {
     private fun star(c:Canvas,x:Float,y:Float,r:Float,color:Int) {
         val a=FloatArray(20);for(i in 0..9) {val t=i*PI/5-PI/2;val rad=if(i%2==0)r else r*.48f;a[i*2]=x+(cos(t)*rad).toFloat();a[i*2+1]=y+(sin(t)*rad).toFloat()};poly(c,a,color)
     }
-    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float) {
-        rect(c,0f,0f,1200f,675f,col("#BFECEE"),0f)
-        circle(c,1090f,155f,48f,col("#FFE7A2"));cloud(c,150f,150f);cloud(c,620f,125f);cloud(c,925f,210f)
-        poly(c,floatArrayOf(0f,370f,190f,255f,380f,370f,655f,240f,900f,375f,1100f,285f,1200f,350f,1200f,490f,0f,490f),col("#A8CCAF"))
-        poly(c,floatArrayOf(0f,415f,220f,350f,440f,430f,755f,345f,1200f,410f,1200f,510f,0f,510f),col("#87B9A0"))
-        rect(c,0f,480f,1200f,195f,col("#E6C58A"),0f);rect(c,0f,480f,1200f,12f,col("#C5A76F"),0f)
-        // Source pit and destination construction mat.
-        rect(c,290f,481f,190f,19f,col("#C19A60"),9f)
-        val pileH=15f+g.source*1.2f
-        poly(c,floatArrayOf(285f,480f,370f,480-pileH,470f,480f),col("#F7D583"))
-        for(i in 0..23) {
-            val h=g.sand[i]*10f
-            if(h>0) poly(c,floatArrayOf(475f+i*30,480f,495f+i*30,480f-h,515f+i*30,480f),col("#F7D583"))
-        }
-        for(i in 0..6) { circle(c,35f+i*175,520f,3f,col("#C6A76B")) }
-        // Quiet construction flags.
-        line(c,60f,475f,60f,352f,ink,5f);poly(c,floatArrayOf(60f,352f,118f,365f,60f,391f),teal)
-        for(x in listOf(490f,1155f)) { poly(c,floatArrayOf(x-15,475f,x,435f,x+15,475f),orange);rect(c,x-19,474f,38f,7f,white,3f);line(c,x-5,454f,x+5,454f,white,6f) }
-        excavator(c,g)
-        truck(c,g.truckX,480f,1f,g.load,g.bedAngle)
-        dozer(c,g.dozerX,480f,1f,g.dozerFacing,g.bladeDown)
-        if(g.transferSerial!=transferSeen) {
-            transferSeen=g.transferSerial; streamStart=time
-            streamX=if(g.tipping)g.truckX-110 else g.armX
-            streamY=if(g.tipping)360f else g.armY+10
-        }
-        val fall=(time-streamStart)/.5f
-        if(fall in 0f..1f) for(i in 0..10) {
-            val phase=(fall+i*.075f)%1f
-            circle(c,streamX+sin(i*7f)*15,streamY+phase*phase*(480-streamY),3.5f,col("#F7D583"))
-        }
-        // Gesture guidance: dashed route from source to bed, only for excavator.
-        if(g.selected==GameState.Vehicle.EXCAVATOR) {
-            p.color=white;p.alpha=170;p.style=Paint.Style.STROKE;p.strokeWidth=3f;p.pathEffect=DashPathEffect(floatArrayOf(8f,10f),0f)
-            val route=Path();route.moveTo(370f,395f);route.cubicTo(430f,230f,550f,215f,g.truckX,295f);c.drawPath(route,p);p.pathEffect=null;p.style=Paint.Style.FILL;p.alpha=255
-            circle(c,g.targetX,g.targetY,10f,white)
-        }
+    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int) {
         // Top navigation and mission card.
         rect(c,24f,20f,201f,64f,white,22f)
         if(g.missionMode) { star(c,56f,52f,17f,yellow);text(c,"Misi",133f,60f,24f) }
         else { text(c,"∞",58f,65f,38f,teal);text(c,"Bebas",143f,60f,24f) }
+        rect(c,245f,20f,270f,70f,white,22f)
         text(c,"TinySim",320f,52f,30f);text(c,"Dunia kecil, imajinasi besar.",376f,77f,14f)
         rect(c,544f,20f,410f,70f,white,22f)
         if(g.missionMode) {
@@ -76,6 +37,11 @@ class GameRenderer {
         rect(c,1000f,20f,70f,64f,white,20f);speaker(c,1035f,52f,sound)
         rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
         if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
+        // Three fixed cameras keep the 3D world easy to explore without accidental orbit gestures.
+        rect(c,1098f,106f,80f,76f,white,22f)
+        rect(c,1114f,124f,45f,28f,ink,6f);circle(c,1137f,138f,9f,white)
+        poly(c,floatArrayOf(1159f,129f,1170f,121f,1170f,155f,1159f,147f),teal)
+        text(c,"${camera+1} / 3",1138f,172f,15f,teal)
         // Lower controls, comfortable targets with room for accidental touches.
         rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
         button(c,20f,125f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,81f,615f)
@@ -128,7 +94,7 @@ class GameRenderer {
         if(g.bucket>0)poly(c,floatArrayOf(g.armX-19,g.armY-9,g.armX,g.armY-23,g.armX+19,g.armY-4),col("#F7D583"))
         circle(c,193f,379f,4f,ink)
     }
-    private fun miniExcavator(c:Canvas,x:Float,y:Float) { c.save();c.translate(x-92,y-203);c.scale(.45f,.45f);val g=GameState();g.armX=340f;g.armY=390f;excavator(c,g);c.restore() }
+    private fun miniExcavator(c:Canvas,x:Float,y:Float) { c.save();c.translate(x-85,y-184);c.scale(.40f,.40f);val g=GameState();g.armX=340f;g.armY=390f;excavator(c,g);c.restore() }
     private fun truck(c:Canvas,x:Float,y:Float,s:Float,load:Int,angle:Float) { c.save();c.translate(x,y);c.scale(s,s)
         rect(c,-113f,-46f,224f,20f,ink,7f)
         rect(c,47f,-112f,72f,78f,orange,13f);rect(c,55f,-102f,52f,39f,col("#A5DFE2"),7f);line(c,62f,-94f,85f,-94f,white,4f)

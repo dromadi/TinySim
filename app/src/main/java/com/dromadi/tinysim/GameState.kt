@@ -104,18 +104,22 @@ class GameState {
     fun reset() { truckX=620f; dozerX=1000f; armX=365f; armY=340f; targetX=armX; targetY=armY
         bucket=0; load=0; source=36; sand.fill(0); delivered=0; flattened=0; mission=0
         tipping=false; direction=0; bladeDown=true; dozerFacing=1; bedAngle=0f; celebrating=0f; tipClock=0f; pendingReward=false }
-    fun snapshot(): String = listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal).joinToString(",")+";"+sand.joinToString(",")
+    fun snapshot(): String = listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal,if(bladeDown)1 else 0,if(tipping)1 else 0,dozerFacing,bedAngle).joinToString(",")+";"+sand.joinToString(",")
     fun restore(value: String?) {
         if(value==null) return
         runCatching {
             val parts=value.split(';'); val v=parts[0].split(','); val piles=parts[1].split(',').map { it.toInt().coerceIn(0,36) }
-            require(v.size==12 && piles.size==24)
+            require(v.size in listOf(12,16) && piles.size==24)
             truckX=v[0].toFloat().coerceIn(510f,1110f); dozerX=v[1].toFloat().coerceIn(520f,1110f)
             armX=v[2].toFloat().coerceIn(285f,825f); armY=v[3].toFloat().coerceIn(220f,466f)
             require(listOf(truckX,dozerX,armX,armY).all { it.isFinite() })
             targetX=armX; targetY=armY; bucket=v[4].toInt().coerceIn(0,2); load=v[5].toInt().coerceIn(0,8)
             source=v[6].toInt().coerceIn(0,36); delivered=v[7].toInt().coerceAtLeast(0); flattened=v[8].toInt().coerceAtLeast(0)
             mission=v[9].toInt().coerceIn(0,2); missionMode=v[10]=="1"; selected=Vehicle.entries[v[11].toInt().coerceIn(0,2)]
+            if(v.size==16) {
+                bladeDown=v[12]=="1";tipping=v[13]=="1";dozerFacing=if(v[14].toInt()<0)-1 else 1
+                bedAngle=v[15].toFloat().coerceIn(-42f,0f);require(bedAngle.isFinite())
+            }
             piles.forEachIndexed { i,n -> sand[i]=n }; require(totalSand==36); checkMission()
         }.onFailure { reset() }
     }

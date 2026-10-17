@@ -1,0 +1,79 @@
+[
+  {
+    "args": [
+      "shell",
+      "input tap 110 52\ninput swipe 486 304 489 358 900\nsleep 2\ninput swipe 489 358 619 263 900\nsleep 2\ninput swipe 619 263 489 358 900\nsleep 2\ninput swipe 489 358 619 263 900\nsleep 2"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "input",
+      "keyevent",
+      "3"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "run-as",
+      "com.dromadi.tinysim",
+      "cat",
+      "shared_prefs/tinysim.xml"
+    ],
+    "exit": 0,
+    "stdout": "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n    <string name=\"world\">620.0,1000.0,600.19293,310.65054,0,4,32,0,0,1,1,0,1,0,1,0.0;0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</string>\n    <int name=\"camera\" value=\"2\" />\n</map>\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-n",
+      "com.dromadi.tinysim/.MainActivity"
+    ],
+    "exit": 0,
+    "stdout": "Starting: Intent { cmp=com.dromadi.tinysim/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: HOT\nActivity: com.dromadi.tinysim/.MainActivity\nTotalTime: 2202\nWaitTime: 2334\nComplete\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "logcat",
+      "-d",
+      "-s",
+      "TinySim3D:I",
+      "AndroidRuntime:E"
+    ],
+    "exit": 0,
+    "stdout": "--------- beginning of main\n--------- beginning of kernel\n--------- beginning of system\n10-17 11:59:52.093  1868  1953 I TinySim3D: EGL scene ready: Android Emulator OpenGL ES Translator (Google SwiftShader), procedural meshes uploaded\n10-17 12:01:35.228  2567  2608 I TinySim3D: EGL scene ready: Android Emulator OpenGL ES Translator (Google SwiftShader), procedural meshes uploaded\n",
+    "stderr": ""
+  }
+]

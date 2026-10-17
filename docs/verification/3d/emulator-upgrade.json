@@ -1,0 +1,79 @@
+[
+  {
+    "args": [
+      "install",
+      "-r",
+      "/workspace/scratch/250fb4835a8a/TinySim/app/build/outputs/apk/debug/app-debug.apk"
+    ],
+    "exit": 0,
+    "stdout": "Performing Streamed Install\nSuccess\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "logcat",
+      "-c"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "am",
+      "start",
+      "-W",
+      "-n",
+      "com.dromadi.tinysim/.MainActivity"
+    ],
+    "exit": 0,
+    "stdout": "Starting: Intent { cmp=com.dromadi.tinysim/.MainActivity }\nStatus: timeout\nLaunchState: UNKNOWN (-1)\nActivity: com.dromadi.tinysim/.MainActivity\nWaitTime: 13013\nComplete\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "exec-out",
+      "screencap",
+      "-p"
+    ],
+    "exit": 0,
+    "stdout": "binary file written",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "input",
+      "keyevent",
+      "3"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "shell",
+      "run-as",
+      "com.dromadi.tinysim",
+      "cat",
+      "shared_prefs/tinysim.xml"
+    ],
+    "exit": 0,
+    "stdout": "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n    <string name=\"world\">749.6002,1023.5501,619.99994,300.00003,0,0,32,4,4,0,0,2,1,0,1,0.0;0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</string>\n    <boolean name=\"sound\" value=\"false\" />\n</map>\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "logcat",
+      "-d",
+      "-s",
+      "TinySim3D:I",
+      "AndroidRuntime:E"
+    ],
+    "exit": 0,
+    "stdout": "--------- beginning of main\n--------- beginning of kernel\n--------- beginning of system\n10-17 11:59:52.093  1868  1953 I TinySim3D: EGL scene ready: Android Emulator OpenGL ES Translator (Google SwiftShader), procedural meshes uploaded\n",
+    "stderr": ""
+  }
+]
