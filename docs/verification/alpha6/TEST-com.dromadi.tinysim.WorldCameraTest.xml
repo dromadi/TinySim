@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.WorldCameraTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-17T12:45:07" hostname="f1d43015ddfd" time="0.008">
+  <properties/>
+  <testcase name="groundPickingRoundTripsAcrossExpandedMapAndCameraPan" classname="com.dromadi.tinysim.WorldCameraTest" time="0.002"/>
+  <testcase name="glSnapshotOwnsSandArray" classname="com.dromadi.tinysim.WorldCameraTest" time="0.0"/>
+  <testcase name="orbitZoomPickingIsAccurateAtEveryLimit" classname="com.dromadi.tinysim.WorldCameraTest" time="0.002"/>
+  <testcase name="projectedArmPointsRoundTripThroughEveryCamera" classname="com.dromadi.tinysim.WorldCameraTest" time="0.0"/>
+  <testcase name="legacySaveUpgradesWithoutLosingSand" classname="com.dromadi.tinysim.WorldCameraTest" time="0.003"/>
+  <testcase name="invalidCameraValuesRecoverAndKeepFrontFacing" classname="com.dromadi.tinysim.WorldCameraTest" time="0.0"/>
+  <testcase name="importantWorldPointsStayBetweenHeaderAndControls" classname="com.dromadi.tinysim.WorldCameraTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -19,6 +19,11 @@ object WorldMap {
     }
     fun cellX(index:Int)=MIN_X+index%COLUMNS+.5f
     fun cellZ(index:Int)=MIN_Z+index/COLUMNS+.5f
+    /** Four 2m road sections, with two rows of sand accepted by each section. */
+    fun roadSection(index:Int):Int {
+        val x=cellX(index);val z=cellZ(index)
+        return if(x in 16f..24f && z in 7f..9f)((x-16f)/2f).toInt().coerceIn(0,3) else -1
+    }
     fun neighbor(index:Int,dx:Float,dz:Float):Int {
         val x=index%COLUMNS;val z=index/COLUMNS
         return if(abs(dx)>=abs(dz))z*COLUMNS+(x+if(dx>=0)1 else -1).coerceIn(0,COLUMNS-1)

@@ -1,0 +1,15 @@
+start-cam1 PASS 1045 draw calls
+start-cam2 PASS 1045 draw calls
+start-cam3 PASS 1045 draw calls
+orbit-close PASS 1045 draw calls
+orbit-wide PASS 1045 draw calls
+map-overview PASS 1045 draw calls
+construction-yard PASS 1067 draw calls
+building-site PASS 1052 draw calls
+mobile-dig PASS 1077 draw calls
+rotated-excavator PASS 1070 draw calls
+road-project PASS 1055 draw calls
+road-complete PASS 1061 draw calls
+loaded PASS 1053 draw calls
+dump PASS 1045 draw calls
+dozer PASS 1054 draw calls

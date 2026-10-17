@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.GameStateTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T12:45:07" hostname="f1d43015ddfd" time="0.012">
+  <properties/>
+  <testcase name="legacySandMigratesToCorrectWorldLocationsWithoutLoss" classname="com.dromadi.tinysim.GameStateTest" time="0.001"/>
+  <testcase name="snapshotRestoresExpandedWorldAndRejectsCorruption" classname="com.dromadi.tinysim.GameStateTest" time="0.004"/>
+  <testcase name="loadActionCanBringADistantTruckBackToTheExcavator" classname="com.dromadi.tinysim.GameStateTest" time="0.0"/>
+  <testcase name="stopCancelsTravelAndTapToDriveLowersTheBedFirst" classname="com.dromadi.tinysim.GameStateTest" time="0.0"/>
+  <testcase name="fullTouchDestinationConstructionLoopConservesSand" classname="com.dromadi.tinysim.GameStateTest" time="0.002"/>
+  <testcase name="mapRoutesClampAndStopAtTheDestinationWithoutOvershoot" classname="com.dromadi.tinysim.GameStateTest" time="0.001"/>
+  <testcase name="missionsRewardAndAdvanceWithoutTimerPressure" classname="com.dromadi.tinysim.GameStateTest" time="0.0"/>
+  <testcase name="dumpingFollowsRotatedTruckRearInBothAxes" classname="com.dromadi.tinysim.GameStateTest" time="0.002"/>
+  <testcase name="invalidTransfersAndFullTruckNeverLoseSand" classname="com.dromadi.tinysim.GameStateTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

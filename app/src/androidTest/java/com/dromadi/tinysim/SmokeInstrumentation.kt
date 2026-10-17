@@ -89,10 +89,20 @@ class SmokeInstrumentation:Instrumentation() {
             waitUntil("dozer spreads sand in second zone") { view.game.flattened>0 }
             tap(765f,605f)
             ui { check(!view.game.driving && view.game.totalSand==36) }
+            // Select the mobile excavator and tap real sand left by the truck/dozer.
+            ui { val cell=view.game.sand.indexOfFirst { it>0 };pileX=WorldMap.cellX(cell);pileZ=WorldMap.cellZ(cell) }
+            tap(81f,605f);tap(128f,355f);destination(pileX,pileZ)
+            waitUntil("mobile excavator reaches and re-scoops deposit") { view.game.excavatorGoal==null && view.game.bucket>0 }
+            tap(1020f,605f);waitUntil("truck collects re-scooped sand") { view.game.bucket==0 && view.game.load>0 }
+            ui {
+                check(view.game.dug.any { it>0 } && view.game.totalSand==36)
+                val saved=view.game.snapshot();view.pause();view.resume()
+                check(!view.game.driving && view.game.snapshot()==saved) { "Pause/resume changed inventory or pose" }
+            }
             // A cancelled hold and a short tap may not open the parent area.
             tap(1138f,52f);ui { check(!view.parents) }
             ui { event(MotionEvent.ACTION_DOWN,listOf(1138f to 52f));event(MotionEvent.ACTION_CANCEL,listOf(1138f to 52f));check(!view.parents) }
-            result.putString("stream","PASS: pinch/orbit isolation, zoom, tap destination, minimap, scoop -> load 4 -> dump 4 -> dozer in expanded map, conserved 36, parent tap/cancel.\n")
+            result.putString("stream","PASS: pinch/orbit isolation, zoom, tap destination, minimap, scoop -> load 4 -> dump 4 -> dozer in expanded map, mobile excavator re-scoop -> reload, pause/resume, conserved 36, parent tap/cancel.\n")
             result.putString("result","PASS")
             finish(Activity.RESULT_OK,result)
         } catch(t:Throwable) {

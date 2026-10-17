@@ -32,11 +32,14 @@ data class CameraSpec(val eye: Vec3, val target: Vec3, val fov: Float=40f) {
         val distance=(.07f-eye.y)/ray.y
         return if(distance>0f && distance<200f)eye+ray*distance else null
     }
-    fun armPlane(screenX: Float, screenY: Float): Vec3? {
+    fun armPlane(screenX: Float, screenY: Float,originX:Float=0f,originZ:Float=0f,heading:Float=0f): Vec3? {
         val nx=screenX/600f-1f;val ny=1f-screenY/337.5f
         val ray=(forward+right*(nx*WorldCamera.ASPECT*tangent)+up*(ny*tangent)).normalized()
-        if(abs(ray.z)<1e-5f)return null
-        val distance=-eye.z/ray.z
+        val angle=heading*PI.toFloat()/180f
+        val normal=Vec3(sin(angle),0f,cos(angle))
+        val denominator=ray.dot(normal)
+        if(abs(denominator)<1e-5f)return null
+        val distance=(Vec3(originX,0f,originZ)-eye).dot(normal)/denominator
         return if(distance>0f) eye+ray*distance else null
     }
 }

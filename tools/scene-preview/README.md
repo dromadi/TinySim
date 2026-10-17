@@ -17,3 +17,5 @@ Alpha.4 adds orbit/zoom fixtures. Every fixture conserves 36 sand units and the 
 `CHROMIUM_PATH` optionally selects an installed Chrome/Chromium executable. `PREVIEW_FORMAT=jpeg` saves JPEG at quality 90 instead of the default PNG. Replay now returns a nonzero process exit code on shader, linking, or GL errors, and writes per-scene draw/triangle counts to `results.json`.
 
 Alpha.5 also captures the original `GameRenderer` Canvas HUD through recording Android graphics stubs. The browser replays it as a 2D canvas above WebGL; this previews the actual minimap/control layout, with browser font metrics rather than native Android font metrics. Additional conserved-inventory fixtures cover the map overview, construction yard, and building site. Screenshots still do not constitute a device or Android input test.
+
+Alpha.6 adds mobile digging, a rotated excavator, a partially built road, and a completed road (15 scenes per shader path). These fixtures execute the same renderer/HUD as the APK; digging/movement/building behavior is separately exercised by the Kotlin tests.

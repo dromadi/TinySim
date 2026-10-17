@@ -60,7 +60,7 @@ class TouchController(
                     val px=point.x;val py=point.y
                     if(held=="scene" && hypot(px-downX,py-downY)>14f) {
                         val unit=candidate
-                        if(unit!=null && unit!=GameState.Vehicle.EXCAVATOR) { emit(Gesture(GestureKind.SELECT,unit=unit));held="drive" }
+                        if(unit!=null) { emit(Gesture(GestureKind.SELECT,unit=unit));held="drive" }
                         else held="pan"
                     }
                     when(held) {

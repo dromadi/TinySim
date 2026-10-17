@@ -48,7 +48,7 @@ class GameView(context: Context): FrameLayout(context) {
     fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
-        val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,-6.67f,0f),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ))
+        val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,WorldMap.worldX(game.excavatorX),game.excavatorZ),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ))
         return candidates.mapNotNull { (unit,wx,wz)->
             val p=runCatching { camera.project(com.dromadi.tinysim.scene.Vec3(wx,1.1f,wz)) }.getOrNull() ?: return@mapNotNull null
             val distance=kotlin.math.hypot(x-p.first,y-p.second)
@@ -61,6 +61,10 @@ class GameView(context: Context): FrameLayout(context) {
         following=false;game.driveTo(game.selected,WorldMap.gameX(point.x),point.z)
     }
     fun sceneTap(x:Float,y:Float) {
+        // A dumped pile lies close to the truck: prioritize the intended digging surface
+        // over the forgiving vehicle hit radius when the excavator is selected.
+        val ground=cameraSpec().ground(x,y)
+        if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
         val unit=vehicleAt(x,y)
         if(unit!=null) {
             if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket>0 && unit==GameState.Vehicle.TRUCK)game.action()
@@ -69,12 +73,11 @@ class GameView(context: Context): FrameLayout(context) {
             } else selectUnit(unit)
             return
         }
-        if(game.selected!=GameState.Vehicle.EXCAVATOR) { driveAt(x,y);followSelected() }
-        else {
-            val point=cameraSpec().ground(x,y) ?: return
-            if(kotlin.math.hypot(point.x-WorldMap.worldX(365f),point.z)<2f)game.action()
-        }
+        val point=cameraSpec().ground(x,y) ?: return
+        if(game.selected==GameState.Vehicle.EXCAVATOR && game.digAt(point.x,point.z))return
+        driveAt(x,y);followSelected()
     }
+
     fun orbit(dx:Float,dy:Float,ratio:Float=1f) {
         following=false
         val base=WorldCamera.spec(camera)
@@ -122,8 +125,11 @@ class GameView(context: Context): FrameLayout(context) {
     fun worldX(x: Float)=(x-offsetX)/scale
     fun worldY(y: Float)=(y-offsetY)/scale
     fun dragArm(x: Float,y: Float) {
-        val point=cameraSpec().armPlane(x,y) ?: return
-        game.moveArm(WorldCamera.gameX(point.x),WorldCamera.gameY(point.y))
+        val origin=WorldMap.worldX(game.excavatorX)
+        val point=cameraSpec().armPlane(x,y,origin,game.excavatorZ,game.excavatorHeading) ?: return
+        val a=game.excavatorHeading*kotlin.math.PI.toFloat()/180f
+        val local=(point.x-origin)*kotlin.math.cos(a)-(point.z-game.excavatorZ)*kotlin.math.sin(a)
+        game.stopMovement();game.moveArm(200f+local*60f,WorldCamera.gameY(point.y))
     }
     private fun drawHud(canvas: Canvas) {
         scale=minOf(width/1200f,height/675f).coerceAtLeast(.001f)
@@ -140,8 +146,8 @@ class GameView(context: Context): FrameLayout(context) {
             lastTransfer=game.transferSerial
         }
         if(following && !parents) {
-            val targetX=when(game.selected) { GameState.Vehicle.EXCAVATOR -> 0f;GameState.Vehicle.TRUCK->WorldMap.worldX(game.truckX)+.3f;GameState.Vehicle.DOZER->WorldMap.worldX(game.dozerX)+.3f }
-            val targetZ=when(game.selected) { GameState.Vehicle.EXCAVATOR->0f;GameState.Vehicle.TRUCK->game.truckZ;GameState.Vehicle.DOZER->game.dozerZ }
+            val targetX=when(game.selected) { GameState.Vehicle.EXCAVATOR -> WorldMap.worldX(game.excavatorX)+3.3f;GameState.Vehicle.TRUCK->WorldMap.worldX(game.truckX)+.3f;GameState.Vehicle.DOZER->WorldMap.worldX(game.dozerX)+.3f }
+            val targetZ=when(game.selected) { GameState.Vehicle.EXCAVATOR->game.excavatorZ;GameState.Vehicle.TRUCK->game.truckZ;GameState.Vehicle.DOZER->game.dozerZ }
             val dt=if(previous==0L)0f else ((now-previous)/1000f).coerceIn(0f,.04f)
             val ease=1f-kotlin.math.exp(-4f*dt)
             panX+=(targetX.coerceIn(-8f,44f)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,11f)-panZ)*ease
@@ -186,7 +192,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(y in 100f..535f) {
             if(orbitMode)return "orbit"
             if(game.selected==GameState.Vehicle.EXCAVATOR) {
-                val pin=runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(WorldCamera.x(game.armX),WorldCamera.y(game.armY),0f)) }.getOrNull()
+                val pin=runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(game.bucketPosition.first,WorldCamera.y(game.armY),game.bucketPosition.second)) }.getOrNull()
                 if(pin!=null && kotlin.math.hypot(x-pin.first,y-pin.second)<54f)return "arm"
             }
             return "scene"
@@ -209,7 +215,7 @@ class GameView(context: Context): FrameLayout(context) {
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")
                 .setMessage("Pasir dan kendaraan kembali ke posisi awal.")
-                .setPositiveButton("Mulai ulang") { _,_ -> game.reset();settings.save(game);parents=false }
+                .setPositiveButton("Mulai ulang") { _,_ -> game.reset();panX=0f;panZ=0f;following=false;saveCamera();settings.save(game);parents=false }
                 .setNegativeButton("Batal",null).show()
             "close" -> parents=false
         }

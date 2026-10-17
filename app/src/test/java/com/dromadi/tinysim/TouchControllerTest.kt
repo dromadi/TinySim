@@ -22,6 +22,12 @@ class TouchControllerTest {
         assertEquals(620f,h.events.last { it.kind==GestureKind.DRIVE }.x,0f)
         assertTrue(h.has(GestureKind.FOLLOW));assertFalse(h.has(GestureKind.PAN));assertFalse(h.has(GestureKind.SCENE_TAP))
     }
+    @Test fun excavatorBodyDragDrivesWhileBucketDragStillManipulatesArm() {
+        val h=Harness(unit=GameState.Vehicle.EXCAVATOR)
+        h.event(TouchPhase.DOWN,h.point(400f));h.event(TouchPhase.MOVE,h.point(600f));h.event(TouchPhase.UP,h.point(650f))
+        assertTrue(h.has(GestureKind.DRIVE));assertFalse(h.has(GestureKind.PAN));assertFalse(h.has(GestureKind.ARM))
+        assertEquals(GameState.Vehicle.EXCAVATOR,h.events.first { it.kind==GestureKind.SELECT }.unit)
+    }
     @Test fun emptyGroundDragPansAndCannotAlsoSetADestination() {
         val h=Harness();h.event(TouchPhase.DOWN,h.point(500f));h.event(TouchPhase.MOVE,h.point(550f));h.event(TouchPhase.UP,h.point(580f))
         assertTrue(h.has(GestureKind.PAN));assertFalse(h.has(GestureKind.DRIVE));assertFalse(h.has(GestureKind.SCENE_TAP))

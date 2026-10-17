@@ -1,0 +1,107 @@
+[
+  {
+    "name": "start-cam1",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1512,
+    "triangles": 241460
+  },
+  {
+    "name": "start-cam2",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1512,
+    "triangles": 241460
+  },
+  {
+    "name": "start-cam3",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1512,
+    "triangles": 241460
+  },
+  {
+    "name": "orbit-close",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1512,
+    "triangles": 241460
+  },
+  {
+    "name": "orbit-wide",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1512,
+    "triangles": 241460
+  },
+  {
+    "name": "map-overview",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1512,
+    "triangles": 241460
+  },
+  {
+    "name": "construction-yard",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1536,
+    "triangles": 247924
+  },
+  {
+    "name": "building-site",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1522,
+    "triangles": 247340
+  },
+  {
+    "name": "mobile-dig",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1546,
+    "triangles": 262084
+  },
+  {
+    "name": "rotated-excavator",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1538,
+    "triangles": 257388
+  },
+  {
+    "name": "road-project",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1536,
+    "triangles": 246580
+  },
+  {
+    "name": "road-complete",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1552,
+    "triangles": 245000
+  },
+  {
+    "name": "loaded",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1522,
+    "triangles": 247108
+  },
+  {
+    "name": "dump",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1514,
+    "triangles": 242644
+  },
+  {
+    "name": "dozer",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1526,
+    "triangles": 249244
+  }
+]

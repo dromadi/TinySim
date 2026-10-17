@@ -1,3 +1,27 @@
+# Verifikasi alpha.6 — excavator bergerak & proyek jalan
+
+Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 6; versi `0.1.0-alpha.6`.
+
+## Yang benar-benar dijalankan
+
+- `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: berhasil. **41 tes, 0 gagal/error/skipped**; lint **0 error, 1 warning** `DiscouragedApi` untuk landscape yang disengaja.
+- Tes baru mencakup excavator mendatangi area jauh, mengambil kembali pasir yang dituang, memuat truk pada lokasi baru; bucket pada lima arah; koordinat bidang lengan berputar; pembatalan rute dan snapshot; migrasi save alpha.5 dan penolakan save rusak.
+- Proyek jalan diuji dengan blade terangkat/turun dan tanpa pasir; juga melalui alur sumber → bucket → truk 4 unit → perjalanan → dump → lintasan bulldozer → empat bagian jalan selesai. Inventori tetap **36 unit**, termasuk pasir yang menjadi jalan.
+- Bantuan pemuatan diuji pada 16 kombinasi posisi batas map dan arah excavator. Pengenal sentuhan diuji untuk seret badan excavator versus bucket, pan/pinch, pembatalan, tombol, minimap, dan tahan area orang tua.
+- APK debug diverifikasi dengan `apksigner`: signature v2 valid, package/versi sesuai, **0 Android permission**. Key lokal sama dengan APK lokal alpha.4/alpha.5; APK CI memakai key lingkungan CI.
+
+- **30 pratinjau renderer/HUD lulus**: 15 adegan shader normal dengan bayangan serta 15 adegan fallback mediump, semuanya GL error 0. Kode renderer dan HUD asli dijalankan pada JVM lalu direplay di WebGL; empat JPG akhir sudah ditinjau secara visual. Ini bukan uji perangkat Android.
+
+## Batas hasil
+
+Belum ada pengujian alpha.6 pada HP/emulator Android. Runner Android yang mengirim MotionEvent asli **berhasil dikompilasi, belum dijalankan**; sekarang mencakup penggalian ulang dengan excavator bergerak serta pause/resume. Tes JVM tidak menggantikan uji lifecycle Android pada perangkat.
+
+Pasir memakai sel deterministik. Bekas pengambilan berupa guratan permukaan, bukan deformasi mesh tanah. Empat bagian jalan yang terbangun tetap terpasang sampai reset; kendaraan/dekorasi belum memakai tabrakan rigid-body.
+
+Bukti build, JUnit XML, lint, identitas/hash/signature APK, dan hasil pratinjau disimpan di [`docs/verification/alpha6/`](docs/verification/alpha6/).
+
+---
+
 # Verifikasi TinySim 3D — 0.1.0-alpha.5
 
 Tanggal: 17 Oktober 2026. Target pengembangan tetap HP pengguna berspesifikasi tinggi sesuai `AGENTS.md`. Perubahan: lahan 62 × 22 unit dunia dengan tiga zona, perjalanan truk/bulldozer di bidang X/Z, pasir dua dimensi, kontrol sentuh langsung, pan/minimap/follow camera, dan migrasi save.

@@ -326,10 +326,10 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         if(shadowPass)return
         noCast {
             GL.glDepthMask(false)
-            val sx=when(f.selected) { GameState.Vehicle.EXCAVATOR->-6.67f;GameState.Vehicle.TRUCK->WorldMap.worldX(f.truckX);GameState.Vehicle.DOZER->WorldMap.worldX(f.dozerX) }
-            val sz=when(f.selected) { GameState.Vehicle.EXCAVATOR->0f;GameState.Vehicle.TRUCK->f.truckZ;GameState.Vehicle.DOZER->f.dozerZ }
+            val sx=when(f.selected) { GameState.Vehicle.EXCAVATOR->WorldMap.worldX(f.excavatorX);GameState.Vehicle.TRUCK->WorldMap.worldX(f.truckX);GameState.Vehicle.DOZER->WorldMap.worldX(f.dozerX) }
+            val sz=when(f.selected) { GameState.Vehicle.EXCAVATOR->f.excavatorZ;GameState.Vehicle.TRUCK->f.truckZ;GameState.Vehicle.DOZER->f.dozerZ }
             disk(sx,.092f,sz,4.5f,3f,rgba(53,196,180,.16f),DECAL)
-            val goal=when(f.selected) { GameState.Vehicle.TRUCK->f.truckGoal;GameState.Vehicle.DOZER->f.dozerGoal;else->null }
+            val goal=when(f.selected) { GameState.Vehicle.TRUCK->f.truckGoal;GameState.Vehicle.DOZER->f.dozerGoal;else->f.excavatorGoal }
             if(goal!=null) {
                 val gx=WorldMap.worldX(goal.x)
                 disk(gx,.105f,goal.z,1.1f,1.1f,rgba(24,178,163,.85f),DECAL)
@@ -393,6 +393,23 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         }
     }
     private fun sand(f:SceneFrame) {
+        // Four pictured work bays become a raised gravel road as the blade compacts sand.
+        for(section in 0..3) {
+            val x=17f+section*2f
+            if(f.road[section]>0) {
+                box(x,.15f,8f,1.96f,.16f,1.95f,sandWet,SAND)
+                for(k in 0..4)box(x-.8f+k*.4f,.24f,8f,.17f,.02f,.09f,paintWhite,MATTE)
+            } else noCast {
+                box(x,.085f,7.02f,1.9f,.025f,.06f,orange,DECAL)
+                box(x,.085f,8.98f,1.9f,.025f,.06f,orange,DECAL)
+                box(x-.97f,.085f,8f,.05f,.025f,2f,orange,DECAL)
+                box(x+.97f,.085f,8f,.05f,.025f,2f,orange,DECAL)
+            }
+        }
+        for(i in f.dug.indices)if(f.dug[i]>0 && f.sand[i]==0)noCast {
+            disk(WorldMap.cellX(i),.081f,WorldMap.cellZ(i),.85f,.8f,sandWet,SAND)
+            for(k in 0..2)box(WorldMap.cellX(i)-.25f+k*.24f,.088f,WorldMap.cellZ(i),.06f,.015f,.48f,sandColor,SAND)
+        }
         noCast { disk(WorldCamera.x(365f),.08f,0f,3.4f,2.85f,sandWet,SAND) }
         if(f.source>0)mound(WorldCamera.x(365f),.07f,0f,3.1f,.25f+f.source/30f,2.6f,sandColor)
         for(i in f.sand.indices)if(f.sand[i]>0) {
@@ -400,8 +417,9 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         }
     }
     private fun excavator(f:SceneFrame) {
-        push();translate(-6.67f,0f,0f)
-        tracks(2.75f,0f)
+        push();translate(WorldMap.worldX(f.excavatorX),0f,f.excavatorZ);rotate(f.excavatorHeading,0f,1f,0f);translate(-WorldMap.worldX(200f),0f,0f)
+        push();translate(WorldMap.worldX(200f),0f,0f)
+        tracks(2.75f,f.excavatorTravel)
         // Slewing ring and upper house.
         shape(cylinder,0f,.82f,0f,1.4f,.14f,1.4f,darkSteel,METAL)
         panel(0f,1.06f,0f,2.5f,.5f,1.65f,yellow)
@@ -433,7 +451,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         box(0f,.0f,-.43f,.83f,.43f,.07f,darkSteel,METAL);box(0f,.0f,.43f,.83f,.43f,.07f,darkSteel,METAL)
         for(i in 0..3)shape(cone,.46f,-.18f,-.32f+i*.21f,.1f,.24f,.1f,metal,METAL)
         if(f.bucket>0)mound(0f,-.13f,0f,.74f,.32f,.78f,sandColor)
-        pop()
+        pop();pop()
     }
     private fun hydraulic(ax:Float,ay:Float,bx:Float,by:Float,radius:Float) {
         val mx=ax+(bx-ax)*.55f;val my=ay+(by-ay)*.55f
@@ -555,17 +573,17 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             pop()
         }
     }
+    private fun wrist(f:SceneFrame):Pair<Float,Float> {
+        val a=f.excavatorHeading*PI.toFloat()/180f;val d=(f.armX-200f)/60f
+        return WorldMap.worldX(f.excavatorX)+cos(a)*d to f.excavatorZ-sin(a)*d
+    }
     private fun guide(f:SceneFrame) {
+        if(f.selected!=GameState.Vehicle.EXCAVATOR)return
+        val point=wrist(f)
         noCast {
-            val start=WorldCamera.x(365f);val end=WorldCamera.x(if(abs(f.truckX-620f)<80f && abs(f.truckZ)<1.3f)f.truckX else 620f)
-            for(i in 0..12) {
-                val t=i/12f
-                val x=start+(end-start)*t
-                val y=1.2f+(3.4f-1.2f)*t+sin(t*PI.toFloat())*1.35f
-                blob(x,y,.05f,.06f,.06f,.06f,white,EMISSIVE)
-            }
-            // A bright wrist pin gives children a large, visible dragging target.
-            blob(WorldCamera.x(f.armX),WorldCamera.y(f.armY),.36f,.16f,.16f,.08f,white,EMISSIVE)
+            blob(point.first,WorldCamera.y(f.armY),point.second+.04f,.18f,.18f,.18f,white,EMISSIVE)
+            // Ring below the bucket makes its real ground position easy to see.
+            disk(point.first,.09f,point.second,.7f,.7f,rgba(255,247,204,.45f),DECAL)
         }
     }
     private fun particles(f:SceneFrame) {
@@ -573,10 +591,11 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             transferSeen=f.transferSerial;streamStart=f.seconds
             val dumping=f.transferKind==3
             val angle=f.truckHeading*PI.toFloat()/180f
-            streamX=if(dumping)WorldCamera.x(f.truckX)-cos(angle)*1.8f else WorldCamera.x(f.armX)
-            streamZ=if(dumping)f.truckZ+sin(angle)*1.8f else 0f
+            streamX=if(dumping)WorldCamera.x(f.truckX)-cos(angle)*1.8f else wrist(f).first
+            streamZ=if(dumping)f.truckZ+sin(angle)*1.8f else wrist(f).second
             streamY=if(dumping)2f else WorldCamera.y(f.armY)
             streamGround=if(f.transferKind==2)1.25f else .1f
+            if(f.transferKind==4) { streamX=WorldMap.worldX(f.dozerX);streamZ=f.dozerZ;streamY=.7f }
         }
         val elapsed=f.seconds-streamStart
         if(elapsed !in 0f.. .6f)return

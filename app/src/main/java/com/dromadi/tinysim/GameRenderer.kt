@@ -30,10 +30,10 @@ class GameRenderer {
         text(c,"TinySim",320f,52f,30f);text(c,"Dunia kecil, imajinasi besar.",376f,77f,14f)
         rect(c,544f,20f,410f,70f,white,22f)
         if(g.missionMode) {
-            when(g.mission) {0->truck(c,600f,73f,.32f,4,0f);1->truck(c,600f,73f,.32f,2,-38f);else->dozer(c,600f,73f,.32f,1)}
-            text(c,when(g.mission){0->"Isi truk";1->"Tuang pasir";else->"Ratakan"},756f,48f,20f)
+            when(g.mission) {0->truck(c,600f,73f,.32f,4,0f);1->truck(c,600f,73f,.32f,2,-38f);2->dozer(c,600f,73f,.32f,1);else->roadIcon(c,600f,51f,g.roadProgress)}
+            text(c,when(g.mission){0->"Isi truk";1->"Tuang pasir";2->"Ratakan";else->"Bangun jalan"},756f,48f,20f)
             for(i in 0..3)circle(c,716f+i*30,70f,7f,if(g.missionProgress>i)teal else col("#DDE5DC"))
-        } else { text(c,"Sentuh • gerakkan • jelajahi",750f,61f,21f,teal) }
+        } else { roadIcon(c,600f,51f,g.roadProgress);text(c,"Bangun jalan ${g.roadProgress}/4",790f,61f,21f,teal) }
         rect(c,1000f,20f,70f,64f,white,20f);speaker(c,1035f,52f,sound)
         rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
         if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
@@ -63,7 +63,7 @@ class GameRenderer {
         button(c,290f,125f,g.selected==GameState.Vehicle.DOZER);dozer(c,353f,620f,.44f,1)
         circle(c,480f,592f,13f,teal);circle(c,480f,592f,6f,white)
         line(c,480f,602f,480f,619f,ink,5f)
-        text(c,if(g.selected==GameState.Vehicle.EXCAVATOR)"Seret bucket" else "Ketuk tujuan",610f,595f,21f,teal)
+        text(c,if(g.selected==GameState.Vehicle.EXCAVATOR)"Ketuk / seret" else "Ketuk tujuan",610f,595f,21f,teal)
         text(c,"Geser map • cubit zoom",595f,627f,15f,ink)
         rect(c,720f,557f,90f,98f,white,24f)
         rect(c,751f,582f,28f,28f,ink,5f);text(c,"Stop",765f,638f,15f)
@@ -101,14 +101,21 @@ class GameRenderer {
         line(c,mx(18f),mz(0f),mx(18f),mz(10f),col("#F6E9C5"),7f)
         line(c,mx(36f),mz(0f),mx(36f),mz(10f),col("#F6E9C5"),7f)
         rect(c,mx(14f),mz(4f),20f,20f,teal,3f);rect(c,mx(32f),mz(4f),20f,20f,orange,3f)
-        circle(c,mx(-6.67f),mz(0f),6f,yellow)
+        line(c,mx(16f),mz(8f),mx(24f),mz(8f),yellow,5f)
+        circle(c,mx(WorldMap.worldX(g.excavatorX)),mz(g.excavatorZ),6f,yellow)
         circle(c,mx(WorldMap.worldX(g.truckX)),mz(g.truckZ),5f,teal)
         circle(c,mx(WorldMap.worldX(g.dozerX)),mz(g.dozerZ),5f,ink)
-        val goal=if(g.selected==GameState.Vehicle.TRUCK)g.truckGoal else if(g.selected==GameState.Vehicle.DOZER)g.dozerGoal else null
+        val goal=if(g.selected==GameState.Vehicle.TRUCK)g.truckGoal else if(g.selected==GameState.Vehicle.DOZER)g.dozerGoal else g.excavatorGoal
         if(goal!=null)star(c,mx(WorldMap.worldX(goal.x)),mz(goal.z),6f,white)
         val fx=mx(panX-.3f).coerceIn(37f,219f);val fz=mz(panZ).coerceIn(319f,391f)
         p.style=Paint.Style.STROKE;p.strokeWidth=2f;p.color=white;c.drawCircle(fx,fz,9f,p);p.style=Paint.Style.FILL
         text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
+    }
+    private fun roadIcon(c:Canvas,x:Float,y:Float,progress:Int) {
+        for(i in 0..3) {
+            rect(c,x-38f+i*20f,y-19f,18f,38f,if(i<progress)teal else col("#DDE5DC"),3f)
+            line(c,x-29f+i*20f,y-3f,x-29f+i*20f,y+3f,white,3f)
+        }
     }
     private fun button(c:Canvas,x:Float,w:Float,selected:Boolean) { rect(c,x,557f,w,98f,if(selected)yellow else col("#E6EBDD"),24f) }
     private fun arrow(c:Canvas,x:Float,y:Float,right:Boolean,color:Int) { val d=if(right)1 else -1;line(c,x-d*24,y,x+d*23,y,color,11f);poly(c,floatArrayOf(x+d*30,y,x+d*5,y-23,x+d*5,y+23),color) }
