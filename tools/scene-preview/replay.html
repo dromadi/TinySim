@@ -3,6 +3,11 @@ async function run(name){
   const data=window.DATA; const c=document.getElementById('c');
   const gl=c.getContext('webgl',{antialias:true,preserveDrawingBuffer:true});
   const objs={},attribs={},uniforms={};let program=null;
+  // Material textures are recorded by path; decode every referenced image before replaying.
+  const images={};
+  for(const o of data.init.concat(data.frames[name]))if(o[0]==='texImageAsset'&&!images[o[1]]) {
+    const img=new Image();img.src='file://'+o[1];await img.decode();images[o[1]]=img;
+  }
   const exec=(o)=>{const [n,...a]=o;switch(n){
     case'createShader':objs[a[0]]=gl.createShader(a[1]);break;
     case'shaderSource':gl.shaderSource(objs[a[0]],a[1]);break;
@@ -37,6 +42,10 @@ async function run(name){
     case'bindTexture':gl.bindTexture(gl.TEXTURE_2D,a[0]?objs[a[0]]:null);break;
     case'texImage':gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a[0],a[1],0,gl.RGBA,gl.UNSIGNED_BYTE,null);break;
     case'texParam':gl.texParameteri(gl.TEXTURE_2D,a[0],a[1]);break;
+    case'texParamf':{const ext=gl.getExtension('EXT_texture_filter_anisotropic');if(ext)gl.texParameterf(gl.TEXTURE_2D,a[0],a[1]);break;}
+    case'texImageAsset':gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,images[a[0]]);break;
+    case'generateMipmap':gl.generateMipmap(gl.TEXTURE_2D);break;
+    case'deleteTexture':break;
     case'createRenderbuffer':objs[a[0]]=gl.createRenderbuffer();break;
     case'bindRenderbuffer':gl.bindRenderbuffer(gl.RENDERBUFFER,objs[a[0]]);break;
     case'renderbufferStorage':gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,a[0],a[1]);break;

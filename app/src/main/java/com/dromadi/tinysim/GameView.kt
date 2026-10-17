@@ -18,7 +18,7 @@ class GameView(context: Context): FrameLayout(context) {
     val settings=SettingsStore(context)
     private val audio=GameAudio(context)
     private val hudRenderer=GameRenderer()
-    private val sceneRenderer=SceneRenderer3D()
+    private val sceneRenderer=SceneRenderer3D(com.dromadi.tinysim.scene.AssetTextureUploader(context.assets))
     private val input=GameInput(this)
     private val surface=GLSurfaceView(context)
     private val hud=object: View(context) {

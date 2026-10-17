@@ -1,10 +1,11 @@
 // Desktop preview: runs the real SceneRenderer3D against recording GLES20 stubs and writes the GL call stream.
 plugins { id 'org.jetbrains.kotlin.jvm' version '2.0.21'; id 'application' }
 repositories { mavenCentral() }
+dependencies { implementation 'org.json:json:20240303' }
 def app=file('../../app/src/main/java/com/dromadi/tinysim')
 def shared=layout.buildDirectory.dir('shared')
 tasks.register('copyScene', Copy) {
-  from(app) { include 'Terrain.kt','GameRenderer.kt','WorldMap.kt','VehicleMotion.kt','ArmRig.kt','GameState.kt','scene/Geometry.kt','scene/TerrainMesh.kt','scene/SceneFrame.kt','scene/SceneRenderer3D.kt','scene/WorldCamera.kt' }
+  from(app) { include 'Terrain.kt','GameRenderer.kt','WorldMap.kt','VehicleMotion.kt','ArmRig.kt','GameState.kt','scene/Geometry.kt','scene/TerrainMesh.kt','scene/SceneFrame.kt','scene/SceneRenderer3D.kt','scene/MaterialTextures.kt','scene/TextureUploader.kt','scene/WorldCamera.kt' }
   into shared
 }
 sourceSets { main { kotlin { srcDirs = ['src','stubs',shared] } } }

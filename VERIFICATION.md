@@ -1,3 +1,16 @@
+# Verifikasi alpha.11 — material foto CC0
+
+Tanggal: 17 Oktober 2026. versionCode 11; versi `0.1.0-alpha.11`.
+
+- `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 63 tes, 0 gagal; lint 0 error, 1 warning `DiscouragedApi` (landscape, disengaja).
+- APK debug **67.641.738 byte**. Isinya 27 file tekstur JPG asli Poly Haven (9 material × albedo/normal/roughness) yang disimpan tanpa kompresi ulang ("Stored", karena JPG sudah terkompresi), ditambah `index.json`. Total aset tekstur 66.694.041 byte.
+- `tools/textures/fetch_textures.py` memeriksa checksum MD5 dari API Poly Haven untuk setiap file. Lisensi semua aset: CC0 1.0.
+- Pratinjau (`tools/scene-preview`, gambar di `docs/verification/alpha11/`): renderer memuat 9 material dengan GL error 0. Tekstur tampak pada tanah lokasi, rumput, atap, dinding, pagar, aspal, dan kendaraan.
+
+**Batas:** belum dijalankan di HP. Waktu memuat 27 tekstur saat aplikasi dibuka belum diukur. Bila GPU tidak mendukung atau tekstur gagal dimuat, game otomatis memakai permukaan prosedural sebelumnya.
+
+---
+
 # Verifikasi alpha.10 — kendaraan yang hidup
 
 Tanggal: 17 Oktober 2026. versionCode 10; versi `0.1.0-alpha.10`.

@@ -25,3 +25,5 @@ Alpha.7 adds the real deforming terrain mesh, terrain-aware vehicle positions an
 Alpha.8 renders the ground through `TerrainMesh`: the first frame uploads the full buffer, later scenes upload only changed rows via `glBufferSubData`, which the stubs record and the replay page applies.
 
 Alpha.10 adds `vehicle-life`: 36 warm-up frames let the truck drive (dust, smoke, suspension) and greet the excavator driver, then the last frame is captured with the driver mid-wave.
+
+Alpha.11 loads the real CC0 material textures: the JVM side records `texImageAsset` with each asset path and the replay page decodes those JPGs (`--allow-file-access-from-files`) before replaying. The preview build needs `org.json` from Maven Central.

@@ -16,7 +16,15 @@ import kotlin.math.*
  * Real depth-tested 3D meshes with a sun shadow map, linear-space lighting, procedural surface
  * detail, sky, fog and filmic tone mapping. All graphics are generated on-device.
  */
-class SceneRenderer3D: GLSurfaceView.Renderer {
+class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
+    private val textures=MaterialTextures(uploader)
+    private var uAlbedoMap=0;private var uNormalMap=0;private var uRoughMap=0
+    private var uTexOn=0;private var uTexScale=0;private var uTexMean=0;private var uTexFrame=0;private var uTexRot=0
+    // Texture frame: identity for the static world, the inverse vehicle pose while drawing a vehicle,
+    // so photo materials stick to moving bodies instead of sliding across them.
+    private val texFrame=FloatArray(16).also { Matrix.setIdentityM(it,0) }
+    private val texRot=FloatArray(9)
+    private var boundSlot=-2
     @Volatile private var frame=SceneFrame.capture(GameState(),0,0f)
     private val cube=Geometry.cube()
     private val panelMesh=Geometry.bevelCube()
@@ -99,16 +107,21 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     private val tread=rgba(70,52,34)
 
     // Material: specular strength, shininess, detail frequency, detail amount, kind.
-    private val PAINT=floatArrayOf(.55f,60f,5f,.05f,0f)
+    private val PAINT=floatArrayOf(.55f,60f,5f,.02f,0f,MaterialTextures.PAINT.toFloat(),2.2f)
     private val MATTE=floatArrayOf(.08f,10f,3f,.08f,0f)
     private val METAL=floatArrayOf(.9f,90f,9f,.05f,6f)
     private val GLASS=floatArrayOf(1.2f,160f,0f,0f,5f)
     private val RUBBER=floatArrayOf(.12f,14f,16f,.12f,0f)
-    private val GRASS=floatArrayOf(.04f,8f,1.1f,.32f,4f)
-    private val SAND=floatArrayOf(.07f,12f,26f,.14f,7f)
-    private val SOIL=floatArrayOf(.05f,8f,6f,.2f,7f)
+    private val GRASS=floatArrayOf(.04f,8f,1.1f,.18f,4f,MaterialTextures.GRASS.toFloat(),3.5f)
+    private val SAND=floatArrayOf(.07f,12f,26f,.04f,7f,MaterialTextures.SAND.toFloat(),2.4f)
+    private val SOIL=floatArrayOf(.05f,8f,6f,.05f,7f,MaterialTextures.SOIL.toFloat(),3.2f)
     private val FOLIAGE=floatArrayOf(.12f,12f,2.6f,.28f,0f)
-    private val WOOD=floatArrayOf(.06f,10f,7f,.18f,0f)
+    private val BARK=floatArrayOf(.06f,10f,7f,.18f,0f)
+    private val CONCRETE=floatArrayOf(.06f,10f,4f,.03f,0f,MaterialTextures.CONCRETE.toFloat(),2.6f)
+    private val ASPHALT=floatArrayOf(.08f,14f,4f,.02f,0f,MaterialTextures.ASPHALT.toFloat(),3f)
+    private val PLASTER=floatArrayOf(.05f,8f,4f,.02f,0f,MaterialTextures.PLASTER.toFloat(),2.2f)
+    private val ROOF=floatArrayOf(.18f,20f,4f,.02f,0f,MaterialTextures.ROOF.toFloat(),2f)
+    private val WOOD=floatArrayOf(.06f,10f,7f,.04f,0f,MaterialTextures.WOOD.toFloat(),1.6f)
     private val CLOUD=floatArrayOf(0f,1f,0f,0f,8f)
     private val EMISSIVE=floatArrayOf(0f,1f,0f,0f,1f)
     private val SKY=floatArrayOf(0f,1f,0f,0f,2f)
@@ -129,6 +142,10 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         uLightVp=GL.glGetUniformLocation(program,"uLightVp");uShadowMap=GL.glGetUniformLocation(program,"uShadowMap")
         uShadowOn=GL.glGetUniformLocation(program,"uShadowOn");uShadowTexel=GL.glGetUniformLocation(program,"uShadowTexel")
         uViewport=GL.glGetUniformLocation(program,"uViewport")
+        uAlbedoMap=GL.glGetUniformLocation(program,"uAlbedoMap");uNormalMap=GL.glGetUniformLocation(program,"uNormalMap");uRoughMap=GL.glGetUniformLocation(program,"uRoughMap")
+        uTexOn=GL.glGetUniformLocation(program,"uTexOn");uTexScale=GL.glGetUniformLocation(program,"uTexScale");uTexMean=GL.glGetUniformLocation(program,"uTexMean")
+        uTexFrame=GL.glGetUniformLocation(program,"uTexFrame");uTexRot=GL.glGetUniformLocation(program,"uTexRot")
+        textures.load()
         for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane,gable)) { mesh.contextLost();mesh.upload() }
         terrain.update(frame.earth,frame.sand);terrain.contextLost();terrain.upload()
         GL.glEnable(GL.GL_DEPTH_TEST);GL.glDepthFunc(GL.GL_LEQUAL)
@@ -208,6 +225,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         GL.glUniform1f(uShadowOn,if(shadowsEnabled)1f else 0f);GL.glUniform2f(uShadowTexel,1f/shadowSize,1f/shadowSize)
         GL.glUniform4f(uViewport,viewportX.toFloat(),viewportY.toFloat(),viewportW.toFloat(),viewportH.toFloat())
         GL.glActiveTexture(GL.GL_TEXTURE0);GL.glBindTexture(GL.GL_TEXTURE_2D,if(shadowsEnabled)shadowTexture else 0);GL.glUniform1i(uShadowMap,0)
+        GL.glUniform1i(uAlbedoMap,1);GL.glUniform1i(uNormalMap,2);GL.glUniform1i(uRoughMap,3);boundSlot=-2
         depth=0;Matrix.setIdentityM(model,0)
         skyDome(camera.eye)
         scene(f)
@@ -285,8 +303,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         noCast {
             for(i in 0..48) {
                 val x=-10.6f+i*1.25f
-                box(x,.075f,-6.65f,1.08f,.09f,.22f,stone,MATTE)
-                box(x,.075f,14.65f,1.08f,.09f,.22f,stone,MATTE)
+                box(x,.075f,-6.65f,1.08f,.09f,.22f,stone,CONCRETE)
+                box(x,.075f,14.65f,1.08f,.09f,.22f,stone,CONCRETE)
             }
         }
         expandedSite()
@@ -388,15 +406,15 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         push();translate(x,ground,z);scale(s,s*(.9f+rnd(1)*.35f),s);rotate(rnd(2)*360f,0f,1f,0f)
         noCast { disk(0f,.01f,0f,2.0f,2.0f,contact,DECAL) }
         if(rnd(3)<.3f) {
-            shape(cylinder,0f,.5f,0f,.2f,1.0f,.2f,bark,WOOD)
+            shape(cylinder,0f,.5f,0f,.2f,1.0f,.2f,bark,BARK)
             for(k in 0..3) {
                 val w=1.9f-k*.4f
                 shape(cone,0f,.7f+k*.6f,0f,w,1.1f,w,if(k%2==0)pine else leaf,FOLIAGE)
             }
         } else {
-            shape(cylinder,0f,.8f,0f,.2f,1.6f,.2f,bark,WOOD)
-            rod(0f,1.3f,.45f,1.95f,.07f,bark,WOOD)
-            rod(0f,1.4f,-.4f,2.05f,.06f,bark,WOOD)
+            shape(cylinder,0f,.8f,0f,.2f,1.6f,.2f,bark,BARK)
+            rod(0f,1.3f,.45f,1.95f,.07f,bark,BARK)
+            rod(0f,1.4f,-.4f,2.05f,.06f,bark,BARK)
             blob(0f,2.15f,0f,1.45f,1.25f,1.4f,leaf,FOLIAGE)
             for(k in 0..4) {
                 val a=(k*72f+rnd(k+4)*40f)*PI.toFloat()/180f;val r=.45f+rnd(k+9)*.25f
@@ -435,7 +453,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         for(section in 0..3) {
             val x=17f+section*2f
             if(f.road[section]>0) {
-                box(x,.15f,8f,1.96f,.16f,1.95f,sandWet,SAND)
+                box(x,.15f,8f,1.96f,.16f,1.95f,rgba(104,102,100),ASPHALT)
                 for(k in 0..4)box(x-.8f+k*.4f,.24f,8f,.17f,.02f,.09f,paintWhite,MATTE)
             } else noCast {
                 box(x,.085f,7.02f,1.9f,.025f,.06f,orange,DECAL)
@@ -458,42 +476,42 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
                 for(x in floatArrayOf(33f,39f))box(x,.12f,7f,.08f,.08f,4f,if(ready)teal else orange,PAINT)
                 for(z in floatArrayOf(5f,9f))box(36f,.12f,z,6f,.08f,.08f,if(ready)teal else orange,PAINT)
             }
-            for(i in 0 until f.houseFill)panel(34.2f+(i%4)*1.15f,.2f,6f+(i/4)*1.2f,.8f,.25f,.8f,stone)
+            for(i in 0 until f.houseFill)surface(34.2f+(i%4)*1.15f,.2f,6f+(i/4)*1.2f,.8f,.25f,.8f,stone,CONCRETE)
         }
         if(f.houseStage>=1) {
-            panel(36f,.18f,7f,6.2f,.32f,4.2f,stone)
+            surface(36f,.18f,7f,6.2f,.32f,4.2f,stone,CONCRETE)
             for(x in floatArrayOf(33.2f,38.8f))panel(x,.4f,7f,.22f,.45f,4f,metal)
         }
         if(f.houseStage>=2) {
             // Separate wall panels leave actual door/window openings.
-            panel(36f,1.65f,5.08f,5.8f,2.6f,.22f,rgba(255,222,158))
-            for(x in floatArrayOf(33.1f,38.9f))panel(x,1.65f,7f,.22f,2.6f,4f,rgba(247,203,126))
-            panel(34.1f,1.65f,8.92f,1.8f,2.6f,.22f,rgba(255,222,158))
-            panel(37.8f,1.65f,8.92f,2f,2.6f,.22f,rgba(255,222,158))
-            panel(36f,2.75f,8.92f,1.8f,.4f,.22f,rgba(255,222,158))
+            surface(36f,1.65f,5.08f,5.8f,2.6f,.22f,rgba(255,222,158),PLASTER)
+            for(x in floatArrayOf(33.1f,38.9f))surface(x,1.65f,7f,.22f,2.6f,4f,rgba(247,203,126),PLASTER)
+            surface(34.1f,1.65f,8.92f,1.8f,2.6f,.22f,rgba(255,222,158),PLASTER)
+            surface(37.8f,1.65f,8.92f,2f,2.6f,.22f,rgba(255,222,158),PLASTER)
+            surface(36f,2.75f,8.92f,1.8f,.4f,.22f,rgba(255,222,158),PLASTER)
             panel(34.1f,1.6f,9.06f,1.1f,1f,.08f,tealDark)
             box(34.1f,1.6f,9.12f,.9f,.8f,.04f,glass,GLASS)
             box(34.1f,1.6f,9.16f,.06f,.86f,.04f,paintWhite,PAINT)
         }
         if(f.houseStage>=3) {
-            shape(gable,36f,2.95f,7f,5.8f,1.1f,3.9f,rgba(247,203,126),PAINT)
-            panel(37f,3.95f,6.3f,.55f,1.1f,.55f,rgba(184,105,77))
-            panel(37f,4.55f,6.3f,.7f,.12f,.7f,stone)
+            shape(gable,36f,2.95f,7f,5.8f,1.1f,3.9f,rgba(247,203,126),PLASTER)
+            surface(37f,3.95f,6.3f,.55f,1.1f,.55f,rgba(184,105,77),PLASTER)
+            surface(37f,4.55f,6.3f,.7f,.12f,.7f,stone,CONCRETE)
             for(side in floatArrayOf(-1f,1f)) {
                 push();translate(36f,3.5f,7f+side*1.05f);rotate(side*27f,1f,0f,0f)
-                panel(0f,0f,0f,6.6f,.18f,2.5f,rgba(209,91,60))
-                for(k in 0..11)box(-3.1f+k*.56f,.12f,0f,.035f,.04f,2.45f,rgba(172,68,46),PAINT)
-                pop()
+                surface(0f,0f,0f,6.6f,.18f,2.5f,rgba(209,91,60),ROOF)
+                                pop()
             }
             panel(36f,1.4f,9.02f,1.6f,2.1f,.12f,teal)
             blob(36.5f,1.35f,9.13f,.09f,.09f,.09f,metal,METAL)
-            panel(36f,.25f,9.65f,2f,.22f,1.1f,stone)
+            surface(36f,.25f,9.65f,2f,.22f,1.1f,stone,CONCRETE)
             for(x in floatArrayOf(32.6f,39.4f)) { shape(cylinder,x,.4f,9.3f,.7f,.6f,.7f,orange,PAINT);blob(x,.95f,9.3f,1f,1.2f,1f,grass,GRASS) }
         }
         if(f.buildClock>0f)for(i in 0..5)blob(33f+i*1.1f,1f+sin(f.seconds*2f+i)*.5f,9.3f,.08f,.08f,.08f,white,EMISSIVE)
     }
     private fun excavator(f:SceneFrame) {
         push();translate(WorldMap.worldX(f.excavatorX),support(f,WorldMap.worldX(f.excavatorX),f.excavatorZ),f.excavatorZ);rotate(f.excavatorHeading,0f,1f,0f);translate(-WorldMap.worldX(200f),0f,0f)
+        beginTexFrame()
         val bob=bob(f,0);translate(0f,bob,0f)
         push();translate(WorldMap.worldX(200f),0f,0f)
         push();translate(0f,-bob,0f);tracks(2.75f,f.excavatorTravel);wheelDust(f,0,2.75f);pop()
@@ -528,7 +546,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         box(0f,.0f,-.43f,.83f,.43f,.07f,darkSteel,METAL);box(0f,.0f,.43f,.83f,.43f,.07f,darkSteel,METAL)
         for(i in 0..3)shape(cone,.46f,-.18f,-.32f+i*.21f,.1f,.24f,.1f,metal,METAL)
         if(f.bucket>0)mound(0f,-.13f,0f,.74f,.32f,.78f,sandColor)
-        pop();pop()
+        pop();endTexFrame();pop()
     }
     private fun hydraulic(ax:Float,ay:Float,bx:Float,by:Float,radius:Float) {
         val mx=ax+(bx-ax)*.55f;val my=ay+(by-ay)*.55f
@@ -537,7 +555,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun truck(f:SceneFrame) {
         val tx=WorldCamera.x(f.truckX)
-        push();translate(tx,support(f,tx,f.truckZ),f.truckZ);rotate(f.truckHeading,0f,1f,0f)
+        push();translate(tx,support(f,tx,f.truckZ),f.truckZ);rotate(f.truckHeading,0f,1f,0f);beginTexFrame()
         val spin=-f.truckTravel/.47f*180f/PI.toFloat()
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.91f,.91f))wheel(x,.48f,z,spin)
         wheelDust(f,1,3.85f)
@@ -575,11 +593,11 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         pop()
         // Tail lights.
         for(z in floatArrayOf(-.7f,.7f))box(-1.95f,.72f,z,.04f,.1f,.2f,rgba(220,40,30),EMISSIVE)
-        pop()
+        endTexFrame();pop()
     }
     private fun bulldozer(f:SceneFrame) {
         val dx=WorldCamera.x(f.dozerX)
-        push();translate(dx,support(f,dx,f.dozerZ),f.dozerZ);rotate(f.dozerHeading,0f,1f,0f)
+        push();translate(dx,support(f,dx,f.dozerZ),f.dozerZ);rotate(f.dozerHeading,0f,1f,0f);beginTexFrame()
         tracks(2.7f,f.dozerTravel);wheelDust(f,2,2.7f)
         translate(0f,bob(f,2),0f)
         panel(0f,.98f,0f,2.7f,.55f,1.55f,yellow)
@@ -601,8 +619,11 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         box(1.95f,.13f,0f,.16f,.1f,2.25f,metal,METAL)
         for(z in floatArrayOf(-1.02f,1.02f))box(1.79f,.5f,z,.35f,.84f,.08f,yellowDark,PAINT)
         if(f.bladeDown && f.sand[WorldMap.cell(dx+cos(f.dozerHeading*PI.toFloat()/180)*1.8f,f.dozerZ-sin(f.dozerHeading*PI.toFloat()/180)*1.8f)]>0)mound(2.1f,.05f,0f,.5f,.18f,1.6f,sandColor)
-        pop();pop()
+        pop();endTexFrame();pop()
     }
+    /** Photo materials on a vehicle follow its body: texture space = the vehicle's local space. */
+    private fun beginTexFrame() { Matrix.invertM(texFrame,0,model,0) }
+    private fun endTexFrame() { Matrix.setIdentityM(texFrame,0) }
     private fun engineOn(f:SceneFrame,v:Int)=motion[v].moving || f.selected.ordinal==v
     /** Settle bounce after stopping plus a faint diesel tremble while the engine runs. */
     private fun bob(f:SceneFrame,v:Int)=motion[v].settle+if(engineOn(f,v)).005f*sin(f.seconds*2f*PI.toFloat()*21f) else 0f
@@ -801,6 +822,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
     }
     private fun box(x:Float,y:Float,z:Float,w:Float,h:Float,d:Float,color:FloatArray,material:FloatArray)=shape(cube,x,y,z,w,h,d,color,material)
     private fun panel(x:Float,y:Float,z:Float,w:Float,h:Float,d:Float,color:FloatArray)=shape(panelMesh,x,y,z,w,h,d,color,PAINT)
+    private fun surface(x:Float,y:Float,z:Float,w:Float,h:Float,d:Float,color:FloatArray,material:FloatArray)=shape(panelMesh,x,y,z,w,h,d,color,material)
     private fun blob(x:Float,y:Float,z:Float,w:Float,h:Float,d:Float,color:FloatArray,material:FloatArray)=shape(sphere,x,y,z,w,h,d,color,material)
     private fun mound(x:Float,y:Float,z:Float,w:Float,h:Float,d:Float,color:FloatArray)=shape(moundMesh,x,y,z,w,h,d,color,SAND)
     private fun disk(x:Float,y:Float,z:Float,w:Float,d:Float,color:FloatArray,material:FloatArray,h:Float=.012f)=shape(cylinder,x,y,z,w,h,d,color,material)
@@ -831,6 +853,16 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
         GL.glUniformMatrix4fv(uMvp,1,false,mvp,0);GL.glUniformMatrix4fv(uModel,1,false,model,0)
         GL.glUniformMatrix3fv(uNormal,1,false,normals,0);GL.glUniform4fv(uColor,1,color,0)
         GL.glUniform4f(uMaterial,material[0],material[1],material[2],material[3]);GL.glUniform1f(uKind,material[4])
+        val slot=if(material.size>6 && textures.loaded)material[5].toInt() else -1
+        GL.glUniform1f(uTexOn,if(slot>=0)1f else 0f)
+        if(slot>=0) {
+            if(slot!=boundSlot) { textures.bind(slot);boundSlot=slot }
+            val m=textures.mean[slot]
+            GL.glUniform1f(uTexScale,material[6]);GL.glUniform3f(uTexMean,m[0],m[1],m[2])
+            GL.glUniformMatrix4fv(uTexFrame,1,false,texFrame,0)
+            for(c in 0..2)for(r in 0..2)texRot[c*3+r]=texFrame[c*4+r]
+            GL.glUniformMatrix3fv(uTexRot,1,false,texRot,0)
+        }
         mesh.draw(position,normal);drawCalls++
     }
     private fun push() { check(depth<stack.lastIndex);model.copyInto(stack[depth+1]);depth++ }
@@ -874,6 +906,8 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             uniform mat4 uModel;
             uniform mat3 uNormal;
             uniform mat4 uLightVp;
+            uniform mat4 uTexFrame;
+            uniform mat3 uTexRot;
             attribute vec3 aPosition;
             attribute vec3 aNormal;
             #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -884,10 +918,15 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             varying VARYING_PRECISION vec3 vNormal;
             varying VARYING_PRECISION vec3 vWorld;
             varying VARYING_PRECISION vec4 vLight;
+            varying VARYING_PRECISION vec3 vTex;
+            varying VARYING_PRECISION vec3 vTexNormal;
             void main() {
                 vec4 world=uModel*vec4(aPosition,1.0);
                 vNormal=normalize(uNormal*aNormal);
                 vWorld=world.xyz;
+                // Photo materials are projected in the static world or the vehicle's own frame.
+                vTex=(uTexFrame*world).xyz;
+                vTexNormal=uTexRot*vNormal;
                 // Normal offset keeps lit faces from shadowing themselves.
                 vLight=uLightVp*vec4(world.xyz+vNormal*0.035,1.0);
                 gl_Position=uMvp*vec4(aPosition,1.0);
@@ -917,6 +956,15 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
             varying VARYING_PRECISION vec3 vNormal;
             varying VARYING_PRECISION vec3 vWorld;
             varying VARYING_PRECISION vec4 vLight;
+            varying VARYING_PRECISION vec3 vTex;
+            varying VARYING_PRECISION vec3 vTexNormal;
+            uniform sampler2D uAlbedoMap;
+            uniform sampler2D uNormalMap;
+            uniform sampler2D uRoughMap;
+            uniform float uTexOn;
+            uniform float uTexScale;
+            uniform vec3 uTexMean;
+            uniform mat3 uTexRot;
 
             float hash(vec3 p) {
                 p=fract(p*0.3183099+vec3(0.71,0.113,0.419));
@@ -981,6 +1029,27 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
                 if(uKind>0.5&&uKind<1.5) { gl_FragColor=vec4(finish(albedo*3.2),uColor.a);return; }
                 vec3 n=normalize(vNormal);
                 float fade=clamp(1.0-dist/60.0,0.0,1.0);
+                float specScale=1.0;
+                if(uTexOn>0.5) {
+                    // Triplanar CC0 photo material: albedo recoloured toward the palette colour,
+                    // whiteout-blended normal map and roughness-driven highlights.
+                    vec3 bn=normalize(vTexNormal);
+                    vec3 w=pow(abs(bn),vec3(4.0));w/=(w.x+w.y+w.z);
+                    vec3 p=vTex/uTexScale;
+                    vec2 ux=p.zy;vec2 uy=p.xz;vec2 uz=p.xy;
+                    vec3 tex=texture2D(uAlbedoMap,ux).rgb*w.x+texture2D(uAlbedoMap,uy).rgb*w.y+texture2D(uAlbedoMap,uz).rgb*w.z;
+                    albedo*=min(pow(tex,vec3(2.2))/pow(uTexMean,vec3(2.2)),vec3(4.0));
+                    float rough=texture2D(uRoughMap,ux).r*w.x+texture2D(uRoughMap,uy).r*w.y+texture2D(uRoughMap,uz).r*w.z;
+                    specScale=1.25-rough;
+                    vec3 tx=texture2D(uNormalMap,ux).xyz*2.0-1.0;
+                    vec3 ty=texture2D(uNormalMap,uy).xyz*2.0-1.0;
+                    vec3 tz=texture2D(uNormalMap,uz).xyz*2.0-1.0;
+                    tx=vec3(tx.xy+bn.zy,abs(tx.z)*bn.x);
+                    ty=vec3(ty.xy+bn.xz,abs(ty.z)*bn.y);
+                    tz=vec3(tz.xy+bn.xy,abs(tz.z)*bn.z);
+                    vec3 tn=normalize(tx.zyx*w.x+ty.xzy*w.y+tz.xyz*w.z);
+                    n=normalize(vec3(dot(uTexRot[0],tn),dot(uTexRot[1],tn),dot(uTexRot[2],tn)));
+                }
                 if(uMaterial.w>0.0) {
                     float detail=noise(vWorld*uMaterial.z)*0.65+noise(vWorld*uMaterial.z*3.1)*0.35;
                     albedo*=1.0+(detail-0.5)*2.0*uMaterial.w*mix(0.5,1.0,fade);
@@ -1005,7 +1074,7 @@ class SceneRenderer3D: GLSurfaceView.Renderer {
                 if(uKind>7.5) { skyAmbient=vec3(0.62,0.68,0.76);ao=1.0; }
                 vec3 h=normalize(uSun+view);
                 float shininess=uMaterial.y;
-                float spec=pow(max(dot(n,h),0.0),shininess)*uMaterial.x*(shininess+8.0)/25.0;
+                float spec=pow(max(dot(n,h),0.0),shininess)*uMaterial.x*(shininess+8.0)/25.0*specScale;
                 float fresnel=pow(1.0-max(dot(n,view),0.0),5.0);
                 vec3 color=albedo*(skyAmbient*ao+sunColor*ndl*lit);
                 vec3 reflection=skyColor(reflect(-view,n));

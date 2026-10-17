@@ -8,7 +8,12 @@ import java.io.File
 
 fun main(args: Array<String>) {
     val out=StringBuilder("{")
-    val r=SceneRenderer3D()
+    // Real CC0 material maps from the app assets; uploads are recorded by path for the browser.
+    val assets=File(System.getProperty("user.dir"),"../../app/src/main/assets").canonicalFile
+    val r=SceneRenderer3D(object:TextureUploader {
+        override fun readText(path:String)=File(assets,path).takeIf { it.isFile }?.readText()
+        override fun upload(path:String):Boolean { val file=File(assets,path);if(!file.isFile)return false;GLES20.texImageAsset(file.path);return true }
+    })
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(

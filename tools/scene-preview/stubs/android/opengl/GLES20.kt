@@ -11,7 +11,8 @@ object GLES20 {
   const val GL_HIGH_FLOAT=0x8DF2; const val GL_MAX_TEXTURE_SIZE=0x0D33; const val GL_TEXTURE_2D=0x0DE1; const val GL_RGBA=0x1908; const val GL_UNSIGNED_BYTE=0x1401
   const val GL_TEXTURE_MIN_FILTER=0x2801; const val GL_TEXTURE_MAG_FILTER=0x2800; const val GL_NEAREST=0x2600; const val GL_TEXTURE_WRAP_S=0x2802; const val GL_TEXTURE_WRAP_T=0x2803; const val GL_CLAMP_TO_EDGE=0x812F
   const val GL_RENDERBUFFER=0x8D41; const val GL_DEPTH_COMPONENT16=0x81A5; const val GL_FRAMEBUFFER=0x8D40; const val GL_COLOR_ATTACHMENT0=0x8CE0; const val GL_DEPTH_ATTACHMENT=0x8D00; const val GL_FRAMEBUFFER_COMPLETE=0x8CD5
-  const val GL_TEXTURE0=0x84C0
+  const val GL_TEXTURE0=0x84C0; const val GL_TEXTURE1=0x84C1; const val GL_TEXTURE2=0x84C2; const val GL_TEXTURE3=0x84C3
+  const val GL_REPEAT=0x2901; const val GL_LINEAR=0x2601; const val GL_LINEAR_MIPMAP_LINEAR=0x2703; const val GL_EXTENSIONS=0x1F03
   val ops=StringBuilder(); private var next=1
   private fun op(name:String,vararg a:Any?){ if(ops.isNotEmpty())ops.append(",\n"); ops.append("[\"").append(name).append('"'); for(x in a){ ops.append(','); ops.append(when(x){ null->"null"; is String->"\""+x.replace("\\","\\\\").replace("\"","\\\"").replace("\n","\\n")+"\""; is FloatArray->x.joinToString(",","[","]"); is Boolean->x.toString(); else->x.toString() }) }; ops.append(']') }
   private fun id(name:String,vararg a:Any?):Int{ val i=next++; op(name,i,*a); return i }
@@ -71,5 +72,10 @@ object GLES20 {
   @JvmStatic fun glFramebufferTexture2D(t:Int,a:Int,tt:Int,x:Int,l:Int)=op("fbTexture",x)
   @JvmStatic fun glFramebufferRenderbuffer(t:Int,a:Int,rt:Int,x:Int)=op("fbRenderbuffer",x)
   @JvmStatic fun glCheckFramebufferStatus(t:Int)=GL_FRAMEBUFFER_COMPLETE
+  @JvmStatic fun glGenerateMipmap(t:Int)=op("generateMipmap")
+  @JvmStatic fun glTexParameterf(t:Int,p:Int,v:Float)=op("texParamf",p,v)
+  @JvmStatic fun glDeleteTextures(n:Int,ids:IntArray,o:Int)=op("deleteTexture",ids[o])
+  /** Records an image upload by asset path; the replay page decodes the real file. */
+  fun texImageAsset(path:String)=op("texImageAsset",path)
   @JvmStatic fun glActiveTexture(t:Int)=op("activeTexture",t)
 }
