@@ -52,7 +52,7 @@ class ConstructionTest {
     }
     @Test fun alpha5SaveMigratesAndMalformedRoadOrMarksResetSafely() {
         val g=GameState();g.load=4;g.source=32
-        val parts=g.snapshot().removePrefix("6|").split(';')
+        val parts=g.snapshot().removePrefix("7|").split(';')
         val old="5|"+parts[0].split(',').take(20).joinToString(",")+";"+parts[1]
         val copy=GameState();copy.restore(old);assertEquals(4,copy.load);assertEquals(200f,copy.excavatorX,0f);assertEquals(36,copy.totalSand)
         copy.restore(g.snapshot().replace(";0,0,0,0;",";2,0,0,0;"));assertEquals(0,copy.load)
@@ -85,6 +85,6 @@ class ConstructionTest {
     @Test fun roadMissionIsOptionalAndAlreadyBuiltRoadCanCompleteIt() {
         val g=GameState();g.source=32;g.road.fill(1);g.missionMode=true;g.mission=3
         val copy=GameState();copy.restore(g.snapshot());assertEquals(4,copy.missionProgress);assertEquals(1,copy.rewardSerial)
-        tick(copy);copy.nextMission();assertEquals(0,copy.mission);assertEquals(36,copy.totalSand)
+        tick(copy);copy.nextMission();assertEquals(4,copy.mission);assertEquals(36,copy.totalSand)
     }
 }

@@ -1,63 +1,67 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.6**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.7**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Map konstruksi dan kontrol sentuh TinySim](docs/verification/alpha6/road-project.jpg)
+![Map konstruksi dan kontrol sentuh TinySim](docs/verification/alpha7/house-complete.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
 
-## Alpha.6: excavator bergerak, gali ulang, bangun jalan
+## Alpha.7: tanah berubah bentuk & rumah yang bisa dibangun
 
-- **Ketiga kendaraan dapat berjalan** di map 62 × 22 unit dengan tiga area terhubung. Ketuk tanah atau seret badan kendaraan untuk menuju tujuan; track excavator ikut berputar.
-- Ketuk tumpukan pasir dengan excavator terpilih. Mesin mendekati tumpukan yang jauh, mengarahkan lengan, lalu mengambil pasir. Pasir hasil bongkar truk bisa digali dan dimuat kembali; bekas pengambilan ditandai guratan pada permukaan.
-- Lengan memakai dua ruas berpanjang tetap, dengan posisi render dan ray picking yang mengikuti posisi/rotasi excavator. **Isi truk** memanggil truk ke posisi pemuatan excavator saat ini, termasuk area yang jauh.
-- **Proyek jalan** berada di halaman konstruksi: empat petak berbingkai jingga pada x=16–24, z=7–9. Tuang pasir, turunkan blade bulldozer, lalu lintasi petak untuk membentuk jalan kerikil. Pasir yang terpasang masuk hitungan inventori; jalan selesai memunculkan perayaan lembut.
-- Misi bergambar bertambah menjadi isi truk → tuang → ratakan → bangun empat bagian jalan. Semua kegiatan juga tersedia dalam bermain bebas.
-- Tidak ada joystick/tombol arah. Pan/pinch, minimap, Ikuti, Stop, kualitas pencahayaan/material/bayangan, privasi, dan lifecycle tetap dipertahankan.
-- Save alpha.1–alpha.5 dimigrasikan. Posisi/arah excavator, pasir, bekas penggalian, dan bagian jalan tersimpan lokal. Reset juga mengembalikan kamera ke area awal.
+- **Heightfield 3D sungguhan**: excavator mengambil tanah, permukaan turun menjadi lubang, muatan truk menjadi timbunan, dan bulldozer dapat mengisi kembali lubang. Mesh, normal pencahayaan, picking sentuhan, dan tinggi kendaraan menggunakan data permukaan yang sama.
+- **Proyek rumah kecil**: gali minimal empat sel di fondasi berbingkai jingga/toska, antarkan delapan unit bahan dengan truk, lalu sentuh ikon rumah untuk membangun lantai/fondasi, dinding, serta atap. Kendaraan di tapak dipindahkan keluar sebelum perakitan. Jendela kaca, pintu, atap genteng, cerobong dan tanaman muncul bertahap. Empat titik berwarna memberi petunjuk penggalian tanpa wajib membaca.
+- **Mode Gali** memakai ikon bucket besar. Saat aktif, ketuk tanah untuk menggali; matikan untuk ketuk tujuan perjalanan. Ketuk pasir lepas tetap langsung mengambil pasir pada kedua mode. Seret badan kendaraan, seret bucket, pan/pinch, minimap, Ikuti dan Stop tetap tersedia; tidak ada analog.
+- **15 menit soundscape offline asli**: tiga area, masing-masing lima menit stereo PCM16 48 kHz; angin/burung, bengkel dengan mesin jauh, serta taman/air. Perpindahan area memakai crossfade, suara mati memakai fade-out, audio focus dihormati, dan pemutar dilepas saat pause.
+- Paket audio aktif berukuran **172.800.132 byte**, sehingga APK debug berada di atas **100 MB**. WAV disimpan tanpa kompresi untuk streaming AssetManager/MediaPlayer. Tidak ada berkas padding; ukuran besar berasal dari audio lossless, bukan klaim bahwa grafik setara game komersial besar.
+- Save alpha.1–alpha.6 dimigrasikan. Tanah, timbunan, kendaraan, jalan, bahan rumah dan tahap bangunan disimpan lokal. Kegiatan jalan alpha.6 tetap dapat dimainkan.
 
 ## Cara bermain
 
 1. Pilih kendaraan dengan menyentuh modelnya atau kartu kendaraan di bawah.
-2. **Excavator:** ketuk tanah kosong atau seret badan mesin untuk berpindah. Ketuk tumpukan pasir untuk mendekat dan mengambilnya, atau seret pin/bucket ke pasir lalu ke atas bak truk. Tombol **Ambil pasir** memilih tumpukan terdekat (sumber awal jika tidak ada tumpukan lepas). Saat bucket terisi, sentuh truk atau **Isi truk**; truk dipanggil ke lokasi excavator sekarang. Pasir yang sudah dituang bisa diambil lagi.
+2. **Excavator:** seret badan mesin untuk berpindah. Dengan **Gali** tidak aktif, ketuk tanah untuk berjalan; dengan **Gali** aktif, ketuk tanah untuk mendekat dan menggali. Tumpukan pasir lepas dapat langsung disentuh pada kedua mode. Seret bucket juga tetap bekerja. Saat bucket terisi, sentuh truk atau **Isi truk**; truk dipanggil ke lokasi excavator sekarang.
 3. **Truk / bulldozer:** ketuk tanah untuk menuju titik tersebut, atau seret model kendaraan ke tujuan. Sentuh model yang sudah dipilih sekali lagi untuk mengangkat/menurunkan bak atau blade; tombol aksi besar menyediakan fungsi yang sama. Tombol **Stop** menghentikan semua perjalanan.
 4. **Jelajah:** seret ruang kosong untuk menggeser map. Dua jari menggeser dan mencubit untuk zoom. Tombol **Kamera/Putar** mengganti seret menjadi orbit; dua jari pada mode tersebut juga mengorbit. Tombol +/− menyediakan alternatif zoom. Minimap di kiri menempatkan pandangan pada area yang disentuh. **Ikuti** mengembalikan kamera ke kendaraan terpilih. Tombol preset kamera mengganti sudut dan memulihkan pandangan stasiun pemuatan.
-5. **Bebas / Misi:** kartu kiri atas mengganti mode. Misi bergambar: isi 4 unit, tuang 4 unit, ratakan melalui 4 perpindahan pasir, dan bangun 4 bagian jalan. Untuk proyek jalan, bawa truk ke petak jingga (muatan jatuh di belakang truk), tuang pasir, lalu lintasi pasir dengan blade bulldozer turun. Empat unit cukup untuk keempat bagian; sisa pasir tetap bisa dimainkan. Tidak ada kalah, hukuman, batas waktu, atau kewajiban membaca.
-6. Speaker mengatur suara. Tahan gembok **3 detik** untuk area orang tua: suara, reset dengan konfirmasi, dan mode. Back menutup panel lalu mengikuti perilaku Android. Perjalanan dibatalkan ketika aplikasi masuk background; posisi terakhir tersimpan.
+5. **Bebas / Misi:** kartu kiri atas mengganti mode. Misi bergambar: isi 4 unit, tuang 4 unit, ratakan, bangun 4 bagian jalan, lalu rumah. Untuk proyek jalan, bawa truk ke petak jingga (muatan jatuh di belakang truk), tuang pasir, lalu lintasi pasir dengan blade bulldozer turun. Empat unit cukup untuk keempat bagian; sisa pasir tetap bisa dimainkan. Tidak ada kalah, hukuman, batas waktu, atau kewajiban membaca.
+6. **Rumah:** gunakan minimap ke area bangunan di kanan. Aktifkan Gali dan gali empat sel di kotak fondasi. Muat delapan unit ke truk, tuang di dalam kotak, lalu sentuh ikon **Bangun** tiga kali untuk tiga tahap. Ikon juga memusatkan kamera ke proyek.
+7. Speaker mengatur suara. Tahan gembok **3 detik** untuk area orang tua: suara, reset dengan konfirmasi, dan mode. Back menutup panel lalu mengikuti perilaku Android. Perjalanan dibatalkan ketika aplikasi masuk background; posisi terakhir tersimpan.
 
-Ada 36 unit pasir yang tetap terhitung di sumber, bucket, bak, tanah, dan jalan yang terpasang. Reset orang tua memulai dunia baru. Kendaraan dibatasi di dalam lahan kerja; dekorasi tidak memakai simulasi tabrakan rigid-body.
+Sumber awal berisi 36 unit pasir. Tanah dasar memiliki 4 unit per sel (1.364 sel): total **5.492 unit material** selalu terhitung di tanah, sumber, bucket, bak, timbunan, jalan, dan rumah. Reset orang tua memulai dunia baru. Kendaraan dibatasi di dalam lahan kerja; dekorasi tidak memakai simulasi tabrakan rigid-body.
 
 ## Teknologi dan struktur
 
 Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas untuk HUD. Integrasi native mempertahankan lifecycle Android dan memisahkan input, simulasi, serta rendering. Tidak ada dependency runtime pihak ketiga; seluruh model dan material dihasilkan lokal tanpa unduhan aset.
 
 - `GameState`: perjalanan ke tujuan, putaran kendaraan, transfer pasir, misi, dan snapshot.
+- `Terrain`: heightfield kontinu, batas tanah dasar, dan zona fondasi rumah.
 - `WorldMap`: batas lahan, grid 62 × 22 sel pasir, konversi posisi dan tetangga sel.
 - `ArmRig`: inverse kinematics dua ruas dan batas jangkauan excavator.
 - `TouchController`: state machine gestur murni Kotlin; `GameInput` mengadaptasi event/pointer Android ke pengenal tersebut.
 - `scene/WorldCamera`: kamera perspektif, pan/orbit/zoom, ray picking tanah dan bidang lengan.
-- `scene/SceneFrame`: snapshot dengan salinan array pasir, jalan, dan bekas penggalian milik thread GL.
+- `scene/SceneFrame`: snapshot dengan salinan array tanah, pasir, jalan, dan bekas penggalian milik thread GL.
 - `scene/SceneRenderer3D`, `Geometry`: model berhierarki, VBO, depth/shadow pass, material, langit, partikel, dan dekorasi. GPU tanpa highp memakai shader warna mediump tanpa shadow map.
 - `GameRenderer`: HUD, ikon, minimap, dan kontrol sentuh besar.
-- `GameAudio`: tone sintetis Android bervolume rendah dengan pembatas frekuensi.
+- `GameAudio`: tone sintetis lembut dan soundscape stereo offline, audio focus, async prepare, fade/crossfade, dan pelepasan lifecycle.
 - `SettingsStore`: SharedPreferences lokal untuk dunia, suara, dan kamera.
 - `GameView` / `MainActivity`: simulasi pada thread UI, snapshot ke GL, pause/resume, dan Back.
 
-Pasir memakai sel deterministik yang stabil, bukan granular physics bebas. Bekas penggalian berupa tanda permukaan pada sel pasir yang diambil; tanah dasar belum memakai mesh deformasi. Jalan terdiri dari empat bagian kerikil yang tetap terpasang sampai reset. Save baru berawalan `6|`; format `5|` serta save lama 12/16 field dengan 24 sel dimigrasikan tanpa menghilangkan pasir. Rute aktif tidak dipulihkan setelah background/cold launch; posisi dan muatan tetap dipertahankan.
+Material memakai sel deterministik, bukan granular physics bebas. Heightfield digambar pada grid 0,25 unit dengan normal permukaan; tanah dapat turun 0,88 unit hingga lapisan dasar. Tinggi timbunan visual dibatasi 24 unit material (3,12 unit tinggi), sementara seluruh material tambahan tetap tersimpan dan bisa diambil kembali. Kendaraan mengikuti tinggi permukaan pada titik pusat; belum ada suspensi/kemiringan sasis atau tabrakan bangunan/dekorasi.
+
+Save baru berawalan `7|`. Format `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
 
 ## Build dan pemasangan
 
-JDK 17, Android SDK 35, Gradle wrapper 8.9 dengan checksum distribusi.
+JDK 17, Android SDK 35, Gradle wrapper 8.9 dengan checksum distribusi. Java 17 menghasilkan audio saat preBuild; tidak perlu mengunduh aset atau dependency audio tambahan. Python 3 hanya diperlukan untuk verifier paket audio. File audio hasil build tidak dimasukkan ke Git; generator dan lisensinya ada di `tools/audio`.
 
 ```sh
 # Atur ANDROID_HOME atau sdk.dir pada local.properties.
 ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+python3 tools/audio/verify_pack.py app/build/generated/sound-assets/soundscapes app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.6-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.6 memakai key yang sama dengan APK lokal alpha.4/alpha.5 selama key pengembangan tersebut tetap tersedia.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.7-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.7 memakai key yang sama dengan APK lokal alpha.4/alpha.5/alpha.6 selama key pengembangan tersebut tetap tersedia.
 
 Runner pengujian sentuh terpisah:
 
@@ -71,7 +75,7 @@ Runner bukan bagian APK permainan. Hasil sukses harus berisi `result=PASS`. Liha
 ## Pengembangan berikutnya
 
 - Menambah aktivitas crane, pemasangan pipa, dan bangunan bertahap.
-- Mesh tanah yang berubah bentuk serta proyek jalan/jembatan tambahan.
+- Suspensi mengikuti kemiringan tanah, tabrakan bangunan, dan proyek jembatan tambahan.
 - Misi antarzona dan tutorial sentuh berbasis gambar.
 - Pengujian langsung bersama anak/orang tua dan virtual accessibility nodes pada kontrol Canvas.
 - Dunia kebun serta kendaraan penyelamat.
@@ -80,4 +84,4 @@ Target utama adalah HP pengguna berspesifikasi tinggi; aturan pengembangan dan p
 
 ## Aset dan lisensi
 
-Model 3D, mesh, material/tekstur prosedural, shader, ikon, dan launcher dibuat sendiri di repository ini; tidak ada aset gambar/model/musik yang diunduh. Font sistem dan ToneGenerator berasal dari Android. Kode dan artwork asli TinySim berlisensi MIT (`LICENSE`); Gradle wrapper Apache-2.0. Kotlin/Android SDK adalah tool build.
+Model 3D, mesh, material/tekstur prosedural, shader, ikon, dan launcher dibuat sendiri di repository ini; tidak ada aset gambar/model/musik yang diunduh. Soundscape disintesis oleh generator Java asli berlisensi MIT; tidak memakai sampel pihak ketiga. Font sistem, ToneGenerator dan MediaPlayer berasal dari Android. Kode dan artwork asli TinySim berlisensi MIT (`LICENSE`); Gradle wrapper Apache-2.0. Kotlin/Android SDK adalah tool build.

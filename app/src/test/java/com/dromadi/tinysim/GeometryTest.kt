@@ -26,6 +26,7 @@ class GeometryTest {
         }
     }
     @Test fun closedMeshesFaceOutward() {
+        assertOutward("gable",Geometry.gable(),Vec3(0f,.33f,0f))
         assertOutward("cube",Geometry.cube(),Vec3(0f,0f,0f))
         assertOutward("bevel",Geometry.bevelCube(),Vec3(0f,0f,0f))
         assertOutward("sphere",Geometry.sphere(),Vec3(0f,0f,0f))

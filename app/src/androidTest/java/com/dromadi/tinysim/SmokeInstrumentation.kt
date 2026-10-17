@@ -99,10 +99,27 @@ class SmokeInstrumentation:Instrumentation() {
                 val saved=view.game.snapshot();view.pause();view.resume()
                 check(!view.game.driving && view.game.snapshot()==saved) { "Pause/resume changed inventory or pose" }
             }
+            // A fresh project: real ground taps dig four cells, action taps load eight units.
+            ui { view.game.reset();view.game.selected=GameState.Vehicle.EXCAVATOR;view.game.excavatorX=WorldMap.gameX(30.5f);view.game.excavatorZ=6.5f }
+            tap(475f,605f);tap(180f,365f)
+            for(x in listOf(33.5f,34.5f,35.5f,36.5f)) {
+                var p=0f to 0f
+                ui { p=view.cameraSpec().project(com.dromadi.tinysim.scene.Vec3(x,view.game.surface(x,6.5f),6.5f)) }
+                tap(p.first,p.second);waitUntil("dig foundation $x") { view.game.bucket==2 }
+                tap(1020f,605f);waitUntil("load foundation material") { view.game.bucket==0 }
+            }
+            ui { check(view.game.foundationProgress==4 && view.game.load==8) }
+            tap(218f,605f);tap(1020f,605f)
+            waitUntil("deliver eight units to the foundation") { view.game.houseFill==8 }
+            repeat(3) { stage->tap(1138f,408f);waitUntil("build house stage ${stage+1}") { view.game.houseStage==stage+1 } }
+            ui {
+                check(view.game.totalMaterial==Terrain.INITIAL_MASS)
+                val snapshot=view.game.snapshot();view.pause();view.resume();check(snapshot==view.game.snapshot())
+            }
             // A cancelled hold and a short tap may not open the parent area.
             tap(1138f,52f);ui { check(!view.parents) }
             ui { event(MotionEvent.ACTION_DOWN,listOf(1138f to 52f));event(MotionEvent.ACTION_CANCEL,listOf(1138f to 52f));check(!view.parents) }
-            result.putString("stream","PASS: pinch/orbit isolation, zoom, tap destination, minimap, scoop -> load 4 -> dump 4 -> dozer in expanded map, mobile excavator re-scoop -> reload, pause/resume, conserved 36, parent tap/cancel.\n")
+            result.putString("stream","PASS: pinch/orbit isolation, zoom, tap destination, minimap, scoop -> load 4 -> dump 4 -> dozer in expanded map, mobile excavator re-scoop -> reload, pause/resume, house foundation -> delivery 8 -> three building stages, conserved terrain material, parent tap/cancel.\n")
             result.putString("result","PASS")
             finish(Activity.RESULT_OK,result)
         } catch(t:Throwable) {

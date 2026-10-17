@@ -11,7 +11,7 @@ object ArmRig {
     const val REACH=423f
     fun limit(x:Float,y:Float):Pair<Float,Float> {
         val dx=x.coerceIn(285f,825f)-PIVOT_X
-        val dy=y.coerceIn(220f,466f)-PIVOT_Y
+        val dy=y.coerceIn(220f,550f)-PIVOT_Y
         val distance=hypot(dx,dy)
         val ratio=min(1f,REACH/distance)
         return PIVOT_X+dx*ratio to PIVOT_Y+dy*ratio

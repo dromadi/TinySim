@@ -16,3 +16,7 @@ Prioritaskan sentuhan langsung: ketuk tujuan, seret kendaraan/bucket, pan/pinch 
 ## Persyaratan produk
 
 Pertahankan konsep dan batasan produk dalam README: permainan ramah anak usia 2–6 tahun, kontrol sederhana, offline, tanpa iklan/login/pembelian/analytics, tanpa izin yang tidak diperlukan, serta area orang tua dengan gestur tahan. Hormati lifecycle dan tombol kembali Android.
+
+## Paket konten
+
+Target pengguna adalah game berukuran 100 MB ke atas. Penuhi dengan konten offline yang benar-benar dipakai (audio, material, dunia, animasi), bukan padding atau duplikasi berkas untuk mengejar angka. Ukuran APK harus dilaporkan dari hasil build nyata.

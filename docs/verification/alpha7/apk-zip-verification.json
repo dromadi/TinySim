@@ -1,0 +1,27 @@
+{
+  "crc": "PASS",
+  "classes": 1096,
+  "duplicateClasses": [],
+  "entries": [
+    "META-INF/com/android/build/gradle/app-metadata.properties",
+    "classes.dex",
+    "classes2.dex",
+    "classes3.dex",
+    "classes4.dex",
+    "assets/soundscapes/garden.wav",
+    "assets/soundscapes/index.json",
+    "assets/soundscapes/quarry.wav",
+    "assets/soundscapes/workshop.wav",
+    "AndroidManifest.xml",
+    "res/drawable/ic_launcher.xml",
+    "res/xml/data_extraction_rules.xml",
+    "resources.arsc",
+    "kotlin/annotation/annotation.kotlin_builtins",
+    "kotlin/collections/collections.kotlin_builtins",
+    "kotlin/coroutines/coroutines.kotlin_builtins",
+    "kotlin/internal/internal.kotlin_builtins",
+    "kotlin/kotlin.kotlin_builtins",
+    "kotlin/ranges/ranges.kotlin_builtins",
+    "kotlin/reflect/reflect.kotlin_builtins"
+  ]
+}

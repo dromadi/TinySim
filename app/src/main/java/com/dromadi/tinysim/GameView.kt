@@ -16,7 +16,7 @@ import com.dromadi.tinysim.scene.WorldCamera
 class GameView(context: Context): FrameLayout(context) {
     val game=GameState()
     val settings=SettingsStore(context)
-    private val audio=GameAudio()
+    private val audio=GameAudio(context)
     private val hudRenderer=GameRenderer()
     private val sceneRenderer=SceneRenderer3D()
     private val input=GameInput(this)
@@ -28,6 +28,7 @@ class GameView(context: Context): FrameLayout(context) {
     var holdProgress=0f
     private var camera=settings.camera
     var orbitMode=false
+    var digging=false
     private var yaw=settings.yaw
     private var pitch=settings.pitch
     private var zoom=settings.zoom
@@ -35,9 +36,10 @@ class GameView(context: Context): FrameLayout(context) {
     private var panZ=settings.panZ
     private var following=false
     fun cameraSpec()=WorldCamera.spec(camera,yaw,pitch,zoom,panX,panZ)
+    private fun groundAt(x:Float,y:Float)=cameraSpec().ground(x,y,game::surface)
     fun followSelected() { following=true }
     fun pan(fromX:Float,fromY:Float,toX:Float,toY:Float) {
-        val camera=cameraSpec();val a=camera.ground(fromX,fromY) ?: return;val b=camera.ground(toX,toY) ?: return
+        val camera=cameraSpec();val a=camera.ground(fromX,fromY,game::surface) ?: return;val b=camera.ground(toX,toY,game::surface) ?: return
         following=false;panX=(panX+a.x-b.x).coerceIn(-8f,44f);panZ=(panZ+a.z-b.z).coerceIn(-3f,11f)
     }
     fun jumpMap(x:Float,y:Float) {
@@ -56,15 +58,15 @@ class GameView(context: Context): FrameLayout(context) {
         }.minByOrNull { it.second }?.first
     }
     fun driveAt(x:Float,y:Float) {
-        val point=cameraSpec().ground(x,y) ?: return
+        val point=groundAt(x,y) ?: return
         if(point.x !in WorldMap.MIN_X..WorldMap.MAX_X || point.z !in WorldMap.MIN_Z..WorldMap.MAX_Z)return
         following=false;game.driveTo(game.selected,WorldMap.gameX(point.x),point.z)
     }
     fun sceneTap(x:Float,y:Float) {
         // A dumped pile lies close to the truck: prioritize the intended digging surface
         // over the forgiving vehicle hit radius when the excavator is selected.
-        val ground=cameraSpec().ground(x,y)
-        if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
+        val ground=groundAt(x,y)
+        if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && (digging || game.looseAt(ground.x,ground.z)) && game.digAt(ground.x,ground.z))return
         val unit=vehicleAt(x,y)
         if(unit!=null) {
             if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket>0 && unit==GameState.Vehicle.TRUCK)game.action()
@@ -73,8 +75,8 @@ class GameView(context: Context): FrameLayout(context) {
             } else selectUnit(unit)
             return
         }
-        val point=cameraSpec().ground(x,y) ?: return
-        if(game.selected==GameState.Vehicle.EXCAVATOR && game.digAt(point.x,point.z))return
+        val point=groundAt(x,y) ?: return
+        if(game.selected==GameState.Vehicle.EXCAVATOR && (digging || game.looseAt(point.x,point.z)) && game.digAt(point.x,point.z))return
         driveAt(x,y);followSelected()
     }
 
@@ -129,7 +131,7 @@ class GameView(context: Context): FrameLayout(context) {
         val point=cameraSpec().armPlane(x,y,origin,game.excavatorZ,game.excavatorHeading) ?: return
         val a=game.excavatorHeading*kotlin.math.PI.toFloat()/180f
         val local=(point.x-origin)*kotlin.math.cos(a)-(point.z-game.excavatorZ)*kotlin.math.sin(a)
-        game.stopMovement();game.moveArm(200f+local*60f,WorldCamera.gameY(point.y))
+        game.stopMovement();game.moveArm(200f+local*60f,WorldCamera.gameY(point.y-game.excavatorHeight))
     }
     private fun drawHud(canvas: Canvas) {
         scale=minOf(width/1200f,height/675f).coerceAtLeast(.001f)
@@ -152,11 +154,12 @@ class GameView(context: Context): FrameLayout(context) {
             val ease=1f-kotlin.math.exp(-4f*dt)
             panX+=(targetX.coerceIn(-8f,44f)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,11f)-panZ)*ease
         }
+        audio.update(settings.sound,if(panX<10f)0 else if(panX<28f)1 else 2)
         previous=now
         sceneRenderer.submit(SceneFrame.capture(game,camera,now/1000f,yaw,pitch,zoom,panX,panZ))
         surface.requestRender()
         canvas.save();canvas.translate(offsetX,offsetY);canvas.scale(scale,scale)
-        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,orbitMode,zoom,panX,panZ)
+        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,orbitMode,zoom,panX,panZ,digging)
         canvas.restore()
         if(running)hud.postInvalidateOnAnimation()
     }
@@ -181,7 +184,9 @@ class GameView(context: Context): FrameLayout(context) {
         if(x in 20f..100f && y in 198f..274f)return "zoomOut"
         if(x in 20f..236f && y in 298f..420f)return "map"
         if(x in 1098f..1178f && y in 282f..358f)return "focus"
+        if(x in 1098f..1178f && y in 370f..446f)return "build"
         if(y in 557f..655f)return when {
+            x in 425f..525f -> "digToggle"
             x in 20f..145f -> "excavator"
             x in 155f..280f -> "truck"
             x in 290f..415f -> "dozer"
@@ -192,7 +197,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(y in 100f..535f) {
             if(orbitMode)return "orbit"
             if(game.selected==GameState.Vehicle.EXCAVATOR) {
-                val pin=runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(game.bucketPosition.first,WorldCamera.y(game.armY),game.bucketPosition.second)) }.getOrNull()
+                val pin=runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(game.bucketPosition.first,WorldCamera.y(game.armY)+game.excavatorHeight,game.bucketPosition.second)) }.getOrNull()
                 if(pin!=null && kotlin.math.hypot(x-pin.first,y-pin.second)<54f)return "arm"
             }
             return "scene"
@@ -208,6 +213,8 @@ class GameView(context: Context): FrameLayout(context) {
             "zoomOut" -> { orbit(0f,0f,1f/1.12f);saveCamera() }
             "focus" -> followSelected()
             "stop" -> game.stopMovement()
+            "digToggle" -> { digging=!digging;game.selected=GameState.Vehicle.EXCAVATOR }
+            "build" -> { game.buildHouse();panX=36.3f;panZ=7f;following=false }
             "excavator" -> selectUnit(GameState.Vehicle.EXCAVATOR)
             "truck" -> selectUnit(GameState.Vehicle.TRUCK)
             "dozer" -> selectUnit(GameState.Vehicle.DOZER)

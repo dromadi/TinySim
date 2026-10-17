@@ -1,3 +1,28 @@
+# Verifikasi alpha.7 — terrain & proyek rumah
+
+Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 7; versi `0.1.0-alpha.7`.
+
+## Hasil yang benar-benar dijalankan
+
+- Build bersih `clean testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` **berhasil**: 48 tes, 0 gagal/error/skipped; lint 0 error dan satu warning `DiscouragedApi` untuk landscape yang disengaja.
+- Tes terrain/rumah mencakup perubahan tinggi dan normal mesh setelah menggali, penggalian → pemuatan → pembongkaran → pengisian kembali lubang oleh dozer, empat titik fondasi → pengiriman delapan unit → tiga tahap rumah, perpindahan kendaraan keluar tapak, ray picking pada heightfield, save/migrasi/corrupt state, lapisan dasar, serta timbunan besar.
+- Semua material dihitung: 36 unit sumber awal + 1.364 × 4 unit tanah dasar = **5.492 unit**. Unit yang masuk jalan atau rumah tetap masuk total. Timbunan di atas batas tinggi visual tetap dapat disimpan dan diambil kembali.
+- APK lokal **173.725.502 byte = 173,7 MB / 165,68 MiB**. Signature v2 valid, package/versi benar, 0 Android permission. Key lokal sama dengan APK lokal alpha.4/alpha.5/alpha.6.
+- Verifikasi ZIP/DEX: CRC seluruh entry lulus, tidak ada kelas duplikat, tidak ada berkas audio tambahan/temporer.
+- Audio: tiga WAV orisinal, masing-masing 300 detik, stereo PCM16/48 kHz; total 172.800.132 byte. Header, variasi data, fade akhir loop, hash, batas peak/RMS, streaming ZIP_STORED dan ukuran APK >100 MiB lulus. Verifier yang sama dijalankan oleh GitHub Actions. Binary audio dihasilkan dari kode Java saat build, tanpa unduhan sampel.
+
+- **12 pratinjau renderer/HUD lulus**: enam adegan (awal, jalan, terrain/fondasi, bahan rumah, dinding, rumah lengkap), masing-masing shader normal berbayangan dan fallback mediump; GL error 0. Gambar akhir ditinjau secara visual. Kode game/mesh/renderer/HUD asli dieksekusi pada JVM lalu WebGL, bukan Android.
+
+## Batas pengujian
+
+Alpha.7 belum dijalankan pada HP/emulator Android. Runner MotionEvent asli sudah dikompilasi dan diperluas untuk fondasi, pemuatan, rumah tiga tahap serta pause/resume, tetapi belum dieksekusi. Playback, crossfade, audio focus dan lifecycle Android belum diverifikasi di perangkat; pengecekan file audio tidak membuktikan pengalaman mendengar di HP.
+
+Terrain menggunakan sel dengan mesh grid 0,25 unit, batas lapisan dasar 0,88 unit dan batas tinggi timbunan visual 3,12 unit. Posisi Y kendaraan mengikuti tinggi pusat kendaraan; belum ada simulasi kemiringan sasis atau tabrakan bangunan/dekorasi. Kendaraan yang berada di tapak dipindahkan sebelum perakitan rumah. Save lama mempertahankan material; bekas penggalian alpha.6 yang dahulu hanya gambar tidak diberi pengurangan tanah secara retroaktif.
+
+Bukti tersedia di [`docs/verification/alpha7/`](docs/verification/alpha7/).
+
+---
+
 # Verifikasi alpha.6 — excavator bergerak & proyek jalan
 
 Tanggal: 17 Oktober 2026. Package `com.dromadi.tinysim`; versionCode 6; versi `0.1.0-alpha.6`.

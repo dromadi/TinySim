@@ -21,7 +21,7 @@ class GameRenderer {
     private fun star(c:Canvas,x:Float,y:Float,r:Float,color:Int) {
         val a=FloatArray(20);for(i in 0..9) {val t=i*PI/5-PI/2;val rad=if(i%2==0)r else r*.48f;a[i*2]=x+(cos(t)*rad).toFloat();a[i*2+1]=y+(sin(t)*rad).toFloat()};poly(c,a,color)
     }
-    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f) {
+    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,digging:Boolean=false) {
         // Top navigation and mission card.
         rect(c,24f,20f,201f,64f,white,22f)
         if(g.missionMode) { star(c,56f,52f,17f,yellow);text(c,"Misi",133f,60f,24f) }
@@ -30,10 +30,10 @@ class GameRenderer {
         text(c,"TinySim",320f,52f,30f);text(c,"Dunia kecil, imajinasi besar.",376f,77f,14f)
         rect(c,544f,20f,410f,70f,white,22f)
         if(g.missionMode) {
-            when(g.mission) {0->truck(c,600f,73f,.32f,4,0f);1->truck(c,600f,73f,.32f,2,-38f);2->dozer(c,600f,73f,.32f,1);else->roadIcon(c,600f,51f,g.roadProgress)}
-            text(c,when(g.mission){0->"Isi truk";1->"Tuang pasir";2->"Ratakan";else->"Bangun jalan"},756f,48f,20f)
+            when(g.mission) {0->truck(c,600f,73f,.32f,4,0f);1->truck(c,600f,73f,.32f,2,-38f);2->dozer(c,600f,73f,.32f,1);3->roadIcon(c,600f,51f,g.roadProgress);else->houseIcon(c,600f,51f)}
+            text(c,when(g.mission){0->"Isi truk";1->"Tuang pasir";2->"Ratakan";3->"Bangun jalan";else->"Bangun rumah"},756f,48f,20f)
             for(i in 0..3)circle(c,716f+i*30,70f,7f,if(g.missionProgress>i)teal else col("#DDE5DC"))
-        } else { roadIcon(c,600f,51f,g.roadProgress);text(c,"Bangun jalan ${g.roadProgress}/4",790f,61f,21f,teal) }
+        } else { houseIcon(c,600f,51f);text(c,if(!g.houseReady)"Gali fondasi ${g.foundationProgress}/4" else if(g.houseFill<8)"Antar bahan ${g.houseFill}/8" else "Rakit rumah ${g.houseStage}/3",790f,61f,21f,teal) }
         rect(c,1000f,20f,70f,64f,white,20f);speaker(c,1035f,52f,sound)
         rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
         if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
@@ -52,6 +52,8 @@ class GameRenderer {
         rect(c,1098f,282f,80f,76f,white,22f)
         text(c,"⊙",1138f,320f,32f,teal);text(c,"Ikuti",1138f,344f,14f)
         minimap(c,g,panX,panZ)
+        rect(c,1098f,370f,80f,76f,if(g.houseReady && g.houseFill==8)yellow else white,22f)
+        houseIcon(c,1138f,398f);text(c,"Bangun",1138f,434f,13f)
         if(orbitMode) {
             rect(c,364f,492f,472f,40f,white,18f)
             text(c,"Geser untuk putar • cubit untuk zoom",600f,518f,17f,teal)
@@ -61,10 +63,11 @@ class GameRenderer {
         button(c,20f,125f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,81f,615f)
         button(c,155f,125f,g.selected==GameState.Vehicle.TRUCK);truck(c,218f,620f,.44f,2,0f)
         button(c,290f,125f,g.selected==GameState.Vehicle.DOZER);dozer(c,353f,620f,.44f,1)
-        circle(c,480f,592f,13f,teal);circle(c,480f,592f,6f,white)
-        line(c,480f,602f,480f,619f,ink,5f)
+        rect(c,425f,557f,100f,98f,if(digging)yellow else white,24f)
+        poly(c,floatArrayOf(451f,582f,497f,582f,487f,607f,462f,607f),teal)
+        text(c,if(digging)"Gali aktif" else "Gali",475f,638f,14f)
         text(c,if(g.selected==GameState.Vehicle.EXCAVATOR)"Ketuk / seret" else "Ketuk tujuan",610f,595f,21f,teal)
-        text(c,"Geser map • cubit zoom",595f,627f,15f,ink)
+        text(c,"Geser • cubit zoom",610f,627f,13f,ink)
         rect(c,720f,557f,90f,98f,white,24f)
         rect(c,751f,582f,28f,28f,ink,5f);text(c,"Stop",765f,638f,15f)
         rect(c,850f,557f,325f,98f,teal,26f)
@@ -110,6 +113,11 @@ class GameRenderer {
         val fx=mx(panX-.3f).coerceIn(37f,219f);val fz=mz(panZ).coerceIn(319f,391f)
         p.style=Paint.Style.STROKE;p.strokeWidth=2f;p.color=white;c.drawCircle(fx,fz,9f,p);p.style=Paint.Style.FILL
         text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
+    }
+    private fun houseIcon(c:Canvas,x:Float,y:Float) {
+        rect(c,x-19f,y-3f,38f,28f,teal,3f)
+        poly(c,floatArrayOf(x-27f,y-4f,x,y-26f,x+27f,y-4f),orange)
+        rect(c,x-5f,y+8f,10f,17f,white,2f)
     }
     private fun roadIcon(c:Canvas,x:Float,y:Float,progress:Int) {
         for(i in 0..3) {

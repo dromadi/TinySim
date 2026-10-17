@@ -24,13 +24,19 @@ fun main(args: Array<String>) {
         Triple("rotated-excavator",2) { it.excavatorX=WorldMap.gameX(18f);it.excavatorZ=5f;it.excavatorHeading=270f;it.armX=440f;it.armY=320f;it.bucket=2;it.source=34;it.truckX=WorldMap.gameX(18f);it.truckZ=10f },
         Triple("road-project",0) { it.source=30;it.road[0]=1;it.road[1]=1;it.sand[WorldMap.cell(20.5f,8.5f)]=4;it.dozerX=WorldMap.gameX(18.8f);it.dozerZ=8.5f;it.selected=GameState.Vehicle.DOZER;it.excavatorX=WorldMap.gameX(14f);it.excavatorZ=5f;it.truckX=WorldMap.gameX(24f);it.truckZ=10f },
         Triple("road-complete",0) { it.source=32;it.road.fill(1);it.dozerX=WorldMap.gameX(24f);it.dozerZ=8f;it.selected=GameState.Vehicle.DOZER;it.excavatorX=WorldMap.gameX(14f);it.excavatorZ=5f;it.dug[WorldMap.cell(22f,5f)]=2;it.celebrating=2f },
+        Triple("terrain-pit",0) { g->g.excavatorX=WorldMap.gameX(30.5f);g.excavatorZ=6.5f;for(x in listOf(33.5f,34.5f,35.5f,36.5f)){g.earth[WorldMap.cell(x,6.5f)]=0;g.sand[WorldMap.cell(31.5f,9.5f)]+=4};g.armX=440f;g.armY=510f },
+        Triple("terrain-mound",0) { g->g.sand[WorldMap.cell(34.5f,7.5f)]=8;g.source=28;g.dozerX=WorldMap.gameX(31.5f);g.dozerZ=7.5f;g.selected=GameState.Vehicle.DOZER },
+        Triple("house-materials",0) { g->for(x in listOf(33.5f,34.5f,35.5f,36.5f))g.earth[WorldMap.cell(x,6.5f)]=2;g.load=8;g.excavatorX=WorldMap.gameX(30f);g.excavatorZ=6f;g.truckX=WorldMap.gameX(37.3f);g.truckZ=7.5f;g.truckHeading=0f;g.tipping=true;repeat(240){g.update(.016f)} },
+        Triple("house-walls",0) { g->for(x in listOf(33.5f,34.5f,35.5f,36.5f))g.earth[WorldMap.cell(x,6.5f)]=2;g.load=8;g.truckX=WorldMap.gameX(37.3f);g.truckZ=7.5f;g.tipping=true;repeat(240){g.update(.016f)};repeat(2){check(g.buildHouse());repeat(400){g.update(.016f)}} },
+        Triple("house-complete",0) { g->for(x in listOf(33.5f,34.5f,35.5f,36.5f))g.earth[WorldMap.cell(x,6.5f)]=2;g.load=8;g.truckX=WorldMap.gameX(37.3f);g.truckZ=7.5f;g.tipping=true;repeat(240){g.update(.016f)};repeat(3){check(g.buildHouse());repeat(400){g.update(.016f)}};g.excavatorX=WorldMap.gameX(29f);g.excavatorZ=5f;g.truckX=WorldMap.gameX(41f);g.truckZ=11f },
         Triple("loaded",0) { it.source=28;it.load=6;it.bucket=2;it.armX=520f;it.armY=330f },
         Triple("dump",0) { it.source=29;it.load=0;it.truckX=760f;it.tipping=true;it.bedAngle=-42f;it.sand[WorldMap.cell(1.2f,0f)]=4;it.sand[WorldMap.cell(2.2f,0f)]=3;it.selected=GameState.Vehicle.TRUCK },
         Triple("dozer",2) { it.source=27;it.sand[WorldMap.cell(3f,2f)]=2;it.sand[WorldMap.cell(4f,2f)]=2;it.sand[WorldMap.cell(5f,2f)]=1;it.sand[WorldMap.cell(6f,2f)]=4;it.dozerX=900f;it.selected=GameState.Vehicle.DOZER }
     )
     val hud=StringBuilder()
-    scenes.forEachIndexed { i,(name,cam,setup) ->
-        val g=GameState();setup(g);check(g.totalSand==36) { "Invalid inventory in preview $name" }
+    val chosen=System.getenv("TINYSIM_PREVIEW_SCENES")?.split(',')
+    scenes.filter { chosen==null || it.first in chosen }.forEachIndexed { i,(name,cam,setup) ->
+        val g=GameState();setup(g);check(g.totalMaterial==com.dromadi.tinysim.Terrain.INITIAL_MASS) { "Invalid inventory in preview $name" }
         val frame=when(name) {
             "orbit-close"->SceneFrame.capture(g,cam,1.2f+i,18f,8f,1.35f)
             "orbit-wide"->SceneFrame.capture(g,cam,1.2f+i,-18f,14f,.8f)
@@ -39,6 +45,7 @@ fun main(args: Array<String>) {
             "mobile-dig"->SceneFrame.capture(g,cam,1.2f+i,0f,4f,1.1f,36f,8f)
             "rotated-excavator"->SceneFrame.capture(g,cam,1.2f+i,0f,4f,1.1f,18f,7f)
             "road-project","road-complete"->SceneFrame.capture(g,cam,1.2f+i,0f,8f,1.2f,20f,8f)
+            "terrain-pit","terrain-mound","house-materials","house-walls","house-complete"->SceneFrame.capture(g,cam,1.2f+i,0f,8f,1.05f,36f,7f)
             "building-site"->SceneFrame.capture(g,cam,1.2f+i,0f,4f,1f,36f,6f)
             else->SceneFrame.capture(g,cam,1.2f+i)
         }

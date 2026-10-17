@@ -2,9 +2,19 @@ plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
 android {
  namespace 'com.dromadi.tinysim'
  compileSdk 35
- defaultConfig { applicationId 'com.dromadi.tinysim'; minSdk 26; targetSdk 35; versionCode 6; versionName '0.1.0-alpha.6'; testInstrumentationRunner 'com.dromadi.tinysim.SmokeInstrumentation' }
+ defaultConfig { applicationId 'com.dromadi.tinysim'; minSdk 26; targetSdk 35; versionCode 7; versionName '0.1.0-alpha.7'; testInstrumentationRunner 'com.dromadi.tinysim.SmokeInstrumentation' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = '17' }
+ androidResources { noCompress += ["wav"]; ignoreAssetsPatterns.addAll([".*", "*.tmp", "*.part", "*~"]) }
+ sourceSets.main.assets.srcDir(layout.buildDirectory.dir("generated/sound-assets"))
  testOptions { unitTests.returnDefaultValues = true }
 }
 dependencies { testImplementation 'junit:junit:4.13.2' }
+
+// Keep generated audio out of Git; local and CI builds reproduce the identical original pack.
+tasks.register('generateSoundscapes', Exec) {
+ inputs.file(rootProject.file('tools/audio/GenerateSoundscapes.java'))
+ outputs.dir(layout.buildDirectory.dir('generated/sound-assets/soundscapes'))
+ commandLine 'java', rootProject.file('tools/audio/GenerateSoundscapes.java').absolutePath, layout.buildDirectory.dir('generated/sound-assets/soundscapes').get().asFile.absolutePath
+}
+tasks.named('preBuild').configure { dependsOn 'generateSoundscapes' }

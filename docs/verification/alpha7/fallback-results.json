@@ -1,0 +1,44 @@
+[
+  {
+    "name": "start-cam1",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1050,
+    "triangles": 209840
+  },
+  {
+    "name": "road-project",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1059,
+    "triangles": 213388
+  },
+  {
+    "name": "terrain-pit",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1056,
+    "triangles": 213584
+  },
+  {
+    "name": "house-materials",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1082,
+    "triangles": 225168
+  },
+  {
+    "name": "house-walls",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1054,
+    "triangles": 209872
+  },
+  {
+    "name": "house-complete",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 1090,
+    "triangles": 212496
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "apkBytes": 173725502,
+  "apkMiB": 165.67754936218262,
+  "tracks": [
+    {
+      "file": "quarry.wav",
+      "seconds": 300,
+      "stereo": true,
+      "sha256": "667b7b62d8dc6534dfbc54593b79ff225569286402cd6941b39f61aa7321c7e8",
+      "bytes": 57600044,
+      "status": "PASS"
+    },
+    {
+      "file": "workshop.wav",
+      "seconds": 300,
+      "stereo": true,
+      "sha256": "705c68ef2ae02ac6438254e7919e8ef61402f7d909cd0f04d5988731bd2d2666",
+      "bytes": 57600044,
+      "status": "PASS"
+    },
+    {
+      "file": "garden.wav",
+      "seconds": 300,
+      "stereo": true,
+      "sha256": "59624aecabf3f4b0b0b3ca7790e520a9ec6b4baabcfc5cf92521d5f1959ff2ce",
+      "bytes": 57600044,
+      "status": "PASS"
+    }
+  ]
+}

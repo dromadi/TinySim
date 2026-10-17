@@ -27,7 +27,21 @@ data class CameraSpec(val eye: Vec3, val target: Vec3, val fov: Float=40f) {
         val nx=screenX/600f-1f;val ny=1f-screenY/337.5f
         return (forward+right*(nx*WorldCamera.ASPECT*tangent)+up*(ny*tangent)).normalized()
     }
-    fun ground(screenX:Float,screenY:Float):Vec3? {
+    fun ground(screenX:Float,screenY:Float,surface:((Float,Float)->Float)?=null):Vec3? {
+        if(surface!=null) {
+            val direction=ray(screenX,screenY);if(direction.y>=-.02f)return null
+            var t=0f;var steps=0
+            while(t<200f && steps++<12000) {
+                val p=eye+direction*t
+                val gap=p.y-surface(p.x,p.z)
+                if(kotlin.math.abs(gap)<.0001f)return p
+                if(gap<0f) {
+                    var lo=(t-.25f).coerceAtLeast(0f);var hi=t
+                    repeat(12) { val mid=(lo+hi)/2;val q=eye+direction*mid;if(q.y>surface(q.x,q.z))lo=mid else hi=mid }
+                    return eye+direction*((lo+hi)/2)
+                };t+=((gap/8f).coerceIn(.000005f,.25f))
+            };return null
+        }
         val ray=ray(screenX,screenY);if(ray.y>=-.02f)return null
         val distance=(.07f-eye.y)/ray.y
         return if(distance>0f && distance<200f)eye+ray*distance else null

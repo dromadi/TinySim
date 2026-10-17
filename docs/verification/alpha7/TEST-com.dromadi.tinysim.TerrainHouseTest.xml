@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.TerrainHouseTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-17T13:37:46" hostname="f1d43015ddfd" time="0.103">
+  <properties/>
+  <testcase name="digLoadDumpAndDozerCanRefillTheActualHole" classname="com.dromadi.tinysim.TerrainHouseTest" time="0.001"/>
+  <testcase name="largeStockpilesKeepMassAndRestoreEvenAboveTheVisualHeightCap" classname="com.dromadi.tinysim.TerrainHouseTest" time="0.003"/>
+  <testcase name="diggingStopsAtBedrockAndCompletedRoadIsProtected" classname="com.dromadi.tinysim.TerrainHouseTest" time="0.001"/>
+  <testcase name="alpha6MigrationAndCorruptEarthOrHouseCannotCreateMaterial" classname="com.dromadi.tinysim.TerrainHouseTest" time="0.007"/>
+  <testcase name="completeHouseUsesFourDigSitesAndEightRealDeliveredUnits" classname="com.dromadi.tinysim.TerrainHouseTest" time="0.008"/>
+  <testcase name="realDiggingChangesHeightAndNormalsAndConservesAllMaterial" classname="com.dromadi.tinysim.TerrainHouseTest" time="0.08"/>
+  <testcase name="terrainPickingMatchesTheVisibleHeightfield" classname="com.dromadi.tinysim.TerrainHouseTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
