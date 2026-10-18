@@ -28,6 +28,9 @@ class GameRenderer {
      */
     fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN,targets:List<Pair<Int,Pair<Float,Float>>> = emptyList()) {
         progressCard(c,g)
+        rect(c,350f,20f,100f,70f,if(g.wind.active)teal else yellow,22f)
+        c.save();c.translate(397f,43f);c.scale(.42f,.42f);cloud(c,0f,0f);c.restore()
+        for(i in 0..2)line(c,380f+i*5,65f+i*6,420f-i*6,65f+i*6,if(g.wind.active)white else ink,3f)
         for((id,point) in targets) {
             val (x,y)=point
             circle(c,x,y,25f,white);circle(c,x,y,21f,if(g.pipes.busy || g.craneBusy)yellow else teal)
@@ -58,7 +61,7 @@ class GameRenderer {
         rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
         for(v in GameState.Vehicle.entries) {
             val x=cardCenter(v)
-            button(c,x-54f,108f,g.selected==v)
+            button(c,x-54f,108f,!g.wind.active && g.selected==v)
             when(v) {
                 GameState.Vehicle.EXCAVATOR -> { c.save();c.translate(x,607f);c.scale(.68f,.68f);miniExcavator(c,0f,8f);c.restore() }
                 GameState.Vehicle.TRUCK -> truck(c,x,623f,.32f,2,0f)
@@ -70,7 +73,7 @@ class GameRenderer {
         }
         if(advanced) { rect(c,712f,557f,100f,98f,white,24f);rect(c,745f,585f,34f,34f,ink,6f) }
         rect(c,840f,556f,340f,104f,teal,28f)
-        actionIcon(c,g,1010f,608f)
+        if(g.wind.active) { circle(c,1010f,608f,31f,white);rect(c,996f,594f,28f,28f,teal,5f) } else actionIcon(c,g,1010f,608f)
         if(g.celebrating>0) {
             star(c,600f,250f,70f+sin(time*6)*6,yellow)
             for(i in 0..7) star(c,380f+i*65,360f+sin(time*2+i)*16,14f,yellow)

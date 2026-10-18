@@ -1,3 +1,55 @@
+# Verifikasi Alpha.19 — Taman Angin
+
+Tanggal: 18 Oktober 2026 (UTC). `com.dromadi.tinysim`, versionCode 19 / `0.1.0-alpha.19`. Basis `f361f6b` (Alpha.18); tidak ada PR terbuka saat pekerjaan dimulai maupun sebelum publikasi.
+
+## Isi yang dapat dimainkan
+
+Tombol awan bergambar membuka taman di dekat area balok. Satu jari mengetuk/menyeret tujuan pusaran, dua jari tetap pan/pinch. Awan atau tombol berhenti meredakan pusaran; kartu kendaraan menghentikannya untuk kembali bekerja. Pusaran tumbuh/menyusut, memiliki corong transparan berlapis pita spiral, awan, daun dan butiran pasir. Pohon sekitar membengkok, kincir/penunjuk angin bereaksi, kendaraan bergoyang ringan dan suara desir naik/turun bertahap.
+
+Saat taman pertama dibuka, enam unit dipindahkan dari sumber lama ke petak taman jika sumber mencukupi. Penanda sekali isi ikut disimpan. Pusaran memindahkan pasir lepas sungguhan secara atomik antarpetak setiap 0,12 detik dalam radius 3,3 m. Partikel mengilustrasikan pengambilan, bukan inventaris material terpisah. Pasir tetap bisa diambil/dituang/diratakan oleh armada lama. Tanah dasar, fondasi rumah serta area pipa tidak diubah oleh angin. Total material tetap **11.068 unit**, tidak ada pasir baru yang dibuat.
+
+Balok ground yang belum dipasang dan tidak sedang dibawa mengikuti orbit terbatas serta berpindah posisi. Tinggi terangkat adalah animasi visual yang turun perlahan saat cuaca reda, bukan rigid-body bebas. Setelah menetap, crane dapat mengangkat dan menyusunnya memakai alur lama. Muatan kendaraan, balok terpasang, bangunan, beton dan properti penghancur dilindungi.
+
+Angin dekat jembatan membuat penjaga mengibarkan bendera kuning dan menutup palang untuk antrean baru. Dek yang sudah terisi tetap mendapat palang terangkat. Tes integrasi menjalankan truk melewati rute nyata: menunggu di barat saat angin aktif, kemudian menyeberang setelah angin berhenti. Tidak ada batas waktu, kalah atau kewajiban merapikan.
+
+Save **v14** menambahkan posisi istirahat pusaran dan penanda pengisian taman; posisi balok/pasir memakai struktur lama. V13 dan format sebelumnya dimigrasikan. Pause menghentikan cuaca/gerak, lalu menyimpan posisi. Cold restore selalu tanpa cuaca aktif. Tidak ada objek material yang menunggu di inventaris udara sehingga snapshot saat pusaran aktif tetap konservatif. Model, ikon, geometri dan suara tambahan dibuat langsung dengan kode TinySim (MIT), tanpa file audio/gambar tambahan.
+
+## Perintah yang dijalankan dan hasil
+
+JDK 17, Gradle 8.9, compile/target SDK 35, AGP 8.7.3. Runner Python meneruskan proxy koneksi yang tersedia; perintah Gradle efektif:
+
+```sh
+GRADLE_USER_HOME=/tmp/ts-gradle-home /tmp/ts-downloads/gradle-8.9/bin/gradle \
+  --no-daemon --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process \
+  testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **BUILD SUCCESSFUL in 23s**, 74 task (5 dieksekusi, 69 up-to-date); build lengkap sebelumnya 56s (17 dieksekusi, 57 up-to-date). [Log final](docs/verification/alpha19/build.log).
+- **129 tes lulus, 0 gagal, 0 error, 0 skipped**: 117 lama dan 12 baru pada `WindPlayTest`. Cakupan baru: sekali isi taman, pasir yang berubah tempat, orbit/settle balok dan pengambilan ulang dengan crane, perlindungan muatan/balok terpasang, pause/cold restore, migrasi v13, save invalid, input/timestep invalid dan acak, gate dengan dek terisi, truk menunggu lalu menyeberang, gestur/pinch, kepemilikan snapshot, geometri funnel dan audio yang terdengar/fade/mute. Jumlah material dicek berulang selama simulasi.
+- **Lint: 0 error, 1 warning** orientasi landscape `DiscouragedApi` yang sudah ada. [Hasil mentah](docs/verification/alpha19/lint.txt).
+- APK permainan dan APK instrumentation berhasil dibangun. APK permainan **67.812.404 byte** (67,81 MB / 64,67 MiB), SHA-256 `7d2560881253727bb72bfb97a1c9ebd9158af16190254a770ab40e3822ee6a2f`. [Ringkasan mesin](docs/verification/alpha19/result.json).
+- `apksigner verify --verbose --print-certs`, `aapt dump permissions`, `aapt dump badging`, CRC ZIP dan pengecekan WAV/MP3/OGG dijalankan pada APK nyata. Tidak ada permission atau berkas audio kemasan; suara disintesis. Sertifikat SHA-256 **`f6700a05aaf7b1a92347a38c54cd65de29099c2c355c7e8b51217b6ecf7f283e`**, sama dengan APK lokal sebelumnya.
+- `adb devices` menghasilkan daftar kosong. **Tidak diuji di HP/emulator**, tidak ada klaim FPS atau kinerja perangkat. APK instrumentation hanya dikompilasi; pengujian sentuh dan lifecycle di sini adalah state-machine/model JVM.
+
+Build pengembangan pertama menemukan satu tes gagal karena masih mengharapkan prefix save v13; ekspektasi diperbarui ke v14. Fixture save rusak pada tes lama juga memakai prefix v14 agar benar-benar mencapai pemeriksaan field yang rusak, bukan lolos karena ditolak jumlah part. Tidak ada tes dihapus, dilewati, atau dilemahkan.
+
+## Pratinjau renderer asli
+
+```sh
+cd tools/scene-preview
+TINYSIM_PREVIEW_SCENES=wind-lift,wind-travel,wind-settled,wind-bridge \
+  /tmp/ts-downloads/gradle-8.9/bin/gradle --no-daemon --max-workers=2 \
+  -Pkotlin.compiler.execution.strategy=in-process run --args=/tmp/ts-frames19.json
+CHROMIUM_PATH=/tmp/ts-chrome/chrome-headless-shell-linux64/chrome-headless-shell \
+  PREVIEW_FORMAT=jpeg node shoot.js /tmp/ts-frames19.json /tmp/ts-shots19
+```
+
+**4 PASS, GL error 0:** `wind-lift`, `wind-travel`, `wind-settled`, `wind-bridge`. Fixture menjalankan `WindPlay.toggle`, `aim`, update dan pembangunan jembatan nyata; tidak sekadar memasang flag selesai. Inventaris diperiksa sebelum merekam setiap frame. VBO terrain penuh diunggah khusus fixture replay; update Android tetap inkremental. [Gambar dan log](docs/verification/alpha19/).
+
+Keempat gambar diperiksa secara visual: pusaran/balok terangkat, perpindahan ke kanan, balok menetap saat angin padam, dan palang tertutup dekat jembatan. Ini **pratinjau desktop JVM/WebGL dengan shader, model, tekstur dan HUD asli**, bukan screenshot Android atau bukti uji sentuh/audio native.
+
+---
+
 # Verifikasi Alpha.18 — armada baru, peta dan penjaga
 
 Tanggal: 18 Oktober 2026 (WIB). `com.dromadi.tinysim`, versionCode 18 / `0.1.0-alpha.18`. Basis `2d288b1` (Alpha.17), tidak ada PR terbuka ketika pekerjaan dimulai.

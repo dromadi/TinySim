@@ -5,7 +5,7 @@ import kotlin.math.hypot
 enum class TouchPhase { DOWN, ADD, MOVE, REMOVE, UP, CANCEL }
 data class TouchPoint(val id:Int,val x:Float,val y:Float)
 data class SceneTouch(val phase:TouchPhase,val time:Long,val points:List<TouchPoint>)
-enum class GestureKind { ARM, DRIVE, SELECT, PAN, ORBIT, SCENE_TAP, MAP, FOLLOW, BUTTON, SAVE, STOP, PARENT_OPEN, HOLD }
+enum class GestureKind { WIND, ARM, DRIVE, SELECT, PAN, ORBIT, SCENE_TAP, MAP, FOLLOW, BUTTON, SAVE, STOP, PARENT_OPEN, HOLD }
 data class Gesture(val kind:GestureKind,val x:Float=0f,val y:Float=0f,val fromX:Float=0f,val fromY:Float=0f,val ratio:Float=1f,val unit:GameState.Vehicle?=null,val button:String?=null)
 
 /** Pure state machine used by Android input; coordinates already account for viewport letterboxing. */
@@ -41,7 +41,7 @@ class TouchController(
                 if(held=="scene")candidate=vehicleAt(x,y)
             }
             TouchPhase.ADD -> {
-                if(!parents() && event.points.size==2 && event.points.all { it.y in 100f..535f } && held in listOf("arm","scene","pan","drive","orbit")) {
+                if(!parents() && event.points.size==2 && event.points.all { it.y in 100f..535f } && held in listOf("wind","arm","scene","pan","drive","orbit")) {
                     held=null;twoFinger=true;waitForRelease=true
                     val a=event.points[0];val b=event.points[1]
                     lastX=(a.x+b.x)/2;lastY=(a.y+b.y)/2;spread=hypot(a.x-b.x,a.y-b.y)
@@ -64,6 +64,7 @@ class TouchController(
                         else held="pan"
                     }
                     when(held) {
+                        "wind" -> emit(Gesture(GestureKind.WIND,px,py))
                         "arm" -> emit(Gesture(GestureKind.ARM,px,py))
                         "drive" -> emit(Gesture(GestureKind.DRIVE,px,py))
                         "pan" -> emit(Gesture(GestureKind.PAN,px,py,lastX,lastY))
@@ -79,6 +80,7 @@ class TouchController(
             TouchPhase.UP -> {
                 if(!waitForRelease) {
                     when(val action=held) {
+                        "wind" -> emit(Gesture(GestureKind.WIND,x,y))
                         "arm" -> emit(Gesture(GestureKind.ARM,x,y))
                         "drive" -> { emit(Gesture(GestureKind.DRIVE,x,y));emit(Gesture(GestureKind.FOLLOW)) }
                         "scene" -> emit(Gesture(GestureKind.SCENE_TAP,x,y))

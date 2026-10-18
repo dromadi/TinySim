@@ -55,7 +55,7 @@ class GameView(context: Context): FrameLayout(context) {
         panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,PAN_MAX_X)
         panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,21f)
     }
-    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { if(game.pipes.active && vehicle in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER))game.leavePipes();game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
+    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.wind.halt(); if(game.pipes.active && vehicle in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER))game.leavePipes();game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
         val candidates=GameState.Vehicle.entries.map { v->game.vehicleBody(v).let { Triple(v,it.point.x,it.point.z) } }
@@ -65,6 +65,7 @@ class GameView(context: Context): FrameLayout(context) {
             if(distance<68f)unit to distance else null
         }.minByOrNull { it.second }?.first
     }
+    fun windAt(x:Float,y:Float) { val p=groundAt(x,y) ?: return;game.wind.aim(p.x,p.z) }
     fun driveAt(x:Float,y:Float) {
         val point=groundAt(x,y) ?: return
         if(point.x !in WorldMap.MIN_X..WorldMap.MAX_X || point.z !in WorldMap.MIN_Z..WorldMap.MAX_Z)return
@@ -187,7 +188,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(running && !parents) {
             val dt=if(previous==0L)0f else (now-previous)/1000f
             game.update(dt)
-            if(game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
+            if(!game.wind.active && game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
             game.nextMission()
             if(game.rewardSerial!=lastReward) { audio.play(settings.sound,true);lastReward=game.rewardSerial }
             if(game.transferSerial!=lastTransfer) { when(game.transferKind) { 6->audio.machines.blockSerial++;7->audio.machines.keeperSerial++;8->audio.machines.impactSerial++;else->audio.machines.pourSerial++ } }
@@ -202,6 +203,7 @@ class GameView(context: Context): FrameLayout(context) {
             panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,21f)-panZ)*ease
         }
         if(running && !parents)houseAndHelp(now)
+        audio.machines.wind=if(parents)0f else game.wind.strength
         audio.update(settings.sound,if(panX<10f)0 else if(panX<28f)1 else 2)
         previous=now
         sceneRenderer.submit(SceneFrame.capture(game,camera,now/1000f,yaw,pitch,zoom,panX,panZ))
@@ -220,6 +222,7 @@ class GameView(context: Context): FrameLayout(context) {
             if(y<GameRenderer.PARENT_TOP || (y-GameRenderer.PARENT_TOP)%GameRenderer.PARENT_STEP>60f)return null
             return listOf("sound","cameraPreset","advanced","mode","reset","close").getOrNull(row)
         }
+        if(x in 350f..450f && y in 20f..90f)return "windToggle"
         if(x in 1100f..1176f && y in 20f..84f)return "parents"
         if(advanced) {
             if(x in 1000f..1070f && y in 20f..84f)return "sound"
@@ -243,6 +246,7 @@ class GameView(context: Context): FrameLayout(context) {
             return null
         }
         if(y in 100f..535f) {
+            if(game.wind.active)return "wind"
             if(game.pipes.active && pipeMarkers().any { kotlin.math.hypot(x-it.second.first,y-it.second.second)<40f })return "scene"
             if(orbitMode && advanced)return "orbit"
             if(game.selected==GameState.Vehicle.EXCAVATOR) {
@@ -272,6 +276,7 @@ class GameView(context: Context): FrameLayout(context) {
     }
     /** House stages assemble by themselves once the foundation and materials are ready. */
     private fun houseAndHelp(now:Long) {
+        if(game.wind.active || game.wind.strength>0f) { hint=null;return }
         if(game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
             following=false;panX=36.3f;panZ=7f
         }
@@ -309,6 +314,7 @@ class GameView(context: Context): FrameLayout(context) {
     }
     fun activate(action: String) {
         when(action) {
+            "windToggle" -> { game.wind.toggle(game);following=false;orbitMode=false;if(game.wind.active) { camera=0;yaw=-18f;pitch=10f;zoom=1.05f;panX=game.wind.x;panZ=game.wind.z };saveCamera() }
             "sound" -> settings.sound=!settings.sound
             "camera" -> { camera=(camera+1)%3;settings.camera=camera;yaw=0f;pitch=0f;zoom=1f;panX=0f;panZ=0f;following=false;saveCamera();input.cancel() }
             "orbitToggle" -> { orbitMode=!orbitMode;input.cancel() }
@@ -324,13 +330,14 @@ class GameView(context: Context): FrameLayout(context) {
             "crane" -> selectUnit(GameState.Vehicle.CRANE)
             "mixer" -> selectUnit(GameState.Vehicle.MIXER)
             "wrecker" -> selectUnit(GameState.Vehicle.WRECKER)
-            "workyard" -> { if(game.pipes.active)game.leavePipes();following=false;panX=if(game.selected==GameState.Vehicle.MIXER)20f else 33f;panZ=17f;camera=0;yaw=-12f;pitch=8f;zoom=1.1f;saveCamera() }
+            "workyard" -> { game.wind.halt(); if(game.pipes.active)game.leavePipes();following=false;panX=if(game.selected==GameState.Vehicle.MIXER)20f else 33f;panZ=17f;camera=0;yaw=-12f;pitch=8f;zoom=1.1f;saveCamera() }
             "pipes" -> {
+                game.wind.halt()
                 if(game.pipes.active)game.leavePipes() else game.startPipes()
                 camera=0;settings.camera=0;yaw=-12f;pitch=8f;zoom=1.2f;panX=13f;panZ=5.8f;following=false;orbitMode=false;saveCamera()
             }
             "blocks" -> { game.stopMovement();game.blockAction();following=false;panX=27f;panZ=3f;zoom=1.05f }
-            "action" -> game.action()
+            "action" -> if(game.wind.active)game.wind.toggle(game) else game.action()
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")
                 .setMessage("Pasir dan kendaraan kembali ke posisi awal.")

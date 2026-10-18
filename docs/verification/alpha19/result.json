@@ -1,0 +1,51 @@
+{
+  "versionName": "0.1.0-alpha.19",
+  "versionCode": 19,
+  "tests": {
+    "tests": 129,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 1,
+    "Fatal": 0
+  },
+  "apkBytes": 67812404,
+  "apkSha256": "7d2560881253727bb72bfb97a1c9ebd9158af16190254a770ab40e3822ee6a2f",
+  "zipCRC": "PASS",
+  "packagedAudioFiles": [],
+  "deviceTested": false,
+  "previewSource": "Real Kotlin renderer and HUD recorded on JVM and replayed in Chromium WebGL, not Android screenshots",
+  "previews": [
+    {
+      "name": "wind-lift",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 3248,
+      "triangles": 753252
+    },
+    {
+      "name": "wind-travel",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 3250,
+      "triangles": 754204
+    },
+    {
+      "name": "wind-settled",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 3174,
+      "triangles": 709612
+    },
+    {
+      "name": "wind-bridge",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 3364,
+      "triangles": 768956
+    }
+  ]
+}

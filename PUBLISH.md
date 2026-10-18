@@ -1,4 +1,14 @@
-# Publikasi Alpha.18
+# Publikasi Alpha.19
+
+`0.1.0-alpha.19` / versionCode 19: Taman Angin, puting beliung yang disentuh/diseret, pasir serta balok yang berpindah, lingkungan dan penjaga yang bereaksi. Save v14 memigrasikan v13 dan versi lama, tanpa menghidupkan cuaca kembali saat restore. Lihat README serta VERIFICATION untuk perilaku dan bukti.
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+Artifact Actions: `TinySim-0.1.0-alpha.19-debug`. Kunci debug lokal privat tetap sama dengan APK lokal Alpha.8–Alpha.18; jangan unggah ke Git. APK CI dapat memakai key berbeda. Tidak ada target ukuran minimum atau aset pengisi.
+
+## Publikasi Alpha.18
 
 `0.1.0-alpha.18` / versionCode 18. Dua truk baru (molen dan bola penghancur), peta 86 × 32 m, penjaga dan palang jembatan. Proyek baru ada di selatan dan langsung bisa dicapai. Lihat README dan VERIFICATION untuk kontrol, migrasi dan bukti.
 

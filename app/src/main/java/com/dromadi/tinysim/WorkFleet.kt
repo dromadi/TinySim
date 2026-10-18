@@ -103,10 +103,13 @@ class BridgeKeeper {
     private var hold=0f
     val open get()=lift>=.98f
     fun request(built:Boolean) { if(hold<=0f) { greetings++;wave=2.4f };if(built)hold=8f }
-    fun update(dt:Float,built:Boolean,occupied:Boolean,waiting:Boolean) {
+    fun update(dt:Float,built:Boolean,occupied:Boolean,waiting:Boolean,wind:Boolean=false) {
         wave=max(0f,wave-dt)
-        if(occupied || waiting) { if(hold<=0f)request(built);hold=8f } else hold=max(0f,hold-dt)
-        val target=if(built && (hold>0 || occupied))1f else 0f
+        if(wind)wave=2.4f
+        if(occupied)hold=8f
+        else if(wind)hold=0f
+        else if(waiting) { if(hold<=0f)request(built);hold=8f } else hold=max(0f,hold-dt)
+        val target=if(built && (occupied || (!wind && hold>0)))1f else 0f
         lift+=(target-lift).coerceIn(-dt*.7f,dt*.85f)
     }
     fun reset() { lift=0f;wave=0f;greetings=0;hold=0f }

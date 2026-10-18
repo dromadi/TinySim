@@ -1,11 +1,20 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.18**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.19**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Truk molen menuang beton](docs/verification/alpha18/mixer-pour.jpg)
+![Puting beliung mengangkat balok di Taman Angin](docs/verification/alpha19/wind-lift.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.19: Taman Angin yang bisa disentuh
+
+- **Sentuh awan kiri atas** untuk memasuki Taman Angin di dekat area balok. Pusaran 3D tumbuh perlahan: corong transparan dengan pita spiral, awan krem, butiran pasir dan daun berputar. Seret satu jari atau ketuk tanah untuk mengarahkannya; dua jari tetap menggeser/mencubit kamera. Tidak ada joystick atau tulisan yang harus dibaca. Sentuh awan lagi atau tombol berhenti besar untuk meredakannya; pilih kartu kendaraan untuk kembali bekerja.
+- **Pasir benar-benar berpindah petak:** ketika taman pertama dibuka, enam unit diantar dari sumber pasir yang sudah ada ke petak taman, hanya sekali per dunia. Angin memindahkan satu unit pasir lepas tiap 0,12 detik dari radius 3,3 m ke petak di sekitar pusatnya. Jejak butiran menandai pengambilan. Tumpukan berubah dan bisa digali/diangkut/diratakan memakai kendaraan lama. Jumlah keseluruhan tetap **11.068 unit**. Sumber yang sudah memiliki kurang dari enam unit tidak diisi ulang secara ajaib; pasir lepas yang ada tetap dapat dimainkan.
+- **Tiga balok crane ikut terangkat dan berputar** saat pusaran mendekat. Posisi tanahnya sungguh berpindah, dengan ketinggian visual yang dibatasi. Saat angin mereda, balok turun perlahan dan bisa diambil serta disusun lagi menggunakan crane. Balok yang sudah terpasang atau sedang dibawa tidak diambil angin. Kendaraan hanya bergoyang pelan; tidak diterbangkan atau dihilangkan.
+- **Lingkungan merespons:** pohon di sekitar pusaran melengkung, penunjuk angin bergoyang, dan kincir bunga berputar. Desir angin dengan nada lembut disintesis langsung, naik/turun bertahap serta mengikuti mute, audio focus dan pause. Tidak ada rekaman WAV atau aset pengisi.
+- **Penjaga membawa bendera kuning** ketika pusaran mendekati jembatan. Palang turun dan kendaraan baru menunggu di luar dek; kendaraan yang sudah berada di dek tetap mendapat palang terangkat. Setelah angin lewat atau berhenti, permintaan penyeberangan membuka palang kembali. Tidak ada kalah, hukuman, orang terluka, bangunan hancur, atau kewajiban membereskan taman.
+- **Save v14:** tanah/pasir, posisi balok, enam kendaraan dan proyek lama tetap tersimpan; posisi terakhir pusaran dan penanda pengisian taman juga disimpan. Pause menghentikan angin dan menetapkan balok di tanah. Cold restore selalu dimulai tanpa cuaca aktif. Save v13/Alpha.18 dan format lama dimigrasikan. Perpindahan material atomik berbasis sel, orbit balok dan tinggi terangkat memakai animasi deterministik; ini bukan simulasi aerodinamika/rigid-body bebas. Fondasi rumah dan area proyek pipa dilindungi dari pemindahan pasir oleh angin.
 
 ## Alpha.18: molen, bola penghancur dan penjaga jembatan
 
@@ -113,7 +122,7 @@ Fitur tabrakan ini dibuat ChatGPT di `main` (commit `9b9df77`) di atas alpha.7, 
 
 ## Cara bermain
 
-Layar anak hanya berisi **enam kartu kendaraan**, **satu tombol aksi besar**, kartu progres bergambar, dan gembok orang tua. Tidak ada tulisan yang harus dibaca.
+Layar anak hanya berisi **enam kartu kendaraan**, **satu tombol aksi besar**, kartu progres bergambar, awan Taman Angin, dan gembok orang tua. Tidak ada tulisan yang harus dibaca.
 
 1. **Pilih kendaraan** dengan kartunya atau dengan menyentuh modelnya.
 2. **Tombol aksi** menampilkan gambar langkah berikutnya:
@@ -138,6 +147,7 @@ Sumber awal berisi 36 unit pasir, ditambah 24 unit di tambang timur. Tanah dasar
 Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas untuk HUD. Integrasi native mempertahankan lifecycle Android dan memisahkan input, simulasi, serta rendering. Tidak ada dependency runtime pihak ketiga; seluruh model dan material dihasilkan lokal tanpa unduhan aset.
 
 - `GameState`: perjalanan ke tujuan, putaran kendaraan, transfer pasir, misi, dan snapshot.
+- `WindPlay`: gestur tujuan pusaran, transfer pasir konservatif, orbit/ketinggian balok, taman sekali isi dan interaksi palang.
 - `WorkFleet` / `BridgeKeeper`: molen, pengecoran, ayunan penghancur, puing dan palang/penjaga.
 - `PipeSite`: aktivitas penggalian, pemasangan pipa dan penimbunan, dengan transfer tanah konservatif.
 - `BlockYard`: tiga balok, posisi dan tingkat susunan, muatan crane, validasi serta save.
@@ -156,7 +166,7 @@ Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas un
 
 Material memakai sel deterministik, bukan granular physics bebas. Heightfield digambar pada grid 0,25 unit dengan normal permukaan; tanah dapat turun 0,88 unit hingga lapisan dasar. Tinggi timbunan visual dibatasi 24 unit material (3,12 unit tinggi), sementara seluruh material tambahan tetap tersimpan dan bisa diambil kembali. Kendaraan mengikuti tinggi permukaan pada titik pusat; belum ada suspensi/kemiringan sasis atau tabrakan bangunan/dekorasi.
 
-Save baru berawalan `13|`. Format `12|`, `11|`, `10|`, `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
+Save baru berawalan `14|`. Format `13|`, `12|`, `11|`, `10|`, `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
 
 ## Build dan pemasangan
 
@@ -169,7 +179,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.18-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.19-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
 
 Runner pengujian sentuh terpisah:
 

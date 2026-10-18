@@ -31,6 +31,19 @@ class Geometry private constructor(private val vertices: FloatArray): Mesh {
     companion object {
         private fun build(block: MeshBuilder.()->Unit): Geometry { val b=MeshBuilder();b.block();return Geometry(b.values.toFloatArray()) }
         private fun ring(a: Double,r: Float,y: Float)=Vec3((cos(a)*r).toFloat(),y,(sin(a)*r).toFloat())
+        /** Hollow funnel and helical ribbon, authored at full size; no texture or bitmap padding. */
+        fun windFunnel(ribbon:Boolean=false)=build {
+            val segments=if(ribbon)10 else 48
+            fun point(row:Int,col:Int):Vec3 {
+                val t=row/64f;val a=col.toFloat()/segments*(if(ribbon)1.15f else 2f*PI.toFloat())+t*13f
+                val radius=.32f+2.1f*t.pow(1.6f)
+                return Vec3(cos(a)*radius+sin(t*3f)*.35f,t*6.6f,sin(a)*radius)
+            }
+            for(row in 0 until 64)for(col in 0 until segments) {
+                val a=point(row,col);val b=point(row+1,col);val c=point(row+1,col+1);val d=point(row,col+1)
+                triangle(a,b,c);triangle(a,c,d)
+            }
+        }
         fun cube()=build {
             val v=arrayOf(Vec3(-.5f,-.5f,-.5f),Vec3(.5f,-.5f,-.5f),Vec3(.5f,.5f,-.5f),Vec3(-.5f,.5f,-.5f),Vec3(-.5f,-.5f,.5f),Vec3(.5f,-.5f,.5f),Vec3(.5f,.5f,.5f),Vec3(-.5f,.5f,.5f))
             for(q in arrayOf(intArrayOf(0,3,2,1),intArrayOf(4,5,6,7),intArrayOf(0,4,7,3),intArrayOf(1,2,6,5),intArrayOf(0,1,5,4),intArrayOf(3,7,6,2))) {

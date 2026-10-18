@@ -6,6 +6,7 @@ import android.view.MotionEvent
 class GameInput(private val view:GameView) {
     private val controller=TouchController(view::hit,view::vehicleAt,{view.orbitMode},{view.parents}) { event->
         when(event.kind) {
+            GestureKind.WIND -> view.windAt(event.x,event.y)
             GestureKind.ARM -> view.dragArm(event.x,event.y)
             GestureKind.DRIVE -> view.driveAt(event.x,event.y)
             GestureKind.SELECT -> event.unit?.let { view.selectUnit(it,false) }

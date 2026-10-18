@@ -32,6 +32,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private val cone=Geometry.cone()
     private val sphere=Geometry.sphere()
     private val moundMesh=Geometry.mound()
+    private val funnelMesh=Geometry.windFunnel()
+    private val ribbonMesh=Geometry.windFunnel(true)
+    private var sceneWind=WindFrame()
     private val plane=Geometry.plane()
     private val gable=Geometry.gable()
     private val terrain=TerrainMesh()
@@ -148,7 +151,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         uTime=GL.glGetUniformLocation(program,"uTime")
         uTexFrame=GL.glGetUniformLocation(program,"uTexFrame");uTexRot=GL.glGetUniformLocation(program,"uTexRot")
         textures.load()
-        for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane,gable)) { mesh.contextLost();mesh.upload() }
+        for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane,gable,funnelMesh,ribbonMesh)) { mesh.contextLost();mesh.upload() }
         terrain.update(frame.earth,frame.sand);terrain.contextLost();terrain.upload()
         GL.glEnable(GL.GL_DEPTH_TEST);GL.glDepthFunc(GL.GL_LEQUAL)
         GL.glEnable(GL.GL_CULL_FACE);GL.glCullFace(GL.GL_BACK)
@@ -239,7 +242,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     }
     /** Shared by the shadow and colour passes so every caster also appears on screen. */
     private fun scene(f:SceneFrame) {
+        sceneWind=f.wind
         environment(f)
+        windGarden(f)
         destination(f)
         contactShadows(f)
         treadMarks(f)
@@ -262,6 +267,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         particles(f)
         dustCloud(f)
         water(f)
+        tornado(f)
     }
     private fun skyDome(eye:Vec3) {
         GL.glDisable(GL.GL_CULL_FACE);GL.glDepthMask(false)
@@ -417,11 +423,50 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         }
     }
     /** Trees vary by position: broadleaf crowns built from irregular clusters, or layered conifers. */
+    private fun windGarden(f:SceneFrame) {
+        // An invitation to play: windsock, spinning flower and curved ring around the sand patch.
+        tree(18f,-4.8f,1.4f);tree(29f,-4.7f,1.3f)
+        val x=21f;val z=-4.6f
+        rod3(x,0f,z,x,3.1f,z,.07f,metal,METAL)
+        push();translate(x,3.1f,z);rotate(12f+f.wind.strength*12f*sin(f.wind.phase),0f,0f,1f)
+        for(i in 0..5) { val size=.7f-i*.07f;box(.18f+i*.27f,0f,0f,.28f,size,size,if(i%2==0)orange else paintWhite,PAINT) };pop()
+        rod3(27f,0f,-4.6f,27f,2.6f,-4.6f,.055f,teal,PAINT)
+        push();translate(27f,2.6f,-4.6f);rotate(f.seconds*12f+f.wind.phase*50f*f.wind.strength,0f,0f,1f)
+        for(i in 0..3) { rotate(90f,0f,0f,1f);box(.3f,0f,0f,.6f,.2f,.06f,if(i%2==0)yellow else teal,PAINT) };blob(0f,0f,.08f,.19f,.19f,.12f,orange,PAINT);pop()
+        noCast { for(i in 0..23) { val a=i*PI.toFloat()/12f;disk(24f+cos(a)*3.8f,.085f,sin(a)*3.8f,.22f,.22f,if(i%2==0)teal else yellow,DECAL) } }
+    }
+    private fun tornado(f:SceneFrame) {
+        val w=f.wind;if(w.strength<=.001f || shadowPass)return
+        val ground=Terrain.height(f.earth,f.sand,w.x,w.z)
+        noCast {
+            GL.glDepthMask(false);GL.glDisable(GL.GL_CULL_FACE)
+            push();translate(w.x,ground,w.z);scale(w.strength,w.strength,w.strength);rotate(w.phase*180f/PI.toFloat(),0f,1f,0f)
+            draw(funnelMesh,rgba(198,187,157,.24f*w.strength),MATTE)
+            for(i in 0..2) { rotate(120f,0f,1f,0f);draw(ribbonMesh,rgba(242,233,209,.47f*w.strength),MATTE) }
+            for(i in 0..47) {
+                val t=((i/48f+w.phase*.12f)%1f);val a=i*2.4f+w.phase*2f+t*10f;val radius=.4f+2.2f*t*t
+                val px=cos(a)*radius;val pz=sin(a)*radius
+                if(i%3==0) { push();translate(px,t*6.5f,pz);rotate(a*60f,1f,1f,0f);box(0f,0f,0f,.16f,.04f,.3f,if(i%2==0)leafLight else yellowDark,MATTE);pop() }
+                else blob(px,t*6.5f,pz,.08f,.08f,.08f,sandColor,MATTE)
+            }
+            for(i in 0..9) { val a=i*PI.toFloat()/5f;blob(cos(a)*1.65f,6.5f+sin(a*3f)*.16f,sin(a)*1.65f,2.1f,.8f,1.6f,rgba(248,246,227,.7f*w.strength),CLOUD) }
+            pop()
+            // A short curved grain trail connects the actual last source cell to the funnel.
+            if(w.trailAge<.5f)for(i in 0..11) {
+                val t=(i/12f+w.trailAge*1.5f).coerceIn(0f,1f)
+                blob(w.trailX+(w.x-w.trailX)*t,ground+.12f+sin(t*PI.toFloat())*1.7f,w.trailZ+(w.z-w.trailZ)*t,.065f,.065f,.065f,sandColor,MATTE)
+            }
+            GL.glEnable(GL.GL_CULL_FACE);GL.glDepthMask(true)
+        }
+    }
     private fun tree(x:Float,z:Float,s:Float) {
         val ground=if(x in WorldMap.MIN_X..WorldMap.MAX_X && z in WorldMap.MIN_Z..WorldMap.MAX_Z)0f else GRASS_Y
         val seed=abs((x*12.9898f+z*78.233f)*43.7585f)
         fun rnd(k:Int)=((seed*(k+1)*.6180339f)%1f)
-        push();translate(x,ground,z);scale(s,s*(.9f+rnd(1)*.35f),s);rotate(rnd(2)*360f,0f,1f,0f)
+        push();translate(x,ground,z)
+        val bend=sceneWind.strength*(1f-hypot(x-sceneWind.x,z-sceneWind.z)/14f).coerceIn(0f,1f)
+        rotate(bend*(8f+2f*sin(sceneWind.phase)),0f,0f,1f)
+        scale(s,s*(.9f+rnd(1)*.35f),s);rotate(rnd(2)*360f,0f,1f,0f)
         noCast { disk(0f,.01f,0f,2.0f,2.0f,contact,DECAL) }
         if(rnd(3)<.3f) {
             shape(cylinder,0f,.5f,0f,.2f,1.0f,.2f,bark,BARK)
@@ -531,7 +576,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         push();translate(WorldMap.worldX(f.excavatorX),support(f,WorldMap.worldX(f.excavatorX),f.excavatorZ),f.excavatorZ);rotate(f.excavatorHeading,0f,1f,0f);translate(-WorldMap.worldX(200f),0f,0f)
         beginTexFrame()
         val bob=bob(f,0);translate(0f,bob,0f)
-        push();translate(WorldMap.worldX(200f),0f,0f)
+        push();translate(WorldMap.worldX(200f),0f,0f);windSway(f,0)
         push();translate(0f,-bob,0f);tracks(2.75f,f.excavatorTravel);wheelDust(f,0,2.75f);pop()
         // Slewing ring and upper house.
         shape(cylinder,0f,.82f,0f,1.4f,.14f,1.4f,darkSteel,METAL)
@@ -578,7 +623,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.91f,.91f))wheel(x,.48f,z,spin)
         wheelDust(f,1,3.85f)
         // Body rides on the suspension: it settles after stopping and trembles while idling.
-        translate(0f,bob(f,1),0f)
+        translate(0f,bob(f,1),0f);windSway(f,1)
         box(0f,.67f,0f,3.85f,.25f,1.25f,darkSteel,METAL)
         // Mudguards and fuel tank.
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.92f,.92f))panel(x,1.0f,z,1.08f,.07f,.36f,ink)
@@ -617,7 +662,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         val dx=WorldCamera.x(f.dozerX)
         push();translate(dx,support(f,dx,f.dozerZ),f.dozerZ);rotate(f.dozerHeading,0f,1f,0f);beginTexFrame()
         tracks(2.7f,f.dozerTravel);wheelDust(f,2,2.7f)
-        translate(0f,bob(f,2),0f)
+        translate(0f,bob(f,2),0f);windSway(f,2)
         panel(0f,.98f,0f,2.7f,.55f,1.55f,yellow)
         cab(-.5f,1.24f,2.36f,1.51f,2.21f,1.2f,1.4f,yellow) { driver(-.64f,1.56f,0f,wave(f,2),f.seconds) }
         panel(-.5f,2.42f,0f,1.36f,.1f,1.52f,ink)
@@ -744,7 +789,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         push();translate(x,support(f,x,z),z);rotate(heading,0f,1f,0f);beginTexFrame()
         wheelDust(f,v,4.4f)
         for(wx in floatArrayOf(-1.55f,-.65f,1.55f))for(wz in floatArrayOf(-.9f,.9f))wheel(wx,.48f,wz,-travel/.47f*180f/PI.toFloat())
-        translate(0f,bob(f,v),0f)
+        translate(0f,bob(f,v),0f);windSway(f,v)
         box(0f,.72f,0f,4.4f,.35f,1.65f,darkSteel,METAL)
         panel(0f,.98f,0f,4.15f,.24f,1.8f,paint)
         cab(1.4f,1.05f,2.55f,1.55f,2.42f,1.4f,1.75f,paint) { driver(1.35f,1.55f,.3f,wave(f,v),f.seconds) }
@@ -838,6 +883,11 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         push();translate(k.X-1.7f,.2f,k.Z+.3f);rotate(-90f,0f,1f,0f)
         surface(0f,.05f,0f,1.1f,.1f,1.1f,stone,CONCRETE)
         driver(0f,1f,0f,if(f.work.keeperWave>0)1f else .1f,f.seconds)
+        if(f.wind.strength>.2f && hypot(f.wind.x-48f,f.wind.z-4.5f)<7f) {
+            push();translate(.45f,1.3f,.1f);rotate(sin(f.wind.phase*2f)*15f,1f,0f,0f)
+            rod3(0f,0f,0f,0f,1.4f,0f,.035f,metal,METAL)
+            box(.3f,1.12f,0f,.6f,.45f,.035f,yellow,PAINT);pop()
+        }
         for(zz in floatArrayOf(-.12f,.12f))box(0f,.45f,zz,.13f,.65f,.13f,ink,MATTE)
         pop()
         for(x in floatArrayOf(48.1f,55.9f)) {
@@ -916,7 +966,8 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         for(i in 0 until 3)if(i!=f.blockCarried) {
             val level=max(0,f.blockLevel[i])
             val base=support(f,f.blockX[i],f.blockZ[i])+if(f.blockLevel[i]>=0).08f else 0f
-            block(f.blockX[i],base+b.HEIGHT/2+level*b.HEIGHT,f.blockZ[i],i)
+            push();translate(f.blockX[i],base+b.HEIGHT/2+level*b.HEIGHT+f.wind.lift[i],f.blockZ[i]);rotate(f.wind.lift[i]*sin(f.wind.phase+i)*15f,0f,1f,0f)
+            block(0f,0f,0f,i);pop()
         }
     }
     private fun crane(f:SceneFrame) {
@@ -924,7 +975,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         push();translate(cx,base,cz);rotate(f.craneHeading,0f,1f,0f);beginTexFrame()
         for(x in floatArrayOf(-1.5f,1.5f))for(z in floatArrayOf(-.85f,.85f))wheel(x,.48f,z,-f.craneTravel/.47f*180f/PI.toFloat())
         wheelDust(f,3,4.4f)
-        translate(0f,bob(f,3),0f)
+        translate(0f,bob(f,3),0f);windSway(f,3)
         panel(0f,.75f,0f,4.4f,.5f,1.9f,yellow)
         val parked=!motion[3].moving
         for(x in floatArrayOf(-1.9f,1.9f))for(z in floatArrayOf(-1.4f,1.4f)) {
@@ -993,6 +1044,18 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private fun endTexFrame() { Matrix.setIdentityM(texFrame,0) }
     private fun engineOn(f:SceneFrame,v:Int)=motion[v].moving || f.selected.ordinal==v
     /** Settle bounce after stopping plus a faint diesel tremble while the engine runs. */
+    private fun windSway(f:SceneFrame,v:Int) {
+        val point=when(v) {
+            0->WorldMap.worldX(f.excavatorX) to f.excavatorZ
+            1->WorldMap.worldX(f.truckX) to f.truckZ
+            2->WorldMap.worldX(f.dozerX) to f.dozerZ
+            3->WorldMap.worldX(f.craneX) to f.craneZ
+            4->WorldMap.worldX(f.work.mixerX) to f.work.mixerZ
+            else->WorldMap.worldX(f.work.wreckX) to f.work.wreckZ
+        }
+        val amount=f.wind.strength*(1f-hypot(point.first-f.wind.x,point.second-f.wind.z)/7f).coerceIn(0f,1f)
+        rotate(amount*sin(f.wind.phase*1.4f)*1.2f,0f,0f,1f)
+    }
     private fun bob(f:SceneFrame,v:Int)=motion[v].settle+if(engineOn(f,v)).005f*sin(f.seconds*2f*PI.toFloat()*21f) else 0f
     /** 0..1 waving strength for a couple of seconds after the vehicle was picked. */
     private fun wave(f:SceneFrame,v:Int):Float {

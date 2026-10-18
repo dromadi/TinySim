@@ -1,0 +1,30 @@
+[
+  {
+    "name": "wind-lift",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3248,
+    "triangles": 753252
+  },
+  {
+    "name": "wind-travel",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3250,
+    "triangles": 754204
+  },
+  {
+    "name": "wind-settled",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3174,
+    "triangles": 709612
+  },
+  {
+    "name": "wind-bridge",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3364,
+    "triangles": 768956
+  }
+]

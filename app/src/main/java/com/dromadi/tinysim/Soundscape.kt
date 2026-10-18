@@ -41,6 +41,8 @@ class Soundscape(val zone:Int) {
 class MachineSounds {
     /** Engine effort per vehicle (excavator, truck, dozer, crane): 0 off, ~.2 idle, 1 full. */
     val engine=FloatArray(GameState.Vehicle.entries.size)
+    @Volatile var wind=0f
+    private var windLevel=0.0;private var windNoise=0.0;private var windPhase=0.0
     @Volatile var hydraulic=0f
     @Volatile var keeperSerial=0
     @Volatile var impactSerial=0
@@ -59,6 +61,10 @@ class MachineSounds {
     /** Mono sample for this instant, roughly within ±0.3. */
     fun next(step:Double):Double {
         var out=0.0
+        windLevel+=(wind.toDouble().coerceIn(0.0,1.0)-windLevel)*min(1.0,step*1.5)
+        windNoise=.97*windNoise+.03*(random.nextDouble()*2-1)
+        windPhase+=step*(240+35*sin(windPhase*.003))*2*PI
+        out+=windLevel*(windNoise*.65+.018*sin(windPhase))
         for(v in engine.indices) {
             val target=engine[v].toDouble().coerceIn(0.0,1.0)
             level[v]+=(target-level[v])*step*6

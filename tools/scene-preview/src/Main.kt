@@ -17,6 +17,10 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("wind-lift",0) { g->g.wind.toggle(g);repeat(180){g.update(.016f)};check(g.wind.lift.any { it>.5f } && g.wind.moved>0) },
+        Triple("wind-travel",0) { g->g.wind.toggle(g);repeat(180){g.update(.016f)};g.wind.aim(29f,1f);repeat(200){g.update(.016f)};check(g.blocks.x.any { it>26f }) },
+        Triple("wind-settled",0) { g->g.wind.toggle(g);repeat(180){g.update(.016f)};g.wind.aim(28f,1f);repeat(200){g.update(.016f)};g.wind.toggle(g);repeat(200){g.update(.016f)};g.selected=GameState.Vehicle.CRANE;check(g.wind.lift.all { it==0f }) },
+        Triple("wind-bridge",0) { g->previewBridge(g);g.wind.toggle(g);g.wind.aim(47f,4.5f);repeat(500){g.update(.016f)};check(g.wind.nearBridge && g.keeper.lift==0f) },
         Triple("mixer-pour",0) { g->g.selected=GameState.Vehicle.MIXER;g.action();repeat(20000){if(g.fleet.pad<3)g.update(.016f)};check(g.fleet.pouring && g.fleet.pad==3) },
         Triple("wreck-impact",0) { g->g.selected=GameState.Vehicle.WRECKER;g.action();repeat(20000){if(g.fleet.hits==0)g.update(.016f)};repeat(45){g.update(.016f)};check(g.fleet.hits==1) },
         Triple("yard-finished",0) { g->g.selected=GameState.Vehicle.MIXER;g.action();previewIdle(g);g.selected=GameState.Vehicle.WRECKER;repeat(3){g.action();previewIdle(g)};repeat(180){g.update(.016f)};check(g.fleet.pad==8 && g.fleet.hits==3) },
@@ -67,6 +71,8 @@ fun main(args: Array<String>) {
                 r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
         }
         val frame=when(name) {
+            "wind-lift","wind-travel","wind-settled"->SceneFrame.capture(g,cam,1.2f+i,-18f,10f,1.05f,26f,1f)
+            "wind-bridge"->SceneFrame.capture(g,cam,1.2f+i,-18f,10f,.95f,48f,3f)
             "mixer-pour"->SceneFrame.capture(g,cam,1.2f+i,-23f,7f,1.35f,20f,18f)
             "wreck-impact"->SceneFrame.capture(g,cam,1.2f+i,-22f,5f,1.2f,31f,18f)
             "yard-finished"->SceneFrame.capture(g,cam,1.2f+i,-22f,12f,.88f,26f,17f)
