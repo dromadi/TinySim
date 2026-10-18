@@ -8,3 +8,5 @@ Gambar merupakan pratinjau renderer/HUD asli di JVM + WebGL, bukan screenshot An
 - `pipe-complete.jpg`: tanah dikembalikan oleh bulldozer; tutup inspeksi dan bendera toska terlihat.
 
 `results.json` menyimpan hasil shader/GL keempat scene; `result.json` hasil tes/lint/APK. Laporan XML, log build, metadata APK dan hasil verifikasi sertifikat disimpan apa adanya. Tidak ada perangkat terhubung saat `adb devices`; instrumentation hanya dikompilasi. Model penggalian/pipa/penimbunan, migrasi save dan konservasi material diuji JVM; kontrol, audio dan lifecycle native belum diuji di HP.
+
+Harness direset dengan upload terrain VBO lengkap per fixture karena konteks WebGL terpisah. Android tetap inkremental. Lihat VERIFICATION.md untuk koreksi pratinjau ini.

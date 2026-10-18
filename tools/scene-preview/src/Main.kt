@@ -80,6 +80,11 @@ fun main(args: Array<String>) {
             "building-site"->SceneFrame.capture(g,cam,1.2f+i,0f,4f,1f,36f,6f)
             else->SceneFrame.capture(g,cam,1.2f+i)
         }
+        // Replay opens each fixture in a fresh WebGL context. Runtime terrain updates are
+        // incremental; without a full fixture upload later shots would inherit flat init soil.
+        // Keep this JVM-only reset here: the Android renderer remains incremental.
+        val terrainField=SceneRenderer3D::class.java.getDeclaredField("terrain").apply { isAccessible=true }
+        (terrainField.get(r) as TerrainMesh).apply { contextLost();update(g.earth,g.sand);upload() }
         r.submit(frame)
         r.onDrawFrame(null)
         val canvas=Canvas();GameRenderer().draw(canvas,g,true,false,0f,frame.seconds,cam,advanced=false,orbitMode=false,zoom=frame.zoom,panX=frame.panX,panZ=frame.panZ,hintX=if(name=="start-cam1")1010f else Float.NaN,hintY=590f,targets=GameRenderer.pipeTargets(g,WorldCamera.spec(cam,frame.yaw,frame.pitch,frame.zoom,frame.panX,frame.panZ)))

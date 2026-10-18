@@ -33,12 +33,14 @@ Build pertama tertahan konfigurasi proxy unduhan dependency; koneksi runner dipe
 cd tools/scene-preview
 TINYSIM_PREVIEW_SCENES=pipe-trench,pipe-lift,pipe-laid,pipe-complete \
   /tmp/ts-downloads/gradle-8.9/bin/gradle --no-daemon --max-workers=2 \
-  -Pkotlin.compiler.execution.strategy=in-process run --args=/tmp/ts-frames17.json
+  -Pkotlin.compiler.execution.strategy=in-process run --args=/tmp/ts-frames17-fixed.json
 CHROMIUM_PATH=/tmp/ts-chrome/chrome-headless-shell-linux64/chrome-headless-shell \
-  PREVIEW_FORMAT=jpeg node shoot.js /tmp/ts-frames17.json /tmp/ts-shots17-v3
+  PREVIEW_FORMAT=jpeg node shoot.js /tmp/ts-frames17-fixed.json /tmp/ts-shots17-fixed
 ```
 
-Renderer dan Canvas HUD asli dijalankan lewat JVM lalu diputar di WebGL dengan shader dan tekstur yang sama. Empat fixture melakukan kegiatan model sungguhan, bukan mengisi flag selesai secara manual. Excavator dipindahkan keluar lewat `driveTo` setelah menggali agar tidak menutupi hasilnya. Semua fixture memeriksa konservasi material. Penanda digeser ke depan agar parit/pipa tetap terlihat; lapisan tanah yang baru terbuka diberi warna lebih gelap dan tertutup kembali saat tinggi tanah pulih.
+Renderer dan Canvas HUD asli dijalankan lewat JVM lalu diputar di WebGL dengan shader dan tekstur yang sama. Empat fixture melakukan kegiatan model sungguhan, bukan mengisi flag selesai secara manual. Harness kini merekam upload penuh terrain VBO untuk setiap fixture: masing-masing gambar diputar di konteks WebGL baru, sehingga delta dari gambar sebelumnya tidak cukup. Sebelum koreksi ini, gambar setelah fixture pertama dapat menampilkan tanah awal datar yang menutupi pipa. Koreksi hanya pada harness JVM, bukan renderer incremental Android. Excavator dipindahkan keluar lewat `driveTo` setelah menggali agar tidak menutupi hasilnya. Semua fixture memeriksa konservasi material. Penanda digeser ke depan agar parit/pipa tetap terlihat; lapisan tanah yang baru terbuka diberi warna lebih gelap dan tertutup kembali saat tinggi tanah pulih.
+
+Pemeriksaan Android setelah koreksi harness juga **BUILD SUCCESSFUL in 7s**, 74 task (1 dieksekusi, 73 up-to-date); APK dan SHA-256 identik. Log tambahan: `pre-push-check.log`.
 
 **Empat scene PASS, seluruhnya GL error 0.** Gambar dan hasil shader/GL: [docs/verification/alpha17](docs/verification/alpha17/). **Ini pratinjau renderer desktop, bukan screenshot Android, uji kontrol sentuh, atau bukti FPS HP.**
 
