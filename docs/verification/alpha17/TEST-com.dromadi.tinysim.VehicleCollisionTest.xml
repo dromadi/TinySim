@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.VehicleCollisionTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:06:29" hostname="f16fdb761c59" time="0.583">
+  <properties/>
+  <testcase name="turningAndBladeStateDoNotShrinkTheSafetyEnvelope" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.039"/>
+  <testcase name="headOnCrossingNeverInterpenetratesEvenWhileTurning" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.042"/>
+  <testcase name="overlappingSavesAndOccupiedGoalsAtMapCornersStayBounded" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.099"/>
+  <testcase name="aSweptSegmentDetectsAnObstacleEvenWhenBothEndsAreFree" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.005"/>
+  <testcase name="overlappingLegacyPosesAreSeparatedWithoutResettingInventory" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.003"/>
+  <testcase name="largeDeltaAndRepeatedTouchRetargetingCannotTunnelThrough" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.221"/>
+  <testcase name="parkedVehicleIsAvoidedAndTheOriginalDestinationIsReached" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.047"/>
+  <testcase name="allThreeApproachingOnePointStaySeparatedAndStopWithoutBouncing" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.051"/>
+  <testcase name="occupiedDestinationStopsAtSafeDistanceAndCanBackAway" classname="com.dromadi.tinysim.VehicleCollisionTest" time="0.076"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.BlockYardTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:06:27" hostname="f16fdb761c59" time="0.119">
+  <properties/>
+  <testcase name="groundDropCanBePickedUpAgainAndWaterIsRejected" classname="com.dromadi.tinysim.BlockYardTest" time="0.027"/>
+  <testcase name="directTouchesPickUpAndTolerantlySnapToTheTarget" classname="com.dromadi.tinysim.BlockYardTest" time="0.008"/>
+  <testcase name="invalidBlockSavesAreRejectedAndResetRestoresAllThreeBlocks" classname="com.dromadi.tinysim.BlockYardTest" time="0.034"/>
+  <testcase name="childCanBuildTheEntireTowerWithTheLargeActionButton" classname="com.dromadi.tinysim.BlockYardTest" time="0.006"/>
+  <testcase name="savesFromBeforeBlocksMigrateWithoutLosingTheExistingWorld" classname="com.dromadi.tinysim.BlockYardTest" time="0.008"/>
+  <testcase name="pauseAndRestoreKeepTheHeldBlockAndCancelOnlyTheMotion" classname="com.dromadi.tinysim.BlockYardTest" time="0.014"/>
+  <testcase name="blockSoundHasAUsableSignalGentleAttackAndDecaysToSilence" classname="com.dromadi.tinysim.BlockYardTest" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -248,6 +248,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         bridgeYard(f)
         bridge(f)
         blockYard(f)
+        pipeSite(f)
         crane(f)
         house(f)
         excavator(f)
@@ -729,6 +730,46 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
      * cable and clamshell grab. While a bridge stage builds, the hook follows the lift-swing-lower
      * timeline from the yard to the span instead.
      */
+    /** Original pipe model: orange wall, dark bore, bright coupling rings and steel lift straps. */
+    private fun pipe(x:Float,y:Float,z:Float) {
+        rod3(x-.94f,y,z,x+.94f,y,z,.18f,orange,PAINT)
+        for(side in floatArrayOf(-1f,1f)) {
+            val end=x+side*.9f
+            rod3(end-.075f,y,z,end+.075f,y,z,.21f,orange,PAINT)
+            rod3(end+side*.08f,y,z,end+side*.09f,y,z,.145f,ink,MATTE)
+        }
+        for(dx in floatArrayOf(-.6f,.6f))rod3(x+dx-.025f,y,z,x+dx+.025f,y,z,.19f,chrome,METAL)
+    }
+    private fun pipeSite(f:SceneFrame) {
+        val site=com.dromadi.tinysim.PipeSite
+        if(!f.pipeActive && f.pipeInstalled==0)return
+        // Freshly exposed earth is darker than the dry surface. It follows the real cut,
+        // and is occluded/removed as the same heightfield is backfilled.
+        noCast {
+            for(i in 0..5)if(site.cells(i).all { f.earth[it]<=2 && f.sand[it]==0 }) {
+                box(site.x(i),-.356f,site.Z,.98f,.018f,.96f,rgba(116,79,46),SOIL)
+            }
+        }
+        for(i in 0..2) {
+            val placed=f.pipeInstalled and (1 shl i)!=0
+            if(i!=f.pipeCarried) {
+                val x=site.pipeX(i);val z=if(placed)site.Z else 11.5f
+                pipe(x,if(placed)-.15f else support(f,x,z)+.28f,z)
+                if(!placed)for(dx in floatArrayOf(-.6f,.6f))box(x+dx,support(f,x,z)+.06f,z,.3f,.12f,.9f,bark,WOOD)
+            }
+        }
+        for(x in floatArrayOf(9.7f,16.3f))for(z in floatArrayOf(3.6f,6.4f)) {
+            val y=support(f,x,z)
+            box(x,y+.5f,z,.09f,1f,.09f,paintWhite,PAINT)
+            box(x+.2f,y+.83f,z,.4f,.25f,.04f,if(f.pipeFilled==7)teal else orange,PAINT)
+        }
+        // Two inspection caps remain visible after the utility is buried.
+        if(f.pipeFilled==7)for(x in floatArrayOf(10f,16f)) {
+            val y=support(f,x,site.Z)
+            disk(x,y+.07f,site.Z,.65f,.65f,darkSteel,METAL,.1f)
+            for(d in floatArrayOf(-.13f,.13f))box(x,y+.125f,site.Z+d,.36f,.015f,.035f,chrome,METAL)
+        }
+    }
     private val blockColors=arrayOf(rgba(235,113,65),rgba(33,167,164),rgba(250,195,60))
     private fun block(x:Float,y:Float,z:Float,id:Int) {
         val b=com.dromadi.tinysim.BlockYard
@@ -808,6 +849,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
                 else->surface(0f,-.08f,0f,2.4f,.1f,1.6f,rgba(104,102,100),ASPHALT)
             }
             pop()
+        } else if(f.pipeCarried>=0) {
+            pipe(hx,hookY-.4f,hz)
+            for(dx in floatArrayOf(-.65f,.65f))rod3(hx,hookY+.25f,hz,hx+dx,hookY-.2f,hz,.022f,darkSteel,METAL)
         } else if(f.blockCarried>=0) {
             val by=hookY-.45f
             val sway=.035f*sin(f.seconds*2.3f)

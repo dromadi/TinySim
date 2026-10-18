@@ -1,11 +1,21 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.15**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.17**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Crane menyusun balok](docs/verification/alpha15/block-tower.jpg)
+![Pipa dipasang di parit](docs/verification/alpha17/pipe-laid.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.17: gali, pasang pipa, lalu timbun
+
+- Pilih excavator atau bulldozer, lalu sentuh kartu pipa kiri atas. Kamera memperlihatkan proyek sepanjang **6 × 2 m** di area barat. Sentuh enam tanda bucket besar: excavator mendekat, menurunkan lengan, menggali tanah sebenarnya, lalu mengayun dan meletakkan hasilnya di timbunan samping. Parit turun **0,44 m**; tanah yang dipindahkan **24 unit**, tidak dihapus.
+- Setelah galian siap, tiga tanda pipa muncul. Sentuh untuk memilih crane dan mengangkat pipa jingga dari rak; sentuh lagi untuk menurunkannya ke parit. Pipa memiliki mulut gelap, gelang sambungan dan sling pengangkat. Boom, tali dan muatan memakai mekanisme crane yang sudah ada.
+- Setelah tiga pipa terpasang, sentuh tanda timbun. Bulldozer mendekati timbunan dan menurunkan blade; tanah timbunan dikembalikan sedikit demi sedikit ke parit. Dua tutup inspeksi dan bendera toska menandai proyek selesai. Ini simulasi sel deterministik: penimbunan dibantu otomatis dari timbunan samping, bukan simulasi butiran tanah bebas.
+- Tangan penunjuk dapat menuntun seluruh alur. Tidak ada teks pada kontrol anak, joystick, hukuman atau waktu habis. Kartu pipa dapat menutup aktivitas tanpa menghapus pekerjaan. Reset dunia tetap hanya di area orang tua.
+- Save **v12** menyimpan pipa yang dibawa, pipa terpasang dan penimbunan. Save v10 (Alpha.15), v11 (Alpha.16), dan versi sebelumnya dibaca; tanah, muatan kendaraan dan balok tetap terpelihara. Animasi/perjalanan dibatalkan saat pause, lalu pekerjaan dilanjutkan dengan sentuhan berikutnya.
+- Sumber Alpha.16 sebelumnya tidak sempat dipublikasikan dan hilang dari workspace. Penggalian terpandu di versi ini dibuat kembali di atas Alpha.15; ini bukan klaim pemulihan sumber Alpha.16 yang identik.
+- Model/ikon pipa adalah geometri dan gambar kode asli TinySim (MIT); tidak ada berkas audio besar atau konten pengisi. Tekstur serta suara kendaraan yang sudah ada dipertahankan.
 
 ## Alpha.15: crane menyusun balok
 
@@ -116,6 +126,7 @@ Sumber awal berisi 36 unit pasir, ditambah 24 unit di tambang timur. Tanah dasar
 Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas untuk HUD. Integrasi native mempertahankan lifecycle Android dan memisahkan input, simulasi, serta rendering. Tidak ada dependency runtime pihak ketiga; seluruh model dan material dihasilkan lokal tanpa unduhan aset.
 
 - `GameState`: perjalanan ke tujuan, putaran kendaraan, transfer pasir, misi, dan snapshot.
+- `PipeSite`: aktivitas penggalian, pemasangan pipa dan penimbunan, dengan transfer tanah konservatif.
 - `BlockYard`: tiga balok, posisi dan tingkat susunan, muatan crane, validasi serta save.
 - `Terrain`: heightfield kontinu, batas tanah dasar, dan zona fondasi rumah.
 - `WorldMap`: batas lahan, grid 86 × 22 sel pasir, konversi posisi dan tetangga sel.
@@ -132,7 +143,7 @@ Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas un
 
 Material memakai sel deterministik, bukan granular physics bebas. Heightfield digambar pada grid 0,25 unit dengan normal permukaan; tanah dapat turun 0,88 unit hingga lapisan dasar. Tinggi timbunan visual dibatasi 24 unit material (3,12 unit tinggi), sementara seluruh material tambahan tetap tersimpan dan bisa diambil kembali. Kendaraan mengikuti tinggi permukaan pada titik pusat; belum ada suspensi/kemiringan sasis atau tabrakan bangunan/dekorasi.
 
-Save baru berawalan `10|`. Format `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
+Save baru berawalan `12|`. Format `11|`, `10|`, `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
 
 ## Build dan pemasangan
 
@@ -145,7 +156,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.15-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.17-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
 
 Runner pengujian sentuh terpisah:
 
@@ -158,7 +169,7 @@ Runner bukan bagian APK permainan. Hasil sukses harus berisi `result=PASS`. Liha
 
 ## Pengembangan berikutnya
 
-- Pemasangan pipa dan bangunan bertahap yang memakai crane.
+- Sambungan air yang mengalir melalui jalur pipa dan bangunan tambahan yang memakai crane.
 - Suspensi mengikuti kemiringan tanah, tabrakan dengan bangunan/dekorasi, dan proyek jembatan tambahan.
 - Misi antarzona dan tutorial sentuh berbasis gambar.
 - Pengujian langsung bersama anak/orang tua dan virtual accessibility nodes pada kontrol Canvas.

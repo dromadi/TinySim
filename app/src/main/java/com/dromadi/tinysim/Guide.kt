@@ -7,6 +7,7 @@ sealed class Hint {
     data class Card(val vehicle:GameState.Vehicle):Hint()
     object Action:Hint()
     object Blocks:Hint()
+    data class Pipe(val id:Int):Hint()
     /** A spot on the ground (world metres) for the selected vehicle. */
     data class Ground(val x:Float,val z:Float):Hint()
 }
@@ -31,6 +32,15 @@ object Guide {
                 g.selected!=GameState.Vehicle.TRUCK -> Hint.Card(GameState.Vehicle.TRUCK)
                 distance<.3f || (distance<2.5f && fits(g.dumpCell)) -> Hint.Action
                 else -> Hint.Ground(x,z)
+            }
+        }
+        if(g.pipes.active && !g.pipes.complete) {
+            if(g.pipes.carried>=0)return use(GameState.Vehicle.CRANE)
+            if(g.bucket>0)return use(GameState.Vehicle.EXCAVATOR)
+            val id=g.pipes.next(g)
+            if(id>=0) {
+                val v=if(id<6)GameState.Vehicle.EXCAVATOR else if(id<9)GameState.Vehicle.CRANE else GameState.Vehicle.DOZER
+                return if(g.selected==v)Hint.Pipe(id) else Hint.Card(v)
             }
         }
         val house=(g.source==0 || g.delivered>=4) && g.houseStage==0

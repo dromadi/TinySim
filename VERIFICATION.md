@@ -1,3 +1,49 @@
+# Verifikasi Alpha.17 — proyek pipa bawah tanah
+
+Tanggal: 18 Oktober 2026 (WIB). `com.dromadi.tinysim`, versionCode 17 / `0.1.0-alpha.17`.
+
+Basis sumber: `816f84a` (Alpha.15); tidak ada PR terbuka saat pekerjaan dimulai. Sumber Alpha.16 yang belum dipush sebelumnya tidak tersedia, sehingga penggalian terpandu dibuat kembali pada basis tersebut. Alpha.15 (balok), sungai/jembatan, tabrakan kendaraan, mesh tanah inkremental, tekstur serta sintesis audio dipertahankan.
+
+Yang dapat dimainkan: sentuh kartu pipa lalu enam tanda bucket untuk menggali parit 6 × 2 m sedalam 0,44 m. Excavator mengangkat 24 unit tanah dan meletakkannya pada timbunan samping. Tiga pipa jingga diangkat dan dipasang memakai crane; bulldozer kemudian mendekati timbunan, menurunkan blade dan mengembalikan tanah sedikit demi sedikit. Penimbunan merupakan bantuan berbasis sel dengan sumber timbunan samping, bukan simulasi butiran/rigid-body. Dua tutup inspeksi dan empat bendera toska tetap terlihat saat selesai. Tangan penunjuk dapat membawa anak melewati seluruh kegiatan.
+
+## Build, tes dan pemeriksaan
+
+JDK 17, Gradle 8.9, Android compile/target SDK 35. Build-Tools 34.0.0 dipilih otomatis AGP 8.7.3; SDK lokal juga memiliki 35.0.0 untuk inspeksi APK. Proyek dan cache dibangun di `/tmp` agar output build tidak terganggu sinkronisasi workspace.
+
+Perintah final yang benar-benar dijalankan (runner Python hanya meneruskan proxy koneksi yang tersedia dan merekam output lengkap):
+
+```sh
+GRADLE_USER_HOME=/tmp/ts-gradle-home /tmp/ts-downloads/gradle-8.9/bin/gradle \
+  --no-daemon --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process \
+  testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **BUILD SUCCESSFUL in 52s**, 74 task (16 dieksekusi, 58 up-to-date). APK debug **67,772,264 byte**; SHA-256 `c3425da410ac702b2a90c241811ae67195c5e8ac1ec910050273095875e5081d`. Hasil final dan ukuran/checksum APK: [result.json](docs/verification/alpha17/result.json), [build.log](docs/verification/alpha17/build.log).
+- **103 tes lulus, 0 gagal/error/skipped**: 92 tes sebelumnya + 11 tes `PipeSiteTest`. Laporan XML asli disimpan di direktori yang sama. Tes meliputi seluruh alur melalui `Guide`, kedalaman parit, semua transfer material setiap tick, kontak sebelum menggali, ketukan aksi berulang, pembatalan perjalanan, pause/cold restore dengan bucket/pipa, penimbunan parsial, migrasi payload v10/v11, reset dan save rusak. Fixture migrasi adalah payload sintetis dengan format lama, bukan save yang diambil dari HP.
+- **Lint 0 error, 1 warning** `DiscouragedApi` untuk landscape yang disengaja. Tidak ada tes lama dihapus/dilewati/dilemahkan; pemeriksaan prefix save diperbarui, dan fixture korupsi memakai indeks field yang dituju agar penambahan field baru tidak mengubah tujuan tes.
+- APK permainan dan APK instrumentation berhasil dibangun. `apksigner verify --verbose --print-certs`, `aapt dump permissions`, `aapt dump badging`, serta pemeriksaan CRC ZIP dijalankan pada hasil nyata. Tidak ada Android permission, WAV atau paket audio pengisi.
+- SHA-256 sertifikat debug: `f6700a05aaf7b1a92347a38c54cd65de29099c2c355c7e8b51217b6ecf7f283e`, sama dengan APK lokal Alpha.8–Alpha.16. Keystore tetap privat dan tidak disertakan di repo.
+- `adb devices` berhasil dijalankan; tidak ada perangkat terhubung. **Tidak ada uji sentuh/lifecycle/audio di HP atau emulator.** Tes pause/restore hanya memverifikasi model dan save JVM. APK instrumentation dikompilasi, tidak dijalankan.
+
+Build pertama tertahan konfigurasi proxy unduhan dependency; koneksi runner diperbaiki tanpa mengubah repository dependency. Uji awal kemudian menemukan satu kegagalan penanda yang bertumpuk (100/101 lulus). Tata letak penanda diperbaiki, lalu dua tes interaksi/resume ditambahkan. Kompilasi Kotlin awal sempat memakai fallback setelah daemon compiler gagal startup; perintah final memakai compiler in-process dan berhasil. Keberhasilan akhir tidak menghapus riwayat kegagalan tersebut.
+
+## Pratinjau visual
+
+```sh
+cd tools/scene-preview
+TINYSIM_PREVIEW_SCENES=pipe-trench,pipe-lift,pipe-laid,pipe-complete \
+  /tmp/ts-downloads/gradle-8.9/bin/gradle --no-daemon --max-workers=2 \
+  -Pkotlin.compiler.execution.strategy=in-process run --args=/tmp/ts-frames17.json
+CHROMIUM_PATH=/tmp/ts-chrome/chrome-headless-shell-linux64/chrome-headless-shell \
+  PREVIEW_FORMAT=jpeg node shoot.js /tmp/ts-frames17.json /tmp/ts-shots17-v3
+```
+
+Renderer dan Canvas HUD asli dijalankan lewat JVM lalu diputar di WebGL dengan shader dan tekstur yang sama. Empat fixture melakukan kegiatan model sungguhan, bukan mengisi flag selesai secara manual. Excavator dipindahkan keluar lewat `driveTo` setelah menggali agar tidak menutupi hasilnya. Semua fixture memeriksa konservasi material. Penanda digeser ke depan agar parit/pipa tetap terlihat; lapisan tanah yang baru terbuka diberi warna lebih gelap dan tertutup kembali saat tinggi tanah pulih.
+
+**Empat scene PASS, seluruhnya GL error 0.** Gambar dan hasil shader/GL: [docs/verification/alpha17](docs/verification/alpha17/). **Ini pratinjau renderer desktop, bukan screenshot Android, uji kontrol sentuh, atau bukti FPS HP.**
+
+---
+
 # Verifikasi Alpha.15 — crane menyusun balok
 
 Tanggal: 18 Oktober 2026 (WIB). versionCode 15; `0.1.0-alpha.15`.

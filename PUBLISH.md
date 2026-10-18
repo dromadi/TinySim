@@ -1,4 +1,16 @@
-# Publikasi TinySim
+# Publikasi Alpha.17
+
+Versi `0.1.0-alpha.17` / code 17. Proyek pipa: gali enam bagian, angkat/pasang tiga pipa dengan crane, timbun dengan bulldozer. Lihat README dan VERIFICATION untuk kontrol dan bukti.
+
+Build dengan JDK 17, SDK 35:
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+GitHub Actions mengunggah `TinySim-0.1.0-alpha.17-debug`. Keystore lokal privat tetap sama dengan APK lokal Alpha.8–Alpha.16; jangan unggah ke Git. Keystore CI dapat berbeda. Pembaruan APK harus menggunakan penanda tangan yang sama agar save tetap ada.
+
+## Publikasi TinySim
 
 Repository: https://github.com/dromadi/TinySim (public, dibuat manual oleh pemilik akun).
 

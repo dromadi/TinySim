@@ -26,8 +26,15 @@ class GameRenderer {
      * no words to read. Zoom, camera, minimap and stop appear only when a parent enables them.
      * hintX/hintY place the pointing hand (NaN hides it).
      */
-    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN) {
+    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN,targets:List<Pair<Int,Pair<Float,Float>>> = emptyList()) {
         progressCard(c,g)
+        for((id,point) in targets) {
+            val (x,y)=point
+            circle(c,x,y,25f,white);circle(c,x,y,21f,if(g.pipes.busy || g.craneBusy)yellow else teal)
+            if(id<6) { poly(c,floatArrayOf(x-14,y-9,x+14,y-9,x+8,y+9,x-8,y+9),yellow);line(c,x,y-18,x,y-8,ink,4f) }
+            else if(id<9)pipeIcon(c,x,y,.65f)
+            else { line(c,x-12,y+7,x+12,y+7,white,5f);arrowDown(c,x,y-14,white) }
+        }
         rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
         if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
         if(advanced) {
@@ -74,13 +81,21 @@ class GameRenderer {
         }
     }
     /** Pictogram progress: mission icon or the house project stage, with dots instead of words. */
+    private fun pipeIcon(c:Canvas,x:Float,y:Float,scale:Float) {
+        rect(c,x-22*scale,y-10*scale,44*scale,20*scale,orange,3f)
+        circle(c,x+20*scale,y,12*scale,teal);circle(c,x+20*scale,y,7*scale,ink)
+        line(c,x-12*scale,y-10*scale,x-12*scale,y+10*scale,white,3f)
+    }
     private fun blockIcon(c:Canvas,x:Float,y:Float) {
         for(i in 0..2)rect(c,x-19f,y+17f-i*17f,38f,15f,listOf(orange,teal,yellow)[i],4f)
     }
     private fun progressCard(c:Canvas,g:GameState) {
         rect(c,24f,20f,300f,70f,white,22f)
         val dots:Int;val done:Int
-        if(g.selected==GameState.Vehicle.CRANE && !g.bridgeReady && g.craneCargo==0) {
+        if(g.pipes.active || g.selected==GameState.Vehicle.EXCAVATOR || g.selected==GameState.Vehicle.DOZER) {
+            pipeIcon(c,72f,51f,1f);dots=6
+            done=if(g.pipes.complete)6 else if(g.pipes.installed==7)g.pipes.filled.countOneBits()*2 else if(g.pipes.open(g))g.pipes.installed.countOneBits()*2 else (0..5).count { g.pipes.dug(g,it) }
+        } else if(g.selected==GameState.Vehicle.CRANE && !g.bridgeReady && g.craneCargo==0) {
             blockIcon(c,72f,50f);dots=3;done=g.blocks.placed
         } else if(g.missionMode) {
             when(g.mission) {0->truck(c,72f,73f,.32f,4,0f);1->truck(c,72f,73f,.32f,2,-38f);2->dozer(c,72f,73f,.32f,1);3->roadIcon(c,72f,51f,g.roadProgress);else->houseIcon(c,72f,51f)}
@@ -92,11 +107,18 @@ class GameRenderer {
         else if(g.houseStage<3) { houseIcon(c,72f,51f);dots=3;done=g.houseStage }
         else if(g.bridgeFill<8 && g.bridgeStage==0) { truck(c,72f,73f,.32f,4,0f);bridgeIcon(c,112f,51f,.6f);dots=8;done=g.bridgeFill }
         else { bridgeIcon(c,72f,51f,1f);dots=3;done=g.bridgeStage }
-        val step=if(dots>4)22f else 34f
+        val step=if(dots>4)25f else 34f
         for(i in 0 until dots)circle(c,140f+i*step,55f,if(dots>4)7f else 9f,if(done>i)teal else col("#DDE5DC"))
     }
     /** The single big action, drawn as what will happen next. */
     private fun actionIcon(c:Canvas,g:GameState,x:Float,y:Float) {
+        if(g.pipes.active && g.bucket==0 && !g.pipes.complete) {
+            val id=g.pipes.next(g)
+            if(id<6) { poly(c,floatArrayOf(x-50,y-22,x+10,y-22,x,y+18,x-36,y+18),yellow);arrowDown(c,x+55,y-16,white) }
+            else if(id<9) { crane(c,x-65,y+34,.8f,false);pipeIcon(c,x+60,y,1.3f);arrowDown(c,x+100,y-15,white) }
+            else { dozer(c,x-30,y+28,.65f,1);arrowDown(c,x+80,y-18,white) }
+            return
+        }
         when(g.selected) {
             GameState.Vehicle.EXCAVATOR -> if(g.bucket==0) {
                 poly(c,floatArrayOf(x-60f,y-30f,x-6f,y-30f,x-18f,y+4f,x-48f,y+4f),yellow)
@@ -174,6 +196,18 @@ class GameRenderer {
         text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
     }
     companion object {
+        fun pipeTargets(g:GameState,camera:com.dromadi.tinysim.scene.CameraSpec):List<Pair<Int,Pair<Float,Float>>> {
+            if(!g.pipes.active || g.pipes.complete)return emptyList()
+            val ids=if(!g.pipes.open(g) && g.pipes.installed!=7)(0..5).filter { !g.pipes.dug(g,it) && !g.pipes.hasPipe(it/2) }
+                else if(g.pipes.installed!=7)(6..8).filter { !g.pipes.hasPipe(it-6) }
+                else (9..11).filter { !g.pipes.covered(it-9) }
+            return ids.map { id->
+                val x=PipeSite.markerX(id);val z=PipeSite.markerZ(id)
+                val point=camera.project(com.dromadi.tinysim.scene.Vec3(x,g.surface(x,z)+.55f,z))
+                id to (point.first to (point.second+if(id<6) { if(id%2==0)-26f else 30f } else 0f))
+            }.filter { it.second.first in 40f..1160f && it.second.second in 120f..510f }
+        }
+
         const val PARENT_TOP=160f;const val PARENT_STEP=70f
         /** Horizontal centre of each vehicle card in the bottom bar (1200-wide HUD space). */
         fun cardCenter(vehicle:GameState.Vehicle)=100f+vehicle.ordinal*172f

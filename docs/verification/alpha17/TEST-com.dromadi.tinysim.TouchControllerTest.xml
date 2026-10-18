@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.TouchControllerTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:06:29" hostname="f16fdb761c59" time="0.009">
+  <properties/>
+  <testcase name="excavatorBodyDragDrivesWhileBucketDragStillManipulatesArm" classname="com.dromadi.tinysim.TouchControllerTest" time="0.004"/>
+  <testcase name="pinchCannotAlsoMoveTheBucketOrActivateGround" classname="com.dromadi.tinysim.TouchControllerTest" time="0.003"/>
+  <testcase name="singleGroundTapDoesNotPanOrDrag" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <testcase name="cancellingAVehicleDragStopsTheRoute" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <testcase name="minimapDragCannotMoveVehiclesOrTheBucket" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <testcase name="lostOwnerAndButtonExitNeverActivateOnRelease" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <testcase name="parentGateRequiresAnUninterruptedThreeSecondHold" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <testcase name="draggingAVehicleSelectsItAndSetsDestinationWithoutPanning" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <testcase name="emptyGroundDragPansAndCannotAlsoSetADestination" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <testcase name="bucketDragIncludesFinalFingerPositionOnlyAsArmInput" classname="com.dromadi.tinysim.TouchControllerTest" time="0.001"/>
+  <testcase name="thirdFingerCancelsAndTheRemainingFingerCannotTap" classname="com.dromadi.tinysim.TouchControllerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

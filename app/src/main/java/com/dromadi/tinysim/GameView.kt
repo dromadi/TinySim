@@ -55,7 +55,7 @@ class GameView(context: Context): FrameLayout(context) {
         panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,PAN_MAX_X)
         panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,11f)
     }
-    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus;game.greet(vehicle) }
+    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
         val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,WorldMap.worldX(game.excavatorX),game.excavatorZ),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ),Triple(GameState.Vehicle.CRANE,game.craneWorldX,game.craneZ))
@@ -74,8 +74,12 @@ class GameView(context: Context): FrameLayout(context) {
         // A dumped pile lies close to the truck: prioritize the intended digging surface
         // over the forgiving vehicle hit radius when the excavator is selected.
         // With an empty bucket the excavator digs wherever the child touches, driving there if needed.
+        if(game.pipes.active) {
+            val id=pipeMarkers().minByOrNull { kotlin.math.hypot(x-it.second.first,y-it.second.second) }
+            if(id!=null && kotlin.math.hypot(x-id.second.first,y-id.second.second)<40f) { pipeTouch(id.first);return }
+        }
         val ground=groundAt(x,y)
-        if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
+        if(!game.pipes.active && game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
         // Hit-test the visible block centre, not its projection on the ground behind it.
         if(game.selected==GameState.Vehicle.CRANE && game.blocks.carried<0 && game.craneCargo==0) {
             val id=(0 until BlockYard.COUNT).filter { game.blocks.level[it]<0 }.map { i->
@@ -106,6 +110,12 @@ class GameView(context: Context): FrameLayout(context) {
         driveAt(x,y);followSelected()
     }
 
+    private fun pipeMarkers()=GameRenderer.pipeTargets(game,cameraSpec())
+    private fun pipeTouch(id:Int) {
+        val unit=if(id<6)GameState.Vehicle.EXCAVATOR else if(id<9)GameState.Vehicle.CRANE else GameState.Vehicle.DOZER
+        game.selected=unit;following=false
+        if(!game.pipes.tap(game,id) && game.pipes.carried>=0 && !game.craneBusy && game.craneGoal==null)game.installPipe(game.pipes.carried)
+    }
     fun orbit(dx:Float,dy:Float,ratio:Float=1f) {
         following=false
         val base=WorldCamera.spec(camera)
@@ -170,7 +180,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(running && !parents) {
             val dt=if(previous==0L)0f else (now-previous)/1000f
             game.update(dt)
-            if(game.selected==GameState.Vehicle.EXCAVATOR) { game.scoop();game.pour() }
+            if(game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
             game.nextMission()
             if(game.rewardSerial!=lastReward) { audio.play(settings.sound,true);lastReward=game.rewardSerial }
             if(game.transferSerial!=lastTransfer) { if(game.transferKind==6)audio.machines.blockSerial++ else audio.machines.pourSerial++ }
@@ -191,7 +201,7 @@ class GameView(context: Context): FrameLayout(context) {
         surface.requestRender()
         canvas.save();canvas.translate(offsetX,offsetY);canvas.scale(scale,scale)
         val mark=hintPoint()
-        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,advanced,orbitMode,zoom,panX,panZ,mark?.first ?: Float.NaN,mark?.second ?: Float.NaN)
+        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,advanced,orbitMode,zoom,panX,panZ,mark?.first ?: Float.NaN,mark?.second ?: Float.NaN,targets=pipeMarkers())
         canvas.restore()
         if(running)hud.postInvalidateOnAnimation()
     }
@@ -214,6 +224,7 @@ class GameView(context: Context): FrameLayout(context) {
             if(x in 1098f..1178f && y in 282f..358f)return "focus"
             if(x in 712f..812f && y in 557f..655f)return "stop"
         }
+        if((game.pipes.active || game.selected==GameState.Vehicle.EXCAVATOR || game.selected==GameState.Vehicle.DOZER) && x in 24f..324f && y in 20f..90f)return "pipes"
         if(game.selected==GameState.Vehicle.CRANE && !game.bridgeReady && game.craneCargo==0 && x in 24f..324f && y in 20f..90f)return "blocks"
         if(y in 556f..660f)return when(x) {
             in 20f..180f -> "excavator"
@@ -224,6 +235,7 @@ class GameView(context: Context): FrameLayout(context) {
             else -> null
         }
         if(y in 100f..535f) {
+            if(game.pipes.active && pipeMarkers().any { kotlin.math.hypot(x-it.second.first,y-it.second.second)<40f })return "scene"
             if(orbitMode && advanced)return "orbit"
             if(game.selected==GameState.Vehicle.EXCAVATOR) {
                 val pin=runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(game.bucketPosition.first,WorldCamera.y(game.armY)+game.excavatorHeight,game.bucketPosition.second)) }.getOrNull()
@@ -270,6 +282,7 @@ class GameView(context: Context): FrameLayout(context) {
             is Hint.Card -> selectUnit(next.vehicle)
             Hint.Action -> game.action()
             Hint.Blocks -> activate("blocks")
+            is Hint.Pipe -> pipeTouch(next.id)
             is Hint.Ground -> {
                 if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && game.digAt(next.x,next.z))return
                 game.driveTo(game.selected,WorldMap.gameX(next.x),next.z);followSelected()
@@ -282,6 +295,7 @@ class GameView(context: Context): FrameLayout(context) {
         is Hint.Card -> GameRenderer.cardCenter(next.vehicle) to 590f
         Hint.Action -> 1010f to 590f
         Hint.Blocks -> 170f to 55f
+        is Hint.Pipe -> pipeMarkers().firstOrNull { it.first==next.id }?.second ?: (1010f to 590f)
         is Hint.Ground -> runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(next.x,game.surface(next.x,next.z),next.z)) }.getOrNull()
             ?.takeIf { it.first in 40f..1160f && it.second in 110f..520f }
     }
@@ -300,6 +314,10 @@ class GameView(context: Context): FrameLayout(context) {
             "truck" -> selectUnit(GameState.Vehicle.TRUCK)
             "dozer" -> selectUnit(GameState.Vehicle.DOZER)
             "crane" -> selectUnit(GameState.Vehicle.CRANE)
+            "pipes" -> {
+                if(game.pipes.active)game.leavePipes() else game.startPipes()
+                camera=0;settings.camera=0;yaw=-12f;pitch=8f;zoom=1.2f;panX=13f;panZ=5.8f;following=false;orbitMode=false;saveCamera()
+            }
             "blocks" -> { game.stopMovement();game.blockAction();following=false;panX=27f;panZ=3f;zoom=1.05f }
             "action" -> game.action()
             "mode" -> game.toggleMode()

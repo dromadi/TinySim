@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.PipeSiteTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:06:27" hostname="f16fdb761c59" time="0.086">
+  <properties/>
+  <testcase name="rapidActionTapsDoNotRestartDiggingAndDirectTravelCancelsIt" classname="com.dromadi.tinysim.PipeSiteTest" time="0.006"/>
+  <testcase name="malformedSavesAndParentResetCannotCreatePipesOrSoil" classname="com.dromadi.tinysim.PipeSiteTest" time="0.018"/>
+  <testcase name="actualContinuousTrenchIsCutAndSpoilContainsEveryRemovedUnit" classname="com.dromadi.tinysim.PipeSiteTest" time="0.007"/>
+  <testcase name="contactAndTravelPrecedeSoilChangesAndEachScoopHasVisibleCargo" classname="com.dromadi.tinysim.PipeSiteTest" time="0.002"/>
+  <testcase name="pauseCancelsTasksButPreservesSoilCargoAndInstalledPipes" classname="com.dromadi.tinysim.PipeSiteTest" time="0.003"/>
+  <testcase name="childCanDigLiftThreePipesAndBuryThemUsingOnlyPictureHints" classname="com.dromadi.tinysim.PipeSiteTest" time="0.011"/>
+  <testcase name="partialBackfillRestoresAndCanFinishWithoutResettingTheTrench" classname="com.dromadi.tinysim.PipeSiteTest" time="0.014"/>
+  <testcase name="cannotInstallBeforeDiggingOrBackfillBeforePipesAndBadTouchesAreHarmless" classname="com.dromadi.tinysim.PipeSiteTest" time="0.001"/>
+  <testcase name="migrateV10AndV11PreservesWorldAndBlockCargo" classname="com.dromadi.tinysim.PipeSiteTest" time="0.015"/>
+  <testcase name="projectedMarkersAreLargeAndInsideTheChildViewport" classname="com.dromadi.tinysim.PipeSiteTest" time="0.0"/>
+  <testcase name="carriedPipeAndInstalledPipeSurviveColdRestoreWithoutDuplicatingProps" classname="com.dromadi.tinysim.PipeSiteTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

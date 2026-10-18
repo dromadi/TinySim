@@ -17,6 +17,10 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("pipe-trench",0) { g->preparePipes(g,0) },
+        Triple("pipe-lift",0) { g->preparePipes(g,1) },
+        Triple("pipe-laid",0) { g->preparePipes(g,2) },
+        Triple("pipe-complete",0) { g->preparePipes(g,3) },
         Triple("start-cam1",0) { },
         Triple("start-cam2",1) { },
         Triple("start-cam3",2) { },
@@ -59,6 +63,7 @@ fun main(args: Array<String>) {
                 r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
         }
         val frame=when(name) {
+            "pipe-trench","pipe-lift","pipe-laid","pipe-complete"->SceneFrame.capture(g,cam,1.2f+i,-12f,8f,1.2f,13f,5.8f)
             "orbit-close"->SceneFrame.capture(g,cam,1.2f+i,18f,8f,1.35f)
             "orbit-wide"->SceneFrame.capture(g,cam,1.2f+i,-18f,14f,.8f)
             "map-overview"->SceneFrame.capture(g,cam,1.2f+i,0f,8f,.48f,19f,4f)
@@ -77,10 +82,31 @@ fun main(args: Array<String>) {
         }
         r.submit(frame)
         r.onDrawFrame(null)
-        val canvas=Canvas();GameRenderer().draw(canvas,g,true,false,0f,frame.seconds,cam,advanced=false,orbitMode=false,zoom=frame.zoom,panX=frame.panX,panZ=frame.panZ,hintX=if(name=="start-cam1")1010f else Float.NaN,hintY=590f)
+        val canvas=Canvas();GameRenderer().draw(canvas,g,true,false,0f,frame.seconds,cam,advanced=false,orbitMode=false,zoom=frame.zoom,panX=frame.panX,panZ=frame.panZ,hintX=if(name=="start-cam1")1010f else Float.NaN,hintY=590f,targets=GameRenderer.pipeTargets(g,WorldCamera.spec(cam,frame.yaw,frame.pitch,frame.zoom,frame.panX,frame.panZ)))
         if(i>0)hud.append(',');hud.append('"').append(name).append("\":[").append(canvas.ops).append(']')
         if(i>0)out.append(',');out.append('"').append(name).append("\":[").append(GLES20.ops).append(']');GLES20.ops.setLength(0)
     }
     out.append("},\"hud\":{").append(hud).append("}}")
     File(args[0]).writeText(out.toString())
+}
+
+fun preparePipes(g:GameState,stage:Int) {
+    fun idle() { repeat(15000) { if(!g.driving)return;g.update(.016f) };error("pipe task stuck") }
+    g.startPipes();g.selected=GameState.Vehicle.EXCAVATOR
+    for(i in 0..5) { check(g.pipes.tap(g,i));idle();check(g.pipes.dug(g,i)) }
+    if(stage>0) {
+        g.selected=GameState.Vehicle.CRANE
+        check(g.pipes.tap(g,6));idle();check(g.pipes.carried==0)
+        if(stage>1) {
+            check(g.pipes.tap(g,6));idle()
+            for(i in 1..2) { check(g.pipes.tap(g,i+6));idle();check(g.pipes.tap(g,i+6));idle() }
+        }
+    }
+    if(stage>2) {
+        g.selected=GameState.Vehicle.DOZER
+        for(i in 9..11) { check(g.pipes.tap(g,i));idle() };check(g.pipes.complete)
+    }
+    // Clear the cut by driving the excavator away, rather than hiding it or editing terrain.
+    g.driveTo(GameState.Vehicle.EXCAVATOR,WorldMap.gameX(6f),10.5f);idle()
+    repeat(180) { g.update(.016f) }
 }

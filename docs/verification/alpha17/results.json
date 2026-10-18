@@ -1,0 +1,30 @@
+[
+  {
+    "name": "pipe-trench",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 2379,
+    "triangles": 568648
+  },
+  {
+    "name": "pipe-lift",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 2369,
+    "triangles": 571584
+  },
+  {
+    "name": "pipe-laid",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 2367,
+    "triangles": 571224
+  },
+  {
+    "name": "pipe-complete",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 2380,
+    "triangles": 576552
+  }
+]

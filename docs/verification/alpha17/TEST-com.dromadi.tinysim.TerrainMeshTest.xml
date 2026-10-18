@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.TerrainMeshTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:06:29" hostname="f16fdb761c59" time="0.403">
+  <properties/>
+  <testcase name="partialUpdatesMatchAFullRebuildEverywhere" classname="com.dromadi.tinysim.TerrainMeshTest" time="0.376"/>
+  <testcase name="normalsPointUpAndWindingFacesTheSky" classname="com.dromadi.tinysim.TerrainMeshTest" time="0.021"/>
+  <testcase name="unchangedWorldDoesNoWorkAndOneCellTouchesFewRows" classname="com.dromadi.tinysim.TerrainMeshTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

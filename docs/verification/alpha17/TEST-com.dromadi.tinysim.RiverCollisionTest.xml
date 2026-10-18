@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.RiverCollisionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:06:28" hostname="f16fdb761c59" time="0.265">
+  <properties/>
+  <testcase name="fourMachinesCrossingTheBridgeBothWaysStaySeparatedAndDry" classname="com.dromadi.tinysim.RiverCollisionTest" time="0.077"/>
+  <testcase name="aDetourAroundTheParkedCraneNeverLeavesTheBank" classname="com.dromadi.tinysim.RiverCollisionTest" time="0.028"/>
+  <testcase name="randomTouchesAcrossBothBanksNeverOverlapOrSink" classname="com.dromadi.tinysim.RiverCollisionTest" time="0.16"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

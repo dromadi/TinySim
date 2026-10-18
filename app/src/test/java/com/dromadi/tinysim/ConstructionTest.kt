@@ -58,7 +58,7 @@ class ConstructionTest {
         val old="5|"+parts[0].split(',').take(20).joinToString(",")+";"+IntArray(WorldMap.LEGACY_COLUMNS*WorldMap.ROWS).joinToString(",")
         val copy=GameState();copy.restore(old);assertEquals(4,copy.load);assertEquals(200f,copy.excavatorX,0f);assertEquals(GameState.START_SAND,copy.totalSand)
         copy.restore(g.snapshot().replace(";0,0,0,0;",";2,0,0,0;"));assertEquals(0,copy.load)
-        copy.restore(g.snapshot().substringBeforeLast(';')+";0");assertEquals(0,copy.load)
+        copy.restore(g.snapshot().substringAfter('|').split(';').toMutableList().also { it[3]="0" }.joinToString(";",prefix="12|"));assertEquals(0,copy.load)
     }
     @Test fun stopAndSaveCancelExcavatorRoutesAndPreservePoseAndDigMarks() {
         val g=GameState();g.driveTo(GameState.Vehicle.EXCAVATOR,3000f,10f);tick(g,50);assertTrue(g.excavatorTravel>0)
