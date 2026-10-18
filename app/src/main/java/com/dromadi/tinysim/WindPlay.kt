@@ -4,6 +4,7 @@ import kotlin.math.*
 
 /** Bounded touch toy: atomic sand transfers conserve material; visual lift never owns inventory. */
 class WindPlay {
+    val arena=TornadoArena()
     var active=false; private set
     var strength=0f; private set
     var x=24f; private set
@@ -33,8 +34,8 @@ class WindPlay {
         if(!active || !px.isFinite() || !pz.isFinite())return
         targetX=px.coerceIn(-8f,47f);targetZ=pz.coerceIn(-2.8f,21.5f)
     }
-    fun halt() { active=false;strength=0f;lift.fill(0f);clock=0f;trailAge=1f }
-    fun reset() { halt();prepared=false;x=24f;z=0f;targetX=x;targetZ=z;phase=0f;moved=0 }
+    fun halt() { arena.pause();active=false;strength=0f;lift.fill(0f);clock=0f;trailAge=1f }
+    fun reset() { halt();arena.reset();prepared=false;x=24f;z=0f;targetX=x;targetZ=z;phase=0f;moved=0 }
     fun update(g:GameState,dt:Float) {
         strength+=( (if(active)1f else 0f)-strength).coerceIn(-dt*.65f,dt*.5f)
         phase=(phase+dt*2.2f)%(2f*PI.toFloat());trailAge+=dt

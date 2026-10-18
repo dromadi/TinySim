@@ -1,11 +1,22 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.19**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.20**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Puting beliung mengangkat balok di Taman Angin](docs/verification/alpha19/wind-lift.jpg)
+![Tornado pasir membesar di arena kota balok](docs/verification/alpha20/arena-sand.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.20: arena tornado yang tumbuh dan menyerap benda
+
+- **Sentuh ikon pusaran di sebelah awan** untuk masuk ke arena. Satu jari mengarahkan tornado; dua jari tetap pan/pinch. Tombol rumah atau Back kembali ke dunia konstruksi beserta sudut kamera sebelumnya. Tidak ada joystick, kewajiban membaca, login, iklan, pembelian, leaderboard online atau koneksi jaringan.
+- **Tiga peta latihan:** taman dengan bola/kerucut dan tanah bermain, kota balok dengan jalan serta bangunan mini, dan pelabuhan dengan dermaga, pelampung serta kontainer. Masing-masing memiliki **48 benda** dengan progres tersimpan terpisah: total **144 properti arena**. Arena merupakan tempat bermain tersendiri; tidak memperbesar grid tanah utama atau mengganti bangunan anak.
+- **Empat tahap pertumbuhan:** menyerap benda ringan memberi tenaga untuk mengangkat peti, tong, balok dinding dan atap. Diameter corong tumbuh dari skala 0,75 ke 1,5, sedangkan jangkauan ikut membesar. Empat lingkaran dan bilah bergambar menunjukkan ukuran serta progres. Benda berat ditandai titik bobot. Ronde selesai ketika 48 identitas benda pernah terserap; bintang muncul tanpa menghentikan permainan, timer atau hukuman kalah.
+- **Tiga jenis, bukan sekadar warna:** angin bergerak paling cepat (4,8 m/detik); pasir memiliki jangkauan 30% lebih lebar (3,6 m/detik); es bergerak 3,2 m/detik dan setelah 0,7 detik kontak dapat menurunkan satu tingkat kebutuhan ukuran benda. Es memberi lapisan biru serta serpih salju, pasir memiliki corong lebih pekat dan butiran emas; suara tiap jenis berbeda dan tetap naik/turun lembut.
+- **Benda benar-benar terangkat:** bola, kerucut, peti, tong, pelampung, balok, atap dan segmen kontainer mengikuti orbit, lalu masuk ke inventaris pusaran. Miniatur benda terserap masih terlihat di dalamnya. Bangunan latihan terurai per bagian; bagian atas turun bila penyangganya diangkat. Tidak ada orang, kendaraan utama atau bangunan anak yang dikonsumsi. Animasi kinematik dibatasi, bukan simulasi aerodinamika/rigid-body bebas.
+- **Keluarkan dan mainkan lagi:** tombol bergambar benda turun mengeluarkan inventaris yang jatuh perlahan dan menetap di tanah. Benda tidak hilang dan menyerap ulang benda yang sama tidak menggandakan tenaga/progres. Tombol panah melingkar memulai ronde baru hanya pada peta terpilih. Peta lain dan dunia konstruksi tetap tersimpan; tidak perlu reset dunia di area orang tua.
+- **Solo atau duo AI offline:** tombol dua pusaran menyalakan pendamping yang bergerak sendiri dan membantu mengangkat benda. Kedua tornado berbagi pertumbuhan/progres; tidak ada musuh, PvP, pemain jaringan atau hasil kalah. Pendamping dapat dimatikan tanpa menghilangkan benda yang sedang diangkat. Tangan penunjuk mengarah ke benda yang bisa diambil ketika anak diam.
+- **Save v15:** menyimpan pilihan peta/jenis/duo, posisi dan keadaan seluruh benda, inventaris terserap serta identitas yang sudah memberi tenaga. Save v14/Alpha.19 dan format lebih lama dimigrasikan. Background menghentikan tornado dan menetapkan benda yang terbang di tanah; cold restore tidak menghidupkan arena/cuaca sendiri. Dunia utama, termasuk truk yang sedang menuang, berhenti sementara selama arena dibuka. Seluruh model, ikon dan audio baru dibuat dengan kode asli (MIT), tanpa aset pengisi.
 
 ## Alpha.19: Taman Angin yang bisa disentuh
 
@@ -147,6 +158,7 @@ Sumber awal berisi 36 unit pasir, ditambah 24 unit di tambang timur. Tanah dasar
 Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas untuk HUD. Integrasi native mempertahankan lifecycle Android dan memisahkan input, simulasi, serta rendering. Tidak ada dependency runtime pihak ketiga; seluruh model dan material dihasilkan lokal tanpa unduhan aset.
 
 - `GameState`: perjalanan ke tujuan, putaran kendaraan, transfer pasir, misi, dan snapshot.
+- `TornadoArena`: tiga arena, identitas/inventaris benda, pertumbuhan, jenis pusaran, pendamping AI, ronde ulang dan save.
 - `WindPlay`: gestur tujuan pusaran, transfer pasir konservatif, orbit/ketinggian balok, taman sekali isi dan interaksi palang.
 - `WorkFleet` / `BridgeKeeper`: molen, pengecoran, ayunan penghancur, puing dan palang/penjaga.
 - `PipeSite`: aktivitas penggalian, pemasangan pipa dan penimbunan, dengan transfer tanah konservatif.
@@ -166,7 +178,7 @@ Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas un
 
 Material memakai sel deterministik, bukan granular physics bebas. Heightfield digambar pada grid 0,25 unit dengan normal permukaan; tanah dapat turun 0,88 unit hingga lapisan dasar. Tinggi timbunan visual dibatasi 24 unit material (3,12 unit tinggi), sementara seluruh material tambahan tetap tersimpan dan bisa diambil kembali. Kendaraan mengikuti tinggi permukaan pada titik pusat; belum ada suspensi/kemiringan sasis atau tabrakan bangunan/dekorasi.
 
-Save baru berawalan `14|`. Format `13|`, `12|`, `11|`, `10|`, `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
+Save baru berawalan `15|`. Format `14|`, `13|`, `12|`, `11|`, `10|`, `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
 
 ## Build dan pemasangan
 
@@ -179,7 +191,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.19-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.20-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
 
 Runner pengujian sentuh terpisah:
 

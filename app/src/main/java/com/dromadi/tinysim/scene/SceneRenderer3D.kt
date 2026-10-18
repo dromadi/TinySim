@@ -4,6 +4,7 @@ import android.opengl.GLES20 as GL
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.util.Log
+import com.dromadi.tinysim.TornadoArena.Prop as ArenaProp
 import com.dromadi.tinysim.GameState
 import com.dromadi.tinysim.ArmRig
 import com.dromadi.tinysim.WorldMap
@@ -32,6 +33,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private val cone=Geometry.cone()
     private val sphere=Geometry.sphere()
     private val moundMesh=Geometry.mound()
+    private val arenaLayouts=Array(3) { com.dromadi.tinysim.TornadoArena.layout(it) }
     private val funnelMesh=Geometry.windFunnel()
     private val ribbonMesh=Geometry.windFunnel(true)
     private var sceneWind=WindFrame()
@@ -242,6 +244,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     }
     /** Shared by the shadow and colour passes so every caster also appears on screen. */
     private fun scene(f:SceneFrame) {
+        if(f.arena.open) { arenaScene(f);return }
         sceneWind=f.wind
         environment(f)
         windGarden(f)
@@ -423,6 +426,67 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         }
     }
     /** Trees vary by position: broadleaf crowns built from irregular clusters, or layered conifers. */
+    private fun arenaScene(f:SceneFrame) {
+        val a=f.arena
+        val w=WindFrame(a.running,a.strength,a.x,a.z,a.phase)
+        sceneWind=w
+        noCast { box(64f,-.65f,17f,100f,.1f,90f,if(a.map==2)rgba(58,154,181) else grass,if(a.map==2)WATER else GRASS) }
+        val floor=when(a.map) { 0->GRASS;1->CONCRETE;else->WOOD }
+        surface(64.5f,-.12f,17f,15.6f,.3f,14.5f,if(a.map==0)rgba(132,168,83) else if(a.map==1)rgba(203,198,177) else rgba(176,142,98),floor)
+        if(a.map==0) {
+            noCast { disk(64.5f,.055f,17f,9f,8.5f,sandColor,SAND) }
+            for(x in floatArrayOf(56.5f,72.5f))for(z in floatArrayOf(10f,24f))tree(x,z,1.4f)
+        } else if(a.map==1) {
+            box(64.5f,.05f,16.8f,14f,.02f,1.7f,darkSteel,ASPHALT)
+            noCast { for(i in 0..10)box(58.3f+i*1.2f,.07f,16.8f,.6f,.01f,.06f,paintWhite,MATTE) }
+            for(x in floatArrayOf(57f,72f)) { box(x,1.5f,10.5f,.12f,3f,.12f,metal,METAL);blob(x,3f,10.5f,.5f,.3f,.5f,lamp,EMISSIVE) }
+        } else {
+            for(i in 0..25)box(57.2f+i*.58f,.05f,17f,.045f,.015f,14.3f,bark,WOOD)
+            for(x in floatArrayOf(57f,72f))for(z in floatArrayOf(10f,24f)) { shape(cylinder,x,.3f,z,.3f,1.3f,.3f,bark,WOOD);disk(x,1f,z,.35f,.35f,paintWhite,MATTE) }
+            push();translate(74f,.1f,15f);rotate(-10f,0f,1f,0f)
+            surface(0f,0f,0f,2f,.6f,4.2f,teal,PAINT);surface(0f,.5f,-.3f,1.2f,.8f,1.4f,white,PAINT);box(0f,.7f,.42f,.8f,.4f,.03f,glass,GLASS);pop()
+        }
+        for(z in floatArrayOf(10.1f,23.9f))for(i in 0..14)surface(57.5f+i,.1f,z,.8f,.16f,.2f,if(i%2==0)paintWhite else yellow,PAINT)
+        val pieces=arenaLayouts[a.map]
+        for(i in a.state.indices)if(a.state[i]!=2) {
+            push();translate(a.px[i],.06f+a.py[i],a.pz[i])
+            if(a.state[i]==1) { rotate(a.phase*70f+i*23f,0f,1f,0f);rotate(sin(a.phase+i)*15f,0f,0f,1f) }
+            arenaProp(pieces[i].prop,i,a.frost[i]);pop()
+            if(!shadowPass && a.state[i]==0 && pieces[i].needed>a.level)noCast {
+                // Weight dots are pictograms, so a child can see why a bigger vortex is needed.
+                for(j in 0 until pieces[i].needed)blob(a.px[i]+(j-(pieces[i].needed-1)*.5f)*.16f,.95f+a.py[i],a.pz[i],.09f,.09f,.09f,yellow,EMISSIVE)
+            }
+        }
+        // Contained inventory remains visible as miniatures; identities are never destroyed.
+        val held=a.state.indices.filter { a.state[it]==2 }.take(12)
+        if(a.strength>.1f)for((n,i) in held.withIndex()) {
+            val angle=a.phase*1.8f+n*2.4f;val radius=(.45f+n%3*.2f)*a.scale
+            val cx=if(a.buddy && a.puller[i]==1)a.buddyX else a.x;val cz=if(a.buddy && a.puller[i]==1)a.buddyZ else a.z
+            push();translate(cx+cos(angle)*radius,1.1f+n%6*.5f*a.scale,cz+sin(angle)*radius);rotate(angle*40f,0f,1f,0f);scale(.22f,.22f,.22f);arenaProp(pieces[i].prop,i,if(a.kind==2)1f else 0f);pop()
+        }
+        if(a.buddy) {
+            val helper=WindFrame(a.running,a.strength,a.buddyX,a.buddyZ,a.phase+1f)
+            tornado(f.copy(wind=helper),a.scale*.8f,a.kind,.06f)
+        }
+        tornado(f.copy(wind=w),a.scale,a.kind,.06f)
+    }
+    private fun arenaProp(prop:com.dromadi.tinysim.TornadoArena.Prop,id:Int,frost:Float) {
+        val color=if(frost>.1f)rgba(142,212,235) else when(id%4) { 0->orange;1->teal;2->yellow;else->rgba(191,105,87) }
+        when(prop) {
+            ArenaProp.BALL->{ blob(0f,.34f,0f,.66f,.66f,.66f,color,PAINT);disk(0f,.36f,0f,.67f,.67f,paintWhite,PAINT,.07f) }
+            ArenaProp.CONE->{surface(0f,.05f,0f,.6f,.1f,.6f,rubber,RUBBER);shape(cone,0f,.1f,0f,.5f,.7f,.5f,color,PAINT);disk(0f,.4f,0f,.3f,.3f,paintWhite,PAINT,.08f)}
+            ArenaProp.CRATE->{
+                surface(0f,.38f,0f,.78f,.76f,.78f,color,WOOD)
+                for(x in floatArrayOf(-.34f,.34f))for(z in floatArrayOf(-.4f,.4f))box(x,.38f,z,.09f,.76f,.04f,paintWhite,WOOD)
+                for(y in floatArrayOf(.1f,.67f)) { box(0f,y,.4f,.78f,.08f,.04f,paintWhite,WOOD);box(0f,y,-.4f,.78f,.08f,.04f,paintWhite,WOOD) }
+            }
+            ArenaProp.BARREL->{shape(cylinder,0f,.44f,0f,.68f,.88f,.68f,color,PAINT);for(y in floatArrayOf(.12f,.73f))disk(0f,y,0f,.71f,.71f,metal,METAL,.07f);disk(0f,.89f,0f,.64f,.64f,darkSteel,METAL);disk(.16f,.9f,0f,.1f,.1f,chrome,METAL)}
+            ArenaProp.BRICK->{surface(0f,.35f,0f,.84f,.7f,.9f,color,CONCRETE);for(x in floatArrayOf(-.2f,.2f))disk(x,.705f,0f,.19f,.3f,ink,MATTE)}
+            ArenaProp.ROOF->{ for(side in floatArrayOf(-1f,1f)) { push();translate(0f,.25f,side*.3f);rotate(side*28f,1f,0f,0f);surface(0f,0f,0f,1.8f,.14f,.8f,color,ROOF);pop() } }
+            ArenaProp.BUOY->{blob(0f,.3f,0f,.6f,.6f,.6f,color,PAINT);disk(0f,.3f,0f,.63f,.63f,paintWhite,PAINT,.08f);rod3(0f,.5f,0f,0f,1.05f,0f,.035f,metal,METAL);box(.14f,.94f,0f,.28f,.2f,.035f,paintWhite,MATTE)}
+            ArenaProp.CONTAINER->{surface(0f,.35f,0f,.9f,.7f,.9f,color,PAINT);for(j in 0..5)for(side in floatArrayOf(-1f,1f))box(-.35f+j*.14f,.35f,side*.46f,.035f,.6f,.035f,paintWhite,PAINT)}
+        }
+    }
     private fun windGarden(f:SceneFrame) {
         // An invitation to play: windsock, spinning flower and curved ring around the sand patch.
         tree(18f,-4.8f,1.4f);tree(29f,-4.7f,1.3f)
@@ -435,18 +499,22 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         for(i in 0..3) { rotate(90f,0f,0f,1f);box(.3f,0f,0f,.6f,.2f,.06f,if(i%2==0)yellow else teal,PAINT) };blob(0f,0f,.08f,.19f,.19f,.12f,orange,PAINT);pop()
         noCast { for(i in 0..23) { val a=i*PI.toFloat()/12f;disk(24f+cos(a)*3.8f,.085f,sin(a)*3.8f,.22f,.22f,if(i%2==0)teal else yellow,DECAL) } }
     }
-    private fun tornado(f:SceneFrame) {
+    private fun tornado(f:SceneFrame,size:Float=1f,kind:Int=0,base:Float?=null) {
         val w=f.wind;if(w.strength<=.001f || shadowPass)return
-        val ground=Terrain.height(f.earth,f.sand,w.x,w.z)
+        val ground=base ?: Terrain.height(f.earth,f.sand,w.x,w.z)
         noCast {
             GL.glDepthMask(false);GL.glDisable(GL.GL_CULL_FACE)
-            push();translate(w.x,ground,w.z);scale(w.strength,w.strength,w.strength);rotate(w.phase*180f/PI.toFloat(),0f,1f,0f)
-            draw(funnelMesh,rgba(198,187,157,.24f*w.strength),MATTE)
-            for(i in 0..2) { rotate(120f,0f,1f,0f);draw(ribbonMesh,rgba(242,233,209,.47f*w.strength),MATTE) }
+            push();translate(w.x,ground,w.z);scale(w.strength*size,w.strength*size,w.strength*size);rotate(w.phase*180f/PI.toFloat(),0f,1f,0f)
+            val core=when(kind) { 1->rgba(213,161,87,.4f*w.strength);2->rgba(118,200,231,.32f*w.strength);else->rgba(198,187,157,.24f*w.strength) }
+            val ribbon=when(kind) { 1->rgba(250,213,141,.55f*w.strength);2->rgba(218,247,255,.55f*w.strength);else->rgba(242,233,209,.47f*w.strength) }
+            draw(funnelMesh,core,MATTE)
+            for(i in 0..2) { rotate(120f,0f,1f,0f);draw(ribbonMesh,ribbon,MATTE) }
             for(i in 0..47) {
                 val t=((i/48f+w.phase*.12f)%1f);val a=i*2.4f+w.phase*2f+t*10f;val radius=.4f+2.2f*t*t
                 val px=cos(a)*radius;val pz=sin(a)*radius
-                if(i%3==0) { push();translate(px,t*6.5f,pz);rotate(a*60f,1f,1f,0f);box(0f,0f,0f,.16f,.04f,.3f,if(i%2==0)leafLight else yellowDark,MATTE);pop() }
+                if(i%3==0) { push();translate(px,t*6.5f,pz);rotate(a*60f,1f,1f,0f);if(kind==2) {
+                    for(j in 0..2) { rotate(60f,0f,1f,0f);box(0f,0f,0f,.35f,.035f,.035f,paintWhite,MATTE) }
+                } else box(0f,0f,0f,.16f,.04f,.3f,if(kind==1)sandColor else if(i%2==0)leafLight else yellowDark,MATTE);pop() }
                 else blob(px,t*6.5f,pz,.08f,.08f,.08f,sandColor,MATTE)
             }
             for(i in 0..9) { val a=i*PI.toFloat()/5f;blob(cos(a)*1.65f,6.5f+sin(a*3f)*.16f,sin(a)*1.65f,2.1f,.8f,1.6f,rgba(248,246,227,.7f*w.strength),CLOUD) }

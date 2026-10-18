@@ -17,6 +17,11 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("arena-wind",0) { g->g.wind.arena.enter();repeat(90){g.update(.016f)};check(g.wind.arena.board.level==1) },
+        Triple("arena-sand",0) { g->prepareArena(g,1,com.dromadi.tinysim.TornadoArena.Kind.SAND,4);repeat(20){g.update(.016f)};check(g.wind.arena.board.level==4) },
+        Triple("arena-ice",0) { g->prepareArena(g,2,com.dromadi.tinysim.TornadoArena.Kind.ICE,2);val a=g.wind.arena;a.aim(a.board.x[32],a.board.z[32]);repeat(230){g.update(.016f)};check(a.kind==com.dromadi.tinysim.TornadoArena.Kind.ICE) },
+        Triple("arena-release",0) { g->prepareArena(g,1,com.dromadi.tinysim.TornadoArena.Kind.SAND,4);repeat(400){g.update(.016f)};check(g.wind.arena.release());repeat(15){g.update(.016f)};check(g.wind.arena.board.state.any { it==3 }) },
+        Triple("arena-duo",0) { g->g.wind.arena.enter(1);g.wind.arena.toggleBuddy();g.wind.arena.aim(69f,14.5f);repeat(600){g.update(.016f)};check(g.wind.arena.board.puller.any { it==1 }) },
         Triple("wind-lift",0) { g->g.wind.toggle(g);repeat(180){g.update(.016f)};check(g.wind.lift.any { it>.5f } && g.wind.moved>0) },
         Triple("wind-travel",0) { g->g.wind.toggle(g);repeat(180){g.update(.016f)};g.wind.aim(29f,1f);repeat(200){g.update(.016f)};check(g.blocks.x.any { it>26f }) },
         Triple("wind-settled",0) { g->g.wind.toggle(g);repeat(180){g.update(.016f)};g.wind.aim(28f,1f);repeat(200){g.update(.016f)};g.wind.toggle(g);repeat(200){g.update(.016f)};g.selected=GameState.Vehicle.CRANE;check(g.wind.lift.all { it==0f }) },
@@ -71,6 +76,7 @@ fun main(args: Array<String>) {
                 r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
         }
         val frame=when(name) {
+            "arena-wind","arena-sand","arena-ice","arena-duo","arena-release"->SceneFrame.capture(g,cam,1.2f+i,-12f,10f,.82f,64.5f,17f)
             "wind-lift","wind-travel","wind-settled"->SceneFrame.capture(g,cam,1.2f+i,-18f,10f,1.05f,26f,1f)
             "wind-bridge"->SceneFrame.capture(g,cam,1.2f+i,-18f,10f,.95f,48f,3f)
             "mixer-pour"->SceneFrame.capture(g,cam,1.2f+i,-23f,7f,1.35f,20f,18f)
@@ -134,4 +140,14 @@ fun previewIdle(g:GameState) { repeat(20000) { if(!g.driving)return;g.update(.01
 fun previewBridge(g:GameState) {
     g.truckX=WorldMap.gameX(48f);g.truckZ=4.5f;g.load=8;g.source-=8;g.selected=GameState.Vehicle.TRUCK;g.action();repeat(400){g.update(.016f)};g.action();repeat(200){g.update(.016f)}
     repeat(3){check(g.buildBridge());previewIdle(g);repeat(300){g.update(.016f)}};check(g.bridgeOpen)
+}
+
+fun prepareArena(g:GameState,map:Int,kind:com.dromadi.tinysim.TornadoArena.Kind,level:Int) {
+    val a=g.wind.arena;a.enter(map);a.choose(kind)
+    repeat(30000) { i->
+        if(a.board.level>=level)return
+        if(i%40==0)a.hintTarget()?.let { a.aim(it.first,it.second) }
+        g.update(.016f)
+    }
+    error("arena growth stuck")
 }

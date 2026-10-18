@@ -1,0 +1,37 @@
+[
+  {
+    "name": "arena-wind",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 687,
+    "triangles": 160708
+  },
+  {
+    "name": "arena-sand",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 245,
+    "triangles": 47360
+  },
+  {
+    "name": "arena-ice",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 823,
+    "triangles": 80720
+  },
+  {
+    "name": "arena-release",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 553,
+    "triangles": 63504
+  },
+  {
+    "name": "arena-duo",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 461,
+    "triangles": 104488
+  }
+]

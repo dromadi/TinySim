@@ -18,6 +18,50 @@ class GameRenderer {
     private fun poly(c:Canvas,points:FloatArray,color:Int) { p.color=color;val path=Path();path.moveTo(points[0],points[1]);for(i in 2 until points.size step 2)path.lineTo(points[i],points[i+1]);path.close();c.drawPath(path,p) }
     private fun wheel(c:Canvas,x:Float,y:Float,r:Float=25f) { circle(c,x,y,r,ink); circle(c,x,y,r*.55f,col("#A6BCC1"));circle(c,x,y,r*.20f,white) }
     private fun cloud(c:Canvas,x:Float,y:Float) { rect(c,x-40,y,110f,28f,white,20f);circle(c,x,y,30f,white);circle(c,x+35,y+2,23f,white) }
+    private fun stormIcon(c:Canvas,x:Float,y:Float,kind:Int,size:Float=1f) {
+        c.save();c.translate(x,y);c.scale(size,size)
+        val color=when(kind) { 1->orange;2->col("#79CBE3");else->teal }
+        for(i in 0..4)line(c,-26f+i*4,-20f+i*9,26f-i*5,-20f+i*9,color,6f)
+        if(kind==2) { line(c,-10f,-27f,10f,-7f,ink,3f);line(c,10f,-27f,-10f,-7f,ink,3f) }
+        else if(kind==1) { circle(c,-26f,8f,3f,yellow);circle(c,25f,-7f,3f,yellow) }
+        c.restore()
+    }
+    private fun arenaHud(c:Canvas,a:TornadoArena,hold:Float,time:Float,hintX:Float,hintY:Float) {
+        val b=a.board
+        rect(c,24f,20f,300f,70f,white,22f)
+        for(i in 1..4)circle(c,52f+i*43f,44f,6f+i*2f,if(b.level>=i)teal else col("#DDE6DE"))
+        rect(c,48f,69f,246f,9f,col("#DDE6DE"),4f)
+        if(b.collected>0)rect(c,48f,69f,246f*b.collected/TornadoArena.COUNT,9f,teal,4f)
+        if(b.complete)star(c,280f,44f,15f,yellow)
+        rect(c,350f,20f,100f,70f,white,22f)
+        poly(c,floatArrayOf(375f,51f,400f,31f,425f,51f),teal);rect(c,381f,49f,38f,27f,teal,3f);rect(c,395f,57f,10f,19f,white,2f)
+        rect(c,590f,20f,100f,70f,if(a.buddy)yellow else white,22f)
+        stormIcon(c,622f,55f,0,.65f);stormIcon(c,660f,55f,a.kind.ordinal,.65f)
+        rect(c,470f,20f,100f,70f,yellow,22f)
+        p.color=ink;p.style=Paint.Style.STROKE;p.strokeWidth=6f;c.drawArc(500f,34f,540f,75f,-60f,290f,false,p);p.style=Paint.Style.FILL
+        poly(c,floatArrayOf(535f,32f,543f,51f,525f,48f),ink)
+        rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
+        if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
+        rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
+        for(i in 0..2) {
+            val x=20f+i*116f;rect(c,x,556f,108f,104f,if(a.kind.ordinal==i)yellow else col("#E6EBDF"),24f)
+            stormIcon(c,x+54f,608f,i,1.2f)
+            val mx=400f+i*116f;rect(c,mx,556f,108f,104f,if(a.map==i)yellow else col("#E6EBDF"),24f)
+            when(i) {
+                0->{ line(c,mx+54f,624f,mx+54f,590f,ink,6f);circle(c,mx+54f,590f,22f,teal);circle(c,mx+34f,621f,9f,orange) }
+                1->{rect(c,mx+28f,596f,52f,35f,orange,3f);poly(c,floatArrayOf(mx+20f,598f,mx+54f,573f,mx+88f,598f),teal);rect(c,mx+48f,611f,12f,20f,white,2f)}
+                2->{rect(c,mx+20f,590f,34f,34f,teal,3f);rect(c,mx+58f,590f,30f,34f,orange,3f);line(c,mx+20f,633f,mx+88f,633f,ink,5f)}
+            }
+        }
+        rect(c,840f,556f,162f,104f,teal,26f)
+        for(i in 0..2)rect(c,879f+i*25,581f+i%2*8,18f,18f,if(i==0)yellow else white,3f)
+        arrowDown(c,921f,620f,white)
+        rect(c,1018f,556f,162f,104f,teal,26f);circle(c,1099f,608f,31f,white)
+        if(a.running)rect(c,1085f,594f,28f,28f,teal,5f)
+        else poly(c,floatArrayOf(1090f,590f,1115f,608f,1090f,626f),teal)
+        if(a.celebrating>0) { for(i in 0..4)star(c,450f+i*75,190f+sin(time*2+i)*12f,20f,yellow) }
+        if(!hintX.isNaN())hand(c,hintX,hintY,time)
+    }
     private fun star(c:Canvas,x:Float,y:Float,r:Float,color:Int) {
         val a=FloatArray(20);for(i in 0..9) {val t=i*PI/5-PI/2;val rad=if(i%2==0)r else r*.48f;a[i*2]=x+(cos(t)*rad).toFloat();a[i*2+1]=y+(sin(t)*rad).toFloat()};poly(c,a,color)
     }
@@ -27,6 +71,8 @@ class GameRenderer {
      * hintX/hintY place the pointing hand (NaN hides it).
      */
     fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN,targets:List<Pair<Int,Pair<Float,Float>>> = emptyList()) {
+        if(g.wind.arena.open && !parents) { arenaHud(c,g.wind.arena,hold,time,hintX,hintY);return }
+        rect(c,470f,20f,100f,70f,white,22f);stormIcon(c,520f,54f,0,.7f)
         progressCard(c,g)
         rect(c,350f,20f,100f,70f,if(g.wind.active)teal else yellow,22f)
         c.save();c.translate(397f,43f);c.scale(.42f,.42f);cloud(c,0f,0f);c.restore()

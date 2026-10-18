@@ -1,0 +1,58 @@
+{
+  "versionName": "0.1.0-alpha.20",
+  "versionCode": 20,
+  "tests": {
+    "tests": 144,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Error": 0,
+    "Fatal": 0,
+    "Warning": 1
+  },
+  "apkBytes": 67846522,
+  "apkSha256": "2dea0f7e82a9c2212857aed764bf9c16744068b756ba5d70a6dc09bafb49de5e",
+  "zipCRC": "PASS",
+  "packagedAudioFiles": [],
+  "previewSource": "Original Kotlin renderer/HUD recorded on JVM and replayed in Chromium WebGL. Not Android screenshots.",
+  "previews": [
+    {
+      "name": "arena-wind",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 687,
+      "triangles": 160708
+    },
+    {
+      "name": "arena-sand",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 245,
+      "triangles": 47360
+    },
+    {
+      "name": "arena-ice",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 823,
+      "triangles": 80720
+    },
+    {
+      "name": "arena-release",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 553,
+      "triangles": 63504
+    },
+    {
+      "name": "arena-duo",
+      "status": "PASS",
+      "glError": 0,
+      "drawCalls": 461,
+      "triangles": 104488
+    }
+  ],
+  "deviceTested": false
+}

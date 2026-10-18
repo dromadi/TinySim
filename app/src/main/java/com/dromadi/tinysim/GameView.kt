@@ -42,12 +42,26 @@ class GameView(context: Context): FrameLayout(context) {
     private var zoom=settings.zoom
     private var panX=settings.panX
     private var panZ=settings.panZ
+    private data class CameraPose(val camera:Int,val yaw:Float,val pitch:Float,val zoom:Float,val x:Float,val z:Float)
+    private var worldCamera:CameraPose?=null
+    private var lastArenaReward=0
+    private var lastArenaAbsorb=0
     private var following=false
+    private fun enterArena(index:Int=game.wind.arena.map) {
+        if(worldCamera==null)worldCamera=CameraPose(camera,yaw,pitch,zoom,panX,panZ)
+        game.stopMovement();game.wind.arena.enter(index);following=false;orbitMode=false
+        camera=0;yaw=-12f;pitch=10f;zoom=.82f;panX=TornadoArena.CENTER_X;panZ=TornadoArena.CENTER_Z
+    }
+    private fun leaveArena() {
+        game.wind.arena.leave()
+        worldCamera?.let { camera=it.camera;yaw=it.yaw;pitch=it.pitch;zoom=it.zoom;panX=it.x;panZ=it.z }
+        worldCamera=null;saveCamera()
+    }
     fun cameraSpec()=WorldCamera.spec(camera,yaw,pitch,zoom,panX,panZ)
-    private fun groundAt(x:Float,y:Float)=cameraSpec().ground(x,y,game::surface)
+    private fun groundAt(x:Float,y:Float)=if(game.wind.arena.open)cameraSpec().ground(x,y) else cameraSpec().ground(x,y,game::surface)
     fun followSelected() { following=true }
     fun pan(fromX:Float,fromY:Float,toX:Float,toY:Float) {
-        val camera=cameraSpec();val a=camera.ground(fromX,fromY,game::surface) ?: return;val b=camera.ground(toX,toY,game::surface) ?: return
+        val a=groundAt(fromX,fromY) ?: return;val b=groundAt(toX,toY) ?: return
         following=false;panX=(panX+a.x-b.x).coerceIn(-8f,PAN_MAX_X);panZ=(panZ+a.z-b.z).coerceIn(-3f,21f)
     }
     fun jumpMap(x:Float,y:Float) {
@@ -55,7 +69,7 @@ class GameView(context: Context): FrameLayout(context) {
         panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,PAN_MAX_X)
         panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,21f)
     }
-    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.wind.halt(); if(game.pipes.active && vehicle in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER))game.leavePipes();game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
+    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { if(game.wind.arena.open)leaveArena();game.wind.halt(); if(game.pipes.active && vehicle in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER))game.leavePipes();game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
         val candidates=GameState.Vehicle.entries.map { v->game.vehicleBody(v).let { Triple(v,it.point.x,it.point.z) } }
@@ -65,7 +79,7 @@ class GameView(context: Context): FrameLayout(context) {
             if(distance<68f)unit to distance else null
         }.minByOrNull { it.second }?.first
     }
-    fun windAt(x:Float,y:Float) { val p=groundAt(x,y) ?: return;game.wind.aim(p.x,p.z) }
+    fun windAt(x:Float,y:Float) { val p=groundAt(x,y) ?: return;if(game.wind.arena.open)game.wind.arena.aim(p.x,p.z) else game.wind.aim(p.x,p.z) }
     fun driveAt(x:Float,y:Float) {
         val point=groundAt(x,y) ?: return
         if(point.x !in WorldMap.MIN_X..WorldMap.MAX_X || point.z !in WorldMap.MIN_Z..WorldMap.MAX_Z)return
@@ -134,7 +148,11 @@ class GameView(context: Context): FrameLayout(context) {
         pitch=(pitch+dy*.1f).coerceIn(22f-basePitch,55f-basePitch)
         if(ratio.isFinite())zoom=(zoom*ratio).coerceIn(.45f,1.8f)
     }
-    fun saveCamera() { settings.yaw=yaw;settings.pitch=pitch;settings.zoom=zoom;settings.panX=panX;settings.panZ=panZ }
+    fun saveCamera() {
+        val saved=worldCamera
+        settings.camera=saved?.camera ?: camera;settings.yaw=saved?.yaw ?: yaw;settings.pitch=saved?.pitch ?: pitch
+        settings.zoom=saved?.zoom ?: zoom;settings.panX=saved?.x ?: panX;settings.panZ=saved?.z ?: panZ
+    }
     private var running=false
     private var previous=0L
     private var lastTransfer=0
@@ -169,6 +187,7 @@ class GameView(context: Context): FrameLayout(context) {
     }
     fun closePanel(): Boolean {
         if(parents) { parents=false;input.cancel();hud.invalidate();return true }
+        if(game.wind.arena.open) { leaveArena();input.cancel();hud.invalidate();return true }
         return false
     }
     fun worldX(x: Float)=(x-offsetX)/scale
@@ -188,8 +207,8 @@ class GameView(context: Context): FrameLayout(context) {
         if(running && !parents) {
             val dt=if(previous==0L)0f else (now-previous)/1000f
             game.update(dt)
-            if(!game.wind.active && game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
-            game.nextMission()
+            if(!game.wind.arena.open && !game.wind.active && game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
+            if(!game.wind.arena.open)game.nextMission()
             if(game.rewardSerial!=lastReward) { audio.play(settings.sound,true);lastReward=game.rewardSerial }
             if(game.transferSerial!=lastTransfer) { when(game.transferKind) { 6->audio.machines.blockSerial++;7->audio.machines.keeperSerial++;8->audio.machines.impactSerial++;else->audio.machines.pourSerial++ } }
             lastTransfer=game.transferSerial
@@ -203,13 +222,22 @@ class GameView(context: Context): FrameLayout(context) {
             panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,21f)-panZ)*ease
         }
         if(running && !parents)houseAndHelp(now)
-        audio.machines.wind=if(parents)0f else game.wind.strength
+        val arena=game.wind.arena
+        audio.machines.wind=if(parents)0f else if(arena.open)arena.strength*(.65f+.1f*arena.board.level) else game.wind.strength
+        audio.machines.windKind=if(arena.open)arena.kind.ordinal else 0
+        if(arena.open) {
+            audio.machines.engine.fill(0f);audio.machines.hydraulic=0f
+            if(arena.absorbSerial!=lastArenaAbsorb) { lastArenaAbsorb=arena.absorbSerial;audio.machines.absorbSerial++ }
+            if(arena.rewardSerial!=lastArenaReward) { lastArenaReward=arena.rewardSerial;audio.play(settings.sound,true) }
+        }
         audio.update(settings.sound,if(panX<10f)0 else if(panX<28f)1 else 2)
         previous=now
         sceneRenderer.submit(SceneFrame.capture(game,camera,now/1000f,yaw,pitch,zoom,panX,panZ))
         surface.requestRender()
         canvas.save();canvas.translate(offsetX,offsetY);canvas.scale(scale,scale)
-        val mark=hintPoint()
+        val mark=if(game.wind.arena.open && helpEnabled && now-lastTouch>HINT_AFTER_MS)game.wind.arena.hintTarget()?.let {
+            cameraSpec().project(com.dromadi.tinysim.scene.Vec3(it.first,.7f,it.second))
+        }?.takeIf { it.first in 40f..1160f && it.second in 110f..520f } else hintPoint()
         hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,advanced,orbitMode,zoom,panX,panZ,mark?.first ?: Float.NaN,mark?.second ?: Float.NaN,targets=pipeMarkers())
         canvas.restore()
         if(running)hud.postInvalidateOnAnimation()
@@ -222,8 +250,21 @@ class GameView(context: Context): FrameLayout(context) {
             if(y<GameRenderer.PARENT_TOP || (y-GameRenderer.PARENT_TOP)%GameRenderer.PARENT_STEP>60f)return null
             return listOf("sound","cameraPreset","advanced","mode","reset","close").getOrNull(row)
         }
-        if(x in 350f..450f && y in 20f..90f)return "windToggle"
         if(x in 1100f..1176f && y in 20f..84f)return "parents"
+        if(game.wind.arena.open) {
+            if(x in 350f..450f && y in 20f..90f)return "arenaExit"
+            if(x in 470f..570f && y in 20f..90f)return "arenaReplay"
+            if(x in 590f..690f && y in 20f..90f)return "arenaBuddy"
+            if(y in 556f..660f) {
+                if(x in 20f..360f && (x-20f)%116f<=108f)return "arenaKind${((x-20f)/116f).toInt()}"
+                if(x in 400f..740f && (x-400f)%116f<=108f)return "arenaMap${((x-400f)/116f).toInt()}"
+                if(x in 840f..1002f)return "arenaRelease"
+                if(x in 1018f..1180f)return "arenaToggle"
+            }
+            return if(y in 100f..535f)"wind" else null
+        }
+        if(x in 350f..450f && y in 20f..90f)return "windToggle"
+        if(x in 470f..570f && y in 20f..90f)return "arena"
         if(advanced) {
             if(x in 1000f..1070f && y in 20f..84f)return "sound"
             if(x in 1098f..1178f && y in 106f..182f)return "camera"
@@ -276,7 +317,7 @@ class GameView(context: Context): FrameLayout(context) {
     }
     /** House stages assemble by themselves once the foundation and materials are ready. */
     private fun houseAndHelp(now:Long) {
-        if(game.wind.active || game.wind.strength>0f) { hint=null;return }
+        if(game.wind.arena.open || game.wind.active || game.wind.strength>0f) { hint=null;return }
         if(game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
             following=false;panX=36.3f;panZ=7f
         }
@@ -314,6 +355,14 @@ class GameView(context: Context): FrameLayout(context) {
     }
     fun activate(action: String) {
         when(action) {
+            "arena" -> enterArena()
+            "arenaExit" -> leaveArena()
+            "arenaReplay" -> { game.wind.arena.replay();enterArena() }
+            "arenaBuddy" -> game.wind.arena.toggleBuddy()
+            "arenaRelease" -> game.wind.arena.release()
+            "arenaToggle" -> game.wind.arena.toggle()
+            "arenaMap0","arenaMap1","arenaMap2" -> enterArena(action.last().digitToInt())
+            "arenaKind0","arenaKind1","arenaKind2" -> game.wind.arena.choose(TornadoArena.Kind.entries[action.last().digitToInt()])
             "windToggle" -> { game.wind.toggle(game);following=false;orbitMode=false;if(game.wind.active) { camera=0;yaw=-18f;pitch=10f;zoom=1.05f;panX=game.wind.x;panZ=game.wind.z };saveCamera() }
             "sound" -> settings.sound=!settings.sound
             "camera" -> { camera=(camera+1)%3;settings.camera=camera;yaw=0f;pitch=0f;zoom=1f;panX=0f;panZ=0f;following=false;saveCamera();input.cancel() }
@@ -341,7 +390,7 @@ class GameView(context: Context): FrameLayout(context) {
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")
                 .setMessage("Pasir dan kendaraan kembali ke posisi awal.")
-                .setPositiveButton("Mulai ulang") { _,_ -> game.reset();panX=0f;panZ=0f;following=false;saveCamera();settings.save(game);parents=false }
+                .setPositiveButton("Mulai ulang") { _,_ -> game.reset();worldCamera=null;panX=0f;panZ=0f;following=false;saveCamera();settings.save(game);parents=false }
                 .setNegativeButton("Batal",null).show()
             "close" -> parents=false
         }

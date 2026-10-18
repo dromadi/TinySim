@@ -1,4 +1,14 @@
-# Publikasi Alpha.19
+# Publikasi Alpha.20
+
+`0.1.0-alpha.20` / versionCode 20. Arena tornado: empat tahap pertumbuhan, tiga jenis dengan perilaku berbeda, tiga peta/144 properti, penyerapan dan pelepasan benda, bangunan latihan yang terurai, serta solo/duo pendamping AI offline. Ronde bisa diulang tanpa reset dunia. Save v15 memigrasikan v14 dan format lama; tidak ada jaringan, iklan atau pembelian.
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+Artifact Actions: `TinySim-0.1.0-alpha.20-debug`. Pertahankan kunci debug lokal privat yang sama dengan versi sebelumnya; jangan unggah ke Git. APK CI dapat memakai key berbeda. Hasil build serta batas pengujian ada di VERIFICATION.
+
+## Publikasi Alpha.19
 
 `0.1.0-alpha.19` / versionCode 19: Taman Angin, puting beliung yang disentuh/diseret, pasir serta balok yang berpindah, lingkungan dan penjaga yang bereaksi. Save v14 memigrasikan v13 dan versi lama, tanpa menghidupkan cuaca kembali saat restore. Lihat README serta VERIFICATION untuk perilaku dan bukti.
 

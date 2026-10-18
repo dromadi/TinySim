@@ -41,6 +41,9 @@ class Soundscape(val zone:Int) {
 class MachineSounds {
     /** Engine effort per vehicle (excavator, truck, dozer, crane): 0 off, ~.2 idle, 1 full. */
     val engine=FloatArray(GameState.Vehicle.entries.size)
+    @Volatile var windKind=0
+    @Volatile var absorbSerial=0
+    private var absorbSeen=0;private var absorbAge=1.0
     @Volatile var wind=0f
     private var windLevel=0.0;private var windNoise=0.0;private var windPhase=0.0
     @Volatile var hydraulic=0f
@@ -64,7 +67,12 @@ class MachineSounds {
         windLevel+=(wind.toDouble().coerceIn(0.0,1.0)-windLevel)*min(1.0,step*1.5)
         windNoise=.97*windNoise+.03*(random.nextDouble()*2-1)
         windPhase+=step*(240+35*sin(windPhase*.003))*2*PI
-        out+=windLevel*(windNoise*.65+.018*sin(windPhase))
+        out+=windLevel*(windNoise*(if(windKind==1).8 else .65)+.018*sin(windPhase*(if(windKind==2)1.8 else 1.0)))
+        if(absorbSerial!=absorbSeen) { absorbSeen=absorbSerial;absorbAge=0.0 }
+        if(absorbAge<.2) {
+            absorbAge+=step;val e=min(1.0,absorbAge/.02)*exp(-absorbAge*20)
+            out+=.07*e*sin(2*PI*(if(windKind==2)660 else 180)*absorbAge)
+        }
         for(v in engine.indices) {
             val target=engine[v].toDouble().coerceIn(0.0,1.0)
             level[v]+=(target-level[v])*step*6

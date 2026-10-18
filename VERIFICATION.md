@@ -1,3 +1,56 @@
+# Verifikasi Alpha.20 — arena tornado
+
+Tanggal: 18 Oktober 2026. `com.dromadi.tinysim`, versionCode 20 / `0.1.0-alpha.20`. Basis `ede31f5` (Alpha.19); tidak ada PR terbuka saat pekerjaan dimulai.
+
+## Permainan yang ditambahkan
+
+Tombol pusaran di sebelah awan membuka arena tersendiri. Terdapat tiga peta (taman, kota balok, pelabuhan) dengan 48 identitas properti masing-masing: **144 benda arena**. Bola, kerucut, peti, tong, pelampung, balok, atap serta segmen kontainer memiliki model dan bobot berbeda. Bagian bangunan ditopang bagian di bawahnya dan turun bila penyangga diangkat. Benda bukan orang atau bangunan/armada anak di dunia utama.
+
+Tornado memiliki empat tahap pertumbuhan dari penyerapan pertama kali terhadap tiap benda. Ukuran visual, jangkauan dan kemampuan mengangkat bertambah. Angin paling cepat, pasir menjangkau 30% lebih lebar, es melemahkan kebutuhan ukuran setelah kontak 0,7 detik. Corong, pita, partikel dan sintesis suara berbeda. Benda terangkat mengikuti orbit, masuk inventaris, dan masih diwakili miniatur di pusaran. Pelepasan mengeluarkannya ke fase jatuh lalu menetap di tanah; mengangkat ulang identitas yang sama tidak memberi poin kedua. Tidak ada pembuangan identitas benda.
+
+Ronde selesai ketika semua 48 benda pernah terserap; bintang muncul tetapi kontrol tetap aktif. Ronde dapat diulang hanya pada peta terpilih. Tombol dua pusaran menyalakan AI pendamping offline: kedua pusaran berbagi pertumbuhan dan progres. Ini **solo/duo kooperatif**, bukan PvP, pemain online atau kompetisi dengan hukuman kalah. Tidak ada timer, iklan, IAP, login, analytics, backend atau izin baru.
+
+Input tetap ketuk/seret satu jari dan pan/pinch dua jari, dengan tombol bergambar besar. Tangan penunjuk mengarah ke benda yang dapat diambil. Home/Back kembali ke dunia dan kamera sebelumnya. Kamera arena tidak menggantikan kamera dunia yang tersimpan. Picking arena memakai bidang lantainya sendiri agar galian/timbunan dunia di koordinat yang sama tidak menggeser sentuhan.
+
+Dunia utama berhenti selama arena dibuka, termasuk bak truk yang sedang menuang. Tanah/pasir utama tetap **11.068 unit**; properti arena merupakan inventaris terpisah seperti balok crane/beton lama. Pause menetapkan benda terbang/jatuh di tanah dan mempertahankan inventaris terserap. Save **v15** menambahkan tiga papan, jenis, peta, pilihan duo, posisi, fase serta identitas yang sudah memberi poin. V14 dan save lama dimigrasikan. Cold restore tidak membuka arena atau menyalakan tornado otomatis. Fisika benda berupa animasi kinematik terbatas, bukan simulasi aerodinamika/rigid-body bebas.
+
+## Build, tes dan inspeksi APK
+
+Lingkungan sementara lama sudah dibersihkan. Sumber diambil kembali dari GitHub Alpha.19; JDK 17 serta Gradle 8.9/Android SDK 35/Build-Tools 34 dipulihkan. Kunci debug privat lokal dipertahankan, tidak dimasukkan ke Git. Runner Python hanya meneruskan proxy koneksi yang tersedia dan menyimpan output lengkap; perintah Gradle efektif yang benar-benar dijalankan:
+
+```sh
+GRADLE_USER_HOME=/tmp/ts20-gradle-home /tmp/ts20-tools/gradle/gradle-8.9/bin/gradle \
+  --no-daemon --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process \
+  testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **BUILD SUCCESSFUL in 1m**, 74 task: 16 dieksekusi, 58 up-to-date. APK permainan dan instrumentation dibangun. [Log lengkap](docs/verification/alpha20/build.log).
+- **144 tes lulus, 0 gagal/error/skipped**: 129 lama dan 15 `TornadoArenaTest`. Satu tes menyelesaikan seluruh sembilan kombinasi peta × jenis sampai tahap empat dan 48 benda. Tes lain mencakup fase angkat/serap/jatuh, bobot, jangkauan/kecepatan/es, pelepasan tanpa penggandaan poin, ronde ulang tanpa menghapus peta lain, bagian bangunan yang menetap, AI yang benar-benar menyerap dan dapat dimatikan, pause/cold restore, migrasi v14, payload rusak, input acak, snapshot GL yang memiliki array sendiri, suara serta dunia utama dengan truk menuang yang tetap tidak berubah.
+- **Lint: 0 error, 1 warning** `DiscouragedApi` untuk landscape yang sudah ada. [Hasil mentah](docs/verification/alpha20/lint.txt).
+- APK debug **67.846.522 byte** (67,85 MB); SHA-256 `2dea0f7e82a9c2212857aed764bf9c16744068b756ba5d70a6dc09bafb49de5e`. [Ringkasan mesin](docs/verification/alpha20/result.json).
+- `apksigner verify --verbose --print-certs`, `aapt dump badging`, `aapt dump permissions`, CRC seluruh ZIP dan pencarian WAV/MP3/OGG dijalankan pada APK nyata. Package/versi benar, **0 permission**, CRC PASS, tanpa berkas audio kemasan. Model/ikon/audio baru adalah kode asli MIT; tekstur lama tetap dipertahankan.
+- Sertifikat SHA-256 `f6700a05aaf7b1a92347a38c54cd65de29099c2c355c7e8b51217b6ecf7f283e`, sama dengan APK lokal sebelumnya.
+- `adb devices` menghasilkan daftar kosong. **Tidak diuji di HP atau emulator**. Instrumentation hanya dikompilasi; tes input/lifecycle yang dilaporkan adalah JVM/model, bukan sentuhan/audio native atau bukti FPS perangkat.
+
+Saat pengembangan, kompilasi tes sempat gagal karena literal integer dipakai pada overload `assertEquals` float; literal diperbaiki menjadi `0f`. Tinjauan juga menemukan potensi bagian bangunan naik lagi setelah dilepas serta dunia tersembunyi tetap menuang: penetapan tanah dan penghentian simulasi dunia diperbaiki, lalu diperiksa dengan tes. Setelah animasi jatuh ditambahkan, seluruh pemeriksaan dijalankan ulang. Tes lama tidak dihapus/dilewati/dilemahkan; prefix fixture save rusak diperbarui ke v15 agar tetap mencapai validasi field yang dimaksud.
+
+## Pratinjau renderer asli
+
+```sh
+cd tools/scene-preview
+TINYSIM_PREVIEW_SCENES=arena-wind,arena-sand,arena-ice,arena-duo,arena-release \
+  /tmp/ts20-tools/gradle/gradle-8.9/bin/gradle --no-daemon --max-workers=2 \
+  -Pkotlin.compiler.execution.strategy=in-process run --args=/tmp/ts20-frames-final.json
+CHROMIUM_PATH=/tmp/ts20-tools/chrome/chrome-headless-shell-linux64/chrome-headless-shell \
+  PREVIEW_FORMAT=jpeg node shoot.js /tmp/ts20-frames-final.json /tmp/ts20-shots-final
+```
+
+**5 PASS, GL error 0.** Fixture menjalankan model nyata: tornado kecil, pertumbuhan sampai tingkat empat, es di pelabuhan, AI pendamping dan pelepasan inventaris. Tidak sekadar menyalakan flag selesai. Inventaris tanah utama diperiksa sebelum merekam setiap frame; geometri, tekstur, shader, shadow/colour pass dan HUD berasal dari kode aplikasi. Semua gambar diperiksa visual. [Gambar serta log](docs/verification/alpha20/).
+
+Ini **pratinjau desktop JVM/WebGL, bukan screenshot Android**. Tidak ada klaim uji sentuh, lifecycle native atau kualitas audio dari HP. Hitungan draw/triangle disimpan sebagai bukti renderer, bukan pengukuran performa perangkat pengguna.
+
+---
+
 # Verifikasi Alpha.19 — Taman Angin
 
 Tanggal: 18 Oktober 2026 (UTC). `com.dromadi.tinysim`, versionCode 19 / `0.1.0-alpha.19`. Basis `f361f6b` (Alpha.18); tidak ada PR terbuka saat pekerjaan dimulai maupun sebelum publikasi.
