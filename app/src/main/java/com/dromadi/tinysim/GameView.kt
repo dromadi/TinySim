@@ -62,14 +62,14 @@ class GameView(context: Context): FrameLayout(context) {
     fun followSelected() { following=true }
     fun pan(fromX:Float,fromY:Float,toX:Float,toY:Float) {
         val a=groundAt(fromX,fromY) ?: return;val b=groundAt(toX,toY) ?: return
-        following=false;panX=(panX+a.x-b.x).coerceIn(-8f,PAN_MAX_X);panZ=(panZ+a.z-b.z).coerceIn(-3f,21f)
+        following=false;panX=(panX+a.x-b.x).coerceIn(-8f,PAN_MAX_X);panZ=(panZ+a.z-b.z).coerceIn(-3f,37.5f)
     }
     fun jumpMap(x:Float,y:Float) {
         following=false
         panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,PAN_MAX_X)
-        panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,21f)
+        panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,37.5f)
     }
-    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { if(game.wind.arena.open)leaveArena();game.wind.halt(); if(game.pipes.active && vehicle in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER))game.leavePipes();game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
+    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { if(game.wind.arena.open)leaveArena();game.wind.halt(); if(game.pipes.active && vehicle in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER))game.leavePipes();game.selected=vehicle;following=focus && !game.pipes.active && !game.recovery.engaged;game.greet(vehicle) }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
         val candidates=GameState.Vehicle.entries.map { v->game.vehicleBody(v).let { Triple(v,it.point.x,it.point.z) } }
@@ -101,6 +101,15 @@ class GameView(context: Context): FrameLayout(context) {
             if(id!=null && kotlin.math.hypot(x-id.second.first,y-id.second.second)<40f) { pipeTouch(id.first);return }
         }
         val ground=groundAt(x,y)
+        if(game.recovery.engaged && ground!=null && ground.x in 5f..44f && ground.z in 25f..40f) {
+            val unit=vehicleAt(x,y)
+            if(unit!=null) { if(unit==game.selected)game.action() else selectUnit(unit);return }
+            // Broad touch targets: a building, loose part, loading pile or depot starts the pictured step.
+            if(game.recovery.damaged==0 || (0 until RecoverySite.COUNT).any { i->
+                kotlin.math.hypot(ground.x-game.recovery.x[i],ground.z-game.recovery.z[i])<2.2f
+            } || ground.x>31f) { game.recovery.nextVehicle()?.let { game.selected=it };game.action();return }
+            driveAt(x,y);return
+        }
         if(!game.pipes.active && game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
         // Hit-test the visible block centre, not its projection on the ground behind it.
         if(game.selected==GameState.Vehicle.CRANE && game.blocks.carried<0 && game.craneCargo==0) {
@@ -207,7 +216,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(running && !parents) {
             val dt=if(previous==0L)0f else (now-previous)/1000f
             game.update(dt)
-            if(!game.wind.arena.open && !game.wind.active && game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
+            if(!game.wind.arena.open && !game.wind.active && !game.recovery.engaged && game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
             if(!game.wind.arena.open)game.nextMission()
             if(game.rewardSerial!=lastReward) { audio.play(settings.sound,true);lastReward=game.rewardSerial }
             if(game.transferSerial!=lastTransfer) { when(game.transferKind) { 6->audio.machines.blockSerial++;7->audio.machines.keeperSerial++;8->audio.machines.impactSerial++;else->audio.machines.pourSerial++ } }
@@ -219,7 +228,7 @@ class GameView(context: Context): FrameLayout(context) {
             val targetZ=game.vehicleBody(game.selected).point.z
             val dt=if(previous==0L)0f else ((now-previous)/1000f).coerceIn(0f,.04f)
             val ease=1f-kotlin.math.exp(-4f*dt)
-            panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,21f)-panZ)*ease
+            panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,37.5f)-panZ)*ease
         }
         if(running && !parents)houseAndHelp(now)
         val arena=game.wind.arena
@@ -265,6 +274,8 @@ class GameView(context: Context): FrameLayout(context) {
         }
         if(x in 350f..450f && y in 20f..90f)return "windToggle"
         if(x in 470f..570f && y in 20f..90f)return "arena"
+        if(x in 590f..690f && y in 20f..90f)return "district"
+        if(game.recovery.engaged && x in 24f..324f && y in 20f..90f)return "action"
         if(advanced) {
             if(x in 1000f..1070f && y in 20f..84f)return "sound"
             if(x in 1098f..1178f && y in 106f..182f)return "camera"
@@ -317,8 +328,8 @@ class GameView(context: Context): FrameLayout(context) {
     }
     /** House stages assemble by themselves once the foundation and materials are ready. */
     private fun houseAndHelp(now:Long) {
-        if(game.wind.arena.open || game.wind.active || game.wind.strength>0f) { hint=null;return }
-        if(game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
+        if(game.wind.arena.open || game.wind.active || game.wind.strength>0f || (game.recovery.engaged && game.recovery.damaged==0)) { hint=null;return }
+        if(!game.recovery.engaged && game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
             following=false;panX=36.3f;panZ=7f
         }
         // The crane builds the bridge stage by stage once the yard holds all eight units.
@@ -355,6 +366,12 @@ class GameView(context: Context): FrameLayout(context) {
     }
     fun activate(action: String) {
         when(action) {
+            "district" -> {
+                if(game.wind.arena.open)leaveArena()
+                if(game.recovery.engaged) { game.stopMovement();game.recovery.engaged=false }
+                else game.recovery.enter(game)
+                following=false;orbitMode=false;camera=0;settings.camera=0;yaw=-12f;pitch=12f;zoom=.7f;panX=23f;panZ=32f;saveCamera()
+            }
             "arena" -> enterArena()
             "arenaExit" -> leaveArena()
             "arenaReplay" -> { game.wind.arena.replay();enterArena() }
@@ -363,7 +380,7 @@ class GameView(context: Context): FrameLayout(context) {
             "arenaToggle" -> game.wind.arena.toggle()
             "arenaMap0","arenaMap1","arenaMap2" -> enterArena(action.last().digitToInt())
             "arenaKind0","arenaKind1","arenaKind2" -> game.wind.arena.choose(TornadoArena.Kind.entries[action.last().digitToInt()])
-            "windToggle" -> { game.wind.toggle(game);following=false;orbitMode=false;if(game.wind.active) { camera=0;yaw=-18f;pitch=10f;zoom=1.05f;panX=game.wind.x;panZ=game.wind.z };saveCamera() }
+            "windToggle" -> { game.wind.toggle(game);following=false;orbitMode=false;if(game.wind.active && !game.recovery.engaged) { camera=0;yaw=-18f;pitch=10f;zoom=1.05f;panX=game.wind.x;panZ=game.wind.z };saveCamera() }
             "sound" -> settings.sound=!settings.sound
             "camera" -> { camera=(camera+1)%3;settings.camera=camera;yaw=0f;pitch=0f;zoom=1f;panX=0f;panZ=0f;following=false;saveCamera();input.cancel() }
             "orbitToggle" -> { orbitMode=!orbitMode;input.cancel() }

@@ -90,7 +90,7 @@ class TornadoArenaTest {
         g.stopMovement();g.wind.arena.enter(2);g.wind.arena.choose(TornadoArena.Kind.ICE);repeat(1500) { g.update(.016f);assertEquals(Terrain.INITIAL_MASS,g.totalMaterial) }
         assertEquals(before,g.snapshot().substringAfter('|').split(';').take(12).joinToString(";"));assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
         g.stopMovement();val saved=g.snapshot();val copy=GameState();copy.restore(saved);assertEquals(saved,copy.snapshot());assertFalse(copy.wind.arena.open)
-        val old=GameState();old.restore("14|"+before);assertEquals(4,old.load);assertTrue(old.tipping);assertEquals(Terrain.INITIAL_MASS,old.totalMaterial);assertFalse(old.wind.arena.open)
+        val old=GameState();old.restore("14|"+before.split(';').mapIndexed { i,s->if(i in listOf(1,3,4))s.split(',').take(WorldMap.COLUMNS*32).joinToString(",") else s }.joinToString(";"));assertEquals(4,old.load);assertTrue(old.tipping);assertEquals(Terrain.INITIAL_MASS,old.totalMaterial);assertFalse(old.wind.arena.open)
     }
     @Test fun malformedRoundSavesAreRejectedWithoutCreatingASecondInventory() {
         val a=TornadoArena();val valid=a.snapshot()
@@ -99,7 +99,7 @@ class TornadoArenaTest {
         for(bad in listOf(valid.replaceFirst("0,0,0#","9,0,0#"),groups.joinToString("#"),valid.replaceFirst("#0,0,","#2,0,"))) {
             try { a.restore(bad);fail("accepted malformed save") } catch(_:IllegalArgumentException) { }
         }
-        val g=GameState();val parts=g.snapshot().substringAfter('|').split(';').toMutableList();parts[12]="broken";g.restore(parts.joinToString(";",prefix="15|"));assertEquals(GameState().snapshot(),g.snapshot())
+        val g=GameState();val parts=g.snapshot().substringAfter('|').split(';').toMutableList();parts[12]="broken";g.restore(parts.joinToString(";",prefix="16|"));assertEquals(GameState().snapshot(),g.snapshot())
     }
     @Test fun randomTouchModeAndPauseSequencesStayBoundedAndNeverChangeWorldMaterial() {
         val g=GameState();val a=g.wind.arena;a.enter();val random=java.util.Random(881)

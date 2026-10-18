@@ -38,7 +38,7 @@ class WindPlayTest {
     }
     @Test fun alpha18SaveMigratesWithoutChangingSixVehiclesOrMaterial() {
         val g=GameState();g.load=4;g.source-=4;g.blocks.pick(2)
-        val old=g.snapshot().substringAfter('|').split(';').take(11).joinToString(";",prefix="13|")
+        val old=g.snapshot().substringAfter('|').split(';').take(11).mapIndexed { i,s->if(i in listOf(1,3,4))s.split(',').take(WorldMap.COLUMNS*32).joinToString(",") else s }.joinToString(";",prefix="13|")
         val copy=GameState();copy.restore(old)
         assertEquals(g.sand.toList(),copy.sand.toList());assertEquals(4,copy.load);assertEquals(2,copy.blocks.carried)
         assertFalse(copy.wind.prepared);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
@@ -48,7 +48,7 @@ class WindPlayTest {
         val g=GameState();g.wind.toggle(g);tick(g);g.reset();assertEquals(GameState().snapshot(),g.snapshot())
         for(s in listOf("1,NaN,0","1,52,0","2,24,0","1,24,99")) {
             val parts=g.snapshot().substringAfter('|').split(';').toMutableList();parts[11]=s
-            g.restore(parts.joinToString(";",prefix="15|"));assertEquals(GameState().snapshot(),g.snapshot())
+            g.restore(parts.joinToString(";",prefix="16|"));assertEquals(GameState().snapshot(),g.snapshot())
         }
     }
     @Test fun arbitraryDragAndBadTimestepsRemainFiniteConservativeAndOnDryLand() {
@@ -56,7 +56,7 @@ class WindPlayTest {
         val random=java.util.Random(93)
         repeat(3000) { i->if(i%70==0)g.wind.aim(random.nextFloat()*200-60,random.nextFloat()*80-30)
             g.update(if(i%31==0)Float.NaN else if(i%33==0)100f else .04f)
-            assertEquals(Terrain.INITIAL_MASS,g.totalMaterial);assertTrue(g.wind.x in -8f..47f && g.wind.z in -2.8f..21.5f)
+            assertEquals(Terrain.INITIAL_MASS,g.totalMaterial);assertTrue(g.wind.x in -8f..47f && g.wind.z in WorldMap.DRIVE_MIN_Z..WorldMap.DRIVE_MAX_Z)
             assertTrue(g.blocks.x.indices.all { BlockYard.validGround(g.blocks.x[it],g.blocks.z[it]) })
         }
     }

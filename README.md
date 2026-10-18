@@ -1,11 +1,23 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.20**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.21**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Tornado pasir membesar di arena kota balok](docs/verification/alpha20/arena-sand.jpg)
+![Kawasan konstruksi setelah dibangun kembali](docs/verification/alpha21/district-restored.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.21: terjang, bersihkan, bangun kembali
+
+- **Satu kawasan di peta utama.** Sentuh tombol bergambar rumah di sebelah pusaran untuk melihat kawasan baru, lalu awan atau aksi untuk menyalakan tornado. Peta tanah utama bertambah **50%: 86 × 32 menjadi 86 × 48 m**. Empat rumah latihan, jalan kerja, tempat muat dan gudang berada di selatan; keenam kendaraan lama bisa masuk melalui peta yang sama. Arena Alpha.20 tetap tersedia lewat tombol pusaran.
+- **Terjang bangunan latihan.** Ketuk/seret satu jari untuk mengarahkan tornado. Dua jari tetap pan/pinch. Dinding berjendela dan atap terurai menjadi **16 bagian** yang terangkat serta berputar. Ukuran pusaran bertumbuh dalam empat tingkat berdasarkan jumlah bagian yang diterjang. Matikan awan/aksi atau pilih kendaraan: bagian turun menjadi puing di tanah. Orang, kendaraan utama dan rumah lama anak tidak diterbangkan.
+- **Bulldozer membersihkan.** Pilih kartu bulldozer lalu aksi, atau sentuh puing untuk memulai langkah berikutnya. Mesin berjalan mendekat, menurunkan blade dan membawa satu bagian di depan blade sungguhan sampai ke tempat muat. Ulangi sampai bersih. Sentuh tanah kosong untuk mengemudi sendiri; perjalanan manual membatalkan pekerjaan dengan aman dan meninggalkan bagian di posisi blade.
+- **Truk benar-benar mengangkut.** Aksi membawa truk ke tempat muat, memasukkan sampai **8 bagian** bertahap, berjalan ke gudang dan mengangkat bak untuk menurunkannya. Bagian di bak mengikuti gerakan bak; bagian yang sudah diturunkan menetap di gudang. Muatan pasir lama tetap dapat dikosongkan tanpa dihapus. Tempat muat yang terhalang kendaraan lain perlu dikosongkan sebelum aksi diulang.
+- **Molen dan crane membangun kembali.** Molen mendekati tiap fondasi, drum berputar dan aliran beton mengisi empat petak fondasi. Stok **16 unit beton** khusus kawasan selalu sama dengan sisa stok ditambah isi fondasi. Crane memakai perjalanan, boom, tali dan kait lama untuk mengambil bagian dari gudang, lalu aksi berikutnya memasangnya pada rumah asal. Bagian yang sama dipakai kembali, tanpa menggandakan properti.
+- **Bisa diterjang lagi tanpa reset dunia.** Setelah 16 bagian terpasang, bintang menandai satu siklus selesai. Sentuh awan/aksi untuk bermain lagi; fondasi beton yang sudah jadi tetap terpelihara. Pembersihan dan pembangunan kembali bersifat opsional, tanpa timer, skor kalah atau hukuman. Kontrol tetap bergambar dan tanpa joystick. Tangan penunjuk berganti antara bulldozer, truk, molen dan crane sesuai langkah berikutnya.
+- **Perjalanan lebih langsung.** Rute lama dapat melewati sisa belokan ketika kendaraan penghalang sudah pindah, dengan pemeriksaan benturan sepanjang jalan pintas. Crane berjalan 3,6 m/detik untuk perjalanan antargudang dan bangunan di kawasan yang lebih luas; batas bodi serta aturan jembatan tetap berlaku.
+- **Save v16.** Mempertahankan 16 identitas bagian, puing, muatan truk/crane, fondasi dan siklus selesai. Pause membatalkan perjalanan/pekerjaan, meredakan angin dan mempertahankan inventaris; tekan aksi untuk melanjutkan. Save v15/Alpha.20 dan versi lama dimigrasikan: **5.504 unit tanah awal** ditambahkan hanya pada perluasan baru, sehingga jumlah material dunia sekarang **16.572**. Tanah/pasir dan seluruh proyek lama tetap dipertahankan. Ini simulasi kinematik deterministik, bukan aerodinamika atau rigid-body bebas.
+- Model bangunan, ikon dan animasi baru dibuat dengan kode asli TinySim (MIT). Audio angin, mesin, transfer bagian dan pengecoran menggunakan sistem suara lama yang benar-benar dipicu oleh aksi; tidak ada WAV, padding, duplikasi aset atau target ukuran minimum APK. Pratinjau desktop dan bukti pemeriksaan ada di [VERIFICATION.md](VERIFICATION.md); belum diuji di HP pengguna.
 
 ## Alpha.20: arena tornado yang tumbuh dan menyerap benda
 

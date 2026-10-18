@@ -86,13 +86,13 @@ class WorkFleetTest {
         for(i in listOf(1,3,4))a[i]=a[i].split(',').take(WorldMap.COLUMNS*WorldMap.LEGACY_ROWS).joinToString(",")
         val copy=GameState();copy.restore(a.joinToString(";",prefix="12|"))
         assertEquals(3,copy.load);assertEquals(2,copy.blocks.carried);assertTrue(copy.pipes.active)
-        assertEquals(32,WorldMap.ROWS);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
+        assertEquals(48,WorldMap.ROWS);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
         assertTrue((WorldMap.COLUMNS*22 until WorldMap.CELL_COUNT).all { copy.earth[it]==4 && copy.sand[it]==0 })
     }
     @Test fun malformedFleetSavesCannotCreateConcreteOrPlaceVehiclesInTheRiver() {
         val g=GameState();val values=g.snapshot().substringAfter('|').split(';')
         for(bad in listOf("NaN,19,0,3000,19,0,8,0,0,0","1200,19,0,3000,19,0,8,8,0,0","3720,19,0,3000,19,0,8,0,0,0")) {
-            val a=values.toMutableList();a[10]=bad;g.restore(a.joinToString(";",prefix="15|"));assertEquals(GameState().snapshot(),g.snapshot())
+            val a=values.toMutableList();a[10]=bad;g.restore(a.joinToString(";",prefix="16|"));assertEquals(GameState().snapshot(),g.snapshot())
         }
     }
     @Test fun newVehiclesCanExploreTheExtraTenMetresAndPictureHintsFinishTheirJobs() {

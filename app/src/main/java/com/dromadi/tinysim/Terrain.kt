@@ -32,5 +32,5 @@ object Terrain {
         return (value(0,0)*(1-u)+value(1,0)*u)*(1-v)+(value(0,1)*(1-u)+value(1,1)*u)*v
     }
     fun foundation(index:Int)=WorldMap.cellX(index) in 33f..39f && WorldMap.cellZ(index) in 5f..9f
-    fun diggable(index:Int)=(WorldMap.cellX(index) in -9f..47f || WorldMap.cellX(index) in 56f..71f) && WorldMap.cellZ(index) in -2.8f..21.5f && WorldMap.roadSection(index)<0
+    fun diggable(index:Int)=(WorldMap.cellX(index) in -9f..47f || WorldMap.cellX(index) in 56f..71f) && WorldMap.cellZ(index) in -2.8f..WorldMap.DRIVE_MAX_Z && WorldMap.roadSection(index)<0
 }

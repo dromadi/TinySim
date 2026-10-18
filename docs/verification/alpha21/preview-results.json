@@ -1,0 +1,44 @@
+[
+  {
+    "name": "district-storm",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3692,
+    "triangles": 857052
+  },
+  {
+    "name": "district-push",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3658,
+    "triangles": 828996
+  },
+  {
+    "name": "district-tip",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3681,
+    "triangles": 849348
+  },
+  {
+    "name": "district-pour",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3700,
+    "triangles": 857532
+  },
+  {
+    "name": "district-lift",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3725,
+    "triangles": 859748
+  },
+  {
+    "name": "district-restored",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3731,
+    "triangles": 859484
+  }
+]

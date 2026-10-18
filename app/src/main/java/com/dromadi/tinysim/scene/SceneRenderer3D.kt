@@ -160,9 +160,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         GL.glEnable(GL.GL_BLEND);GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA)
         createShadowMap()
         // The sun is fixed, so its orthographic frustum is fitted once around the work site.
-        val c=Vec3(31f,0f,3f)
+        val c=Vec3(31f,0f,12f)
         Matrix.setLookAtM(lightView,0,c.x+sun.x*75f,c.y+sun.y*75f,c.z+sun.z*75f,c.x,c.y,c.z,0f,1f,0f)
-        Matrix.orthoM(lightProjection,0,-52f,52f,-30f,30f,5f,170f)
+        Matrix.orthoM(lightProjection,0,-58f,58f,-46f,46f,5f,220f)
         Matrix.multiplyMM(lightVp,0,lightProjection,0,lightView,0)
         transferSeen=frame.transferSerial;streamStart=-10f;lastDozerX=Float.NaN
         Log.i("TinySim3D","EGL scene ready: ${GL.glGetString(GL.GL_RENDERER)}, shadows=$shadowsEnabled ${shadowSize}px, procedural meshes uploaded")
@@ -258,6 +258,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         blockYard(f)
         pipeSite(f)
         workYard(f)
+        recoverySite(f)
         serviceTruck(f,false)
         serviceTruck(f,true)
         bridgeKeeper(f)
@@ -270,7 +271,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         particles(f)
         dustCloud(f)
         water(f)
-        tornado(f)
+        tornado(f,if(f.wind.z>=25f).5f+f.recovery.level*.25f else 1f)
     }
     private fun skyDome(eye:Vec3) {
         GL.glDisable(GL.GL_CULL_FACE);GL.glDepthMask(false)
@@ -315,8 +316,8 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         }
         // Open-top soil volume: the heightfield can dip below the original surface.
         noCast {
-            for(z in floatArrayOf(-7f,25f))box(31f,-.8f,z,86f,1.7f,.08f,soilSide,SOIL)
-            for(x in floatArrayOf(-12f,74f))box(x,-.8f,9f,.08f,1.7f,32f,soilSide,SOIL)
+            for(z in floatArrayOf(-7f,WorldMap.MAX_Z))box(31f,-.8f,z,86f,1.7f,.08f,soilSide,SOIL)
+            for(x in floatArrayOf(-12f,74f))box(x,-.8f,17f,.08f,1.7f,48f,soilSide,SOIL)
         }
         draw(terrain,soil,SOIL)
         noCast { for(i in 0..37)for(z in floatArrayOf(-1.6f,1.6f)) {
@@ -328,7 +329,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
                 val x=-10.6f+i*1.25f
                 if(x>WorldMap.WEST_BANK_X+.6f && x<WorldMap.EAST_BANK_X-.6f)continue
                 box(x,.075f,-6.65f,1.08f,.09f,.22f,stone,CONCRETE)
-                box(x,.075f,24.65f,1.08f,.09f,.22f,stone,CONCRETE)
+                box(x,.075f,40.65f,1.08f,.09f,.22f,stone,CONCRETE)
             }
         }
         expandedSite()
@@ -402,7 +403,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         for(z in floatArrayOf(3f,10f))for(i in 0..9)panel(31.5f+i,.16f,z,.85f,.22f,.32f,paintWhite)
         for(i in 0..5)for(k in 0..1)panel(28f+i*.45f,.25f+k*.24f,-5.5f,.4f,.21f,.6f,orange)
         for(i in 0..2) { push();translate(35f+i*.65f,.35f,-5.5f);rotate(90f,0f,0f,1f);shape(cylinder,0f,0f,0f,.6f,2.2f,.6f,metal,METAL);pop() }
-        for(x in floatArrayOf(25f,31f,38f,45f,49f)) { tree(x,-6f,1f);tree(x,27f,1.4f) }
+        for(x in floatArrayOf(25f,31f,38f,45f,49f)) { tree(x,-6f,1f);tree(x,43f,1.4f) }
         for(x in floatArrayOf(11f,25f,30f,44f))for(z in floatArrayOf(2.5f,11.5f))trafficCone(x,z)
     }
     private fun destination(f:SceneFrame) {
@@ -426,6 +427,57 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         }
     }
     /** Trees vary by position: broadleaf crowns built from irregular clusters, or layered conifers. */
+    /** Same sixteen parts in the house, on the ground, in the bed and beneath the hook. */
+    private fun recoveryPart(id:Int) {
+        val color=if(id/4%2==0)rgba(238,166,91) else rgba(103,182,174)
+        if(id%4==3) {
+            for(side in floatArrayOf(-1f,1f)) {
+                push();translate(0f,.25f,side*.62f);rotate(side*28f,1f,0f,0f)
+                surface(0f,0f,0f,2.5f,.18f,1.5f,rgba(177,78,53),ROOF);pop()
+            }
+            box(0f,.61f,0f,2.55f,.12f,.14f,orange,PAINT)
+        } else {
+            val front=id%4==2
+            push();if(!front)rotate(90f,0f,1f,0f)
+            // A real opening between piers keeps the blue window visibly inset.
+            for(dx in floatArrayOf(-.8f,.8f))surface(dx,.85f,0f,.45f,1.7f,.2f,color,PLASTER)
+            surface(0f,.26f,0f,1.3f,.52f,.2f,color,PLASTER)
+            surface(0f,1.54f,0f,1.3f,.32f,.2f,color,PLASTER)
+            box(0f,.98f,0f,1.1f,.94f,.07f,rgba(123,204,221),GLASS)
+            for(dx in floatArrayOf(-.56f,0f,.56f))box(dx,.98f,.12f,.05f,1f,.05f,paintWhite,PAINT)
+            for(dy in floatArrayOf(.5f,1f,1.47f))box(0f,dy,.12f,1.17f,.05f,.05f,paintWhite,PAINT)
+            pop()
+        }
+    }
+    private fun recoverySite(f:SceneFrame) {
+        val r=f.recovery;val site=com.dromadi.tinysim.RecoverySite
+        // Connected gravel roads and broad work bays are part of the expanded main terrain.
+        for(z in floatArrayOf(24f,32f,40f))surface(23f,.055f,z,41f,.06f,2.2f,rgba(165,158,143),SOIL)
+        for(h in 0..3) {
+            val x=site.houseX(h);val z=site.houseZ(h)
+            surface(x,.1f,z,3.4f,.15f,3.4f,if(r.pads[h]>0)rgba(165,174,169) else sandColor,if(r.pads[h]>0)CONCRETE else SAND)
+            for(k in 0 until r.pads[h])box(x-1.2f+k*.8f,.2f,z,.7f,.08f,2.8f,stone,CONCRETE)
+            for(dx in floatArrayOf(-2f,2f))trafficCone(x+dx,z-2f)
+            // Four footprints remain visible while parts are away.
+            for(k in 0..3)noCast { box(x-1.15f+k*.77f,.22f,z+1.4f,.4f,.015f,.12f,if(r.state[h*4+k]==0)teal else yellow,DECAL) }
+        }
+        for(i in r.state.indices)if(r.state[i] in listOf(0,1,2,3,5)) {
+            push();translate(r.x[i],support(f,r.x[i],r.z[i])+r.y[i]+.18f,r.z[i])
+            if(r.state[i]==1) { rotate(f.seconds*65f+i*28f,0f,1f,0f);rotate(sin(f.seconds*2+i)*18f,1f,0f,0f) }
+            else if(r.state[i]!=0) {
+                rotate(i*31f,0f,1f,0f)
+                when(i%4) { 0,1->rotate(90f,0f,0f,1f);2->rotate(90f,1f,0f,0f);else->rotate(12f,1f,0f,0f) }
+                if(i%4!=3)translate(0f,-.85f,0f)
+            }
+            recoveryPart(i);pop()
+        }
+        // Loading ramp and depot pictograms use the same silhouettes as the working parts.
+        surface(site.PILE_X,.06f,site.PILE_Z,3.5f,.08f,3.5f,stone,CONCRETE)
+        for(z in floatArrayOf(34f,38f))box(site.PILE_X,.38f,z,4f,.65f,.15f,yellow,PAINT)
+        for(x in floatArrayOf(35.5f,40f)) { box(x,1.2f,24.4f,.18f,2.4f,.18f,teal,PAINT) }
+        box(37.75f,2.4f,24.4f,4.7f,.28f,.3f,teal,PAINT)
+        for(x in floatArrayOf(5f,19f,34f,46f)) { tree(x,43f,1.3f);trafficCone(x,24f) }
+    }
     private fun arenaScene(f:SceneFrame) {
         val a=f.arena
         val w=WindFrame(a.running,a.strength,a.x,a.z,a.phase)
@@ -721,6 +773,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         push();translate(-.3f,.12f,0f);rotate(if(f.tipping)-65f else 0f,0f,0f,1f)
         panel(0f,.36f,0f,.12f,.72f,1.88f,teal);pop()
         if(f.load>0)mound(1.05f,.13f,0f,2.5f,.12f+f.load*.08f,1.7f,sandColor)
+        for((n,id) in f.recovery.state.indices.filter { f.recovery.state[it]==4 }.withIndex()) {
+            push();translate(.3f+(n%4)*.47f,.16f+(n/4)*.35f,0f);scale(.23f,.23f,.23f);recoveryPart(id);pop()
+        }
         pop()
         // Tail lights.
         for(z in floatArrayOf(-.7f,.7f))box(-1.95f,.72f,z,.04f,.1f,.2f,rgba(220,40,30),EMISSIVE)
@@ -766,7 +821,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private fun water(f:SceneFrame) {
         if(shadowPass)return
         GL.glDepthMask(false)
-        push();translate((WorldMap.RIVER_MIN_X+WorldMap.RIVER_MAX_X)/2,-.38f,9f);scale(WorldMap.RIVER_MAX_X-WorldMap.RIVER_MIN_X+1.2f,1f,32.1f)
+        push();translate((WorldMap.RIVER_MIN_X+WorldMap.RIVER_MAX_X)/2,-.38f,17f);scale(WorldMap.RIVER_MAX_X-WorldMap.RIVER_MIN_X+1.2f,1f,48.1f)
         draw(plane,rgba(40,118,128,.86f),WATER);pop()
         GL.glDepthMask(true)
     }
@@ -881,9 +936,10 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
             pop()
             for(yy in floatArrayOf(1.1f,1.35f,1.6f,1.85f,2.1f))box(-2f,yy,.9f,.38f,.045f,.07f,chrome,METAL)
             for(xx in floatArrayOf(-2.2f,-1.8f))box(xx,1.6f,.9f,.045f,1.1f,.045f,chrome,METAL)
-            val chute=if(a.pouring)1f else .3f
+            val pouring=a.pouring || f.recovery.pouring>=0
+            val chute=if(pouring)1f else .3f
             rod3(-1.8f,1.75f,0f,-2.9f*chute,1.1f,0f,.17f,metal,METAL)
-            if(a.pouring && !shadowPass)for(i in 0..7) {
+            if(pouring && !shadowPass)for(i in 0..7) {
                 val t=(f.seconds*2+i*.125f)%1f
                 blob(-2.85f,1.04f-t*.9f,.05f*sin(i*2f),.17f,.2f,.17f,stone,CONCRETE)
             }
@@ -935,7 +991,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         noCast { for(i in 0..31)box(2f+i*1.35f,.085f,15.8f,.65f,.015f,.08f,paintWhite,MATTE) }
         panel(7f,1.1f,23f,5f,2.2f,2.5f,teal);panel(7f,2.3f,23f,5.4f,.2f,2.9f,yellow)
         box(7f,.9f,21.73f,2f,1.8f,.06f,ink,MATTE)
-        for(x in floatArrayOf(1f,15f,27f,42f,60f,70f))tree(x,27f,1.1f)
+        for(x in floatArrayOf(1f,15f,27f,42f,60f,70f))tree(x,43f,1.1f)
         for(x in floatArrayOf(58f,64f,70f)) {
             box(x,.65f,19f,2.3f,.15f,.75f,bark,WOOD)
             for(dx in floatArrayOf(-.8f,.8f))box(x+dx,.3f,19f,.14f,.6f,.14f,bark,WOOD)
@@ -1087,6 +1143,9 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
                 else->surface(0f,-.08f,0f,2.4f,.1f,1.6f,rgba(104,102,100),ASPHALT)
             }
             pop()
+        } else if(f.recovery.held>=0) {
+            push();translate(hx,hookY-(if(f.recovery.held%4==3).9f else 1.9f),hz);recoveryPart(f.recovery.held);pop()
+            for(dx in floatArrayOf(-.6f,.6f))rod3(hx,hookY+.25f,hz,hx+dx,hookY-.25f,hz,.025f,darkSteel,METAL)
         } else if(f.pipeCarried>=0) {
             pipe(hx,hookY-.4f,hz)
             for(dx in floatArrayOf(-.65f,.65f))rod3(hx,hookY+.25f,hz,hx+dx,hookY-.2f,hz,.022f,darkSteel,METAL)

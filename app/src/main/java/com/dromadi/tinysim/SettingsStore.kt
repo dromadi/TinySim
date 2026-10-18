@@ -25,7 +25,7 @@ class SettingsStore(context: Context) {
         get()=finite("panX",0f,-8f,68f)
         set(value) { prefs.edit().putFloat("panX",value).apply() }
     var panZ:Float
-        get()=finite("panZ",0f,-3f,21f)
+        get()=finite("panZ",0f,-3f,37.5f)
         set(value) { prefs.edit().putFloat("panZ",value).apply() }
     private fun finite(key:String,fallback:Float,min:Float,max:Float):Float {
         val value=prefs.getFloat(key,fallback)

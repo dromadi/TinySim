@@ -1,4 +1,65 @@
-# Verifikasi Alpha.20 — arena tornado
+# Verifikasi Alpha.21 — kawasan pulih-bangun
+
+Tanggal: 18 Oktober 2026. `com.dromadi.tinysim`, versionCode 21 / `0.1.0-alpha.21`. Basis `e11bc9d` (Alpha.20); tidak ada PR terbuka saat mulai dan saat pemeriksaan publikasi.
+
+## Yang bisa dimainkan
+
+Tombol rumah di sebelah pusaran membuka kawasan selatan pada **peta utama**, bukan arena terpisah. Grid bertambah 50%, dari 86 × 32 menjadi **86 × 48 m**. Empat bangunan latihan memiliki total **16 identitas bagian**: dua dinding samping, dinding depan berjendela, serta atap per bangunan. Tornado mengangkat/mengorbitkan bagian yang didekati dan tumbuh dalam empat tingkat berdasarkan identitas yang diterjang. Setelah angin dimatikan bagian jatuh dan menetap menjadi puing. Rumah/proyek lama, orang serta kendaraan utama tidak diangkat.
+
+Bulldozer mendekat memakai navigasi/batas bodi lama, menurunkan blade dan mengantar satu bagian di depan blade sungguhan ke tempat muat. Truk berjalan ke tempat muat, memuat sampai delapan bagian bertahap, bergerak ke gudang lalu mengangkat bak; muatan ikut transformasi bak. Bagian yang diturunkan disimpan di gudang. Molen mendekat, menghadap agar corong belakang berada di tepi fondasi, lalu mengalirkan beton ke empat petak per rumah. Drum dan corong memakai model lama; stok 16 unit beton kawasan tidak bercampur dengan delapan unit bengkel lama. Crane memakai rute, boom, hook dan task lama untuk mengambil satu bagian dari gudang, lalu memasangnya di rumah asal dengan aksi berikutnya.
+
+Setelah keenam belas bagian dipasang, satu siklus selesai dan bintang muncul. Rumah boleh diterjang lagi tanpa reset dunia; fondasi yang sudah dicor tetap jadi, tidak mendapatkan beton baru. Identitas bagian tetap berjumlah 16 melalui seluruh fase; jumlah stok beton ditambah fondasi selalu 16. Tanah/pasir tetap **16.572 unit** di setiap langkah pengujian. Ini animasi kinematik deterministik, bukan simulasi aerodinamika/rigid-body bebas. Pembersihan tidak wajib, tanpa timer, kalah atau hukuman.
+
+Kontrol anak tetap ikon besar, ketuk/seret langsung dan pan/pinch dua jari tanpa joystick. Menyentuh puing/tempat muat/gudang dapat memilih langkah berikutnya; kartu kendaraan dan aksi tetap tersedia. Tangan penunjuk menuntun seluruh alur. Tujuan manual membatalkan pekerjaan dan meninggalkan bagian di posisi aktual blade. Tempat muat yang terhalang berhenti dengan aman dan dapat dicoba lagi sesudah penghalang dipindahkan. Rute yang masih punya belokan bisa mengambil jalan pintas bila lintasan lengkap sudah aman setelah penghalang bergerak. Crane berjalan 3,6 m/detik; pemeriksaan benturan sepanjang lintasan dan jembatan tetap berlaku.
+
+Save **v16** menambahkan bagian, posisi, muatan, fondasi dan jumlah siklus. Save v15/Alpha.20 serta format lama dimigrasikan. Perluasan menambah 1.376 sel × 4 = **5.504 tanah awal**, hanya pada sel baru; pasir, galian dan proyek lama dipertahankan. Pause menghentikan pekerjaan/cuaca, menetapkan bagian terbang di tanah dan mempertahankan muatan truk maupun crane. Cold restore tidak menjalankan kendaraan atau tornado sendiri. Resume pekerjaan menggunakan aksi berikutnya.
+
+## Perintah dan bukti build
+
+JDK 17, Gradle 8.9, SDK 35, Build-Tools 34. Lingkungan sementara dipulihkan dari sumber GitHub dan kunci debug privat lokal yang sama. Runner Python meneruskan proxy lingkungan tanpa mengubah proyek. Perintah efektif:
+
+```sh
+GRADLE_USER_HOME=/tmp/ts21-gradle-home /tmp/ts21-tools/gradle/gradle-8.9/bin/gradle \
+  --no-daemon --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process \
+  testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **BUILD SUCCESSFUL in 1m 2s**, 74 task: 16 dieksekusi, 58 up-to-date. [Log lengkap](docs/verification/alpha21/build.log).
+- **154 tes lulus, 0 gagal/error/skipped**: 144 lama, sembilan `RecoverySiteTest` dan satu tes jalan pintas rute. Tes baru menjalankan dua siklus pulih-bangun tanpa reset atau isi ulang beton, seluruh alur panduan kartu/aksi, migrasi v15, pause saat terbang/blade/truk/pengecoran/kait, snapshot render yang memiliki array sendiri, posisi parkir molen, tempat muat terhalang beserta retry, serta payload save rusak. Setiap langkah alur memeriksa massa tanah dan inventaris beton. Tes navigasi lama tetap mencakup tabrakan enam kendaraan, swept path, posisi berhimpit dan tujuan terisi.
+- **Lint: 0 error, 1 warning** `DiscouragedApi` landscape yang sudah ada. [Hasil mentah](docs/verification/alpha21/lint.txt).
+- APK debug **67.868.716 byte (67,87 MB)**. SHA-256 `2e45b92a244fafef0aa318a2d4b53e98764af0ccff1f52ae3333bfdc8c5e392f`. [Ringkasan mesin](docs/verification/alpha21/result.json).
+- `apksigner verify --verbose --print-certs`, `aapt dump badging`, `aapt dump permissions` serta CRC seluruh ZIP dijalankan pada APK nyata: identitas/versi benar, **0 permission**, CRC PASS, tanpa WAV/MP3/OGG/Opus kemasan. Tidak ada padding, aset duplikat atau cek minimum ukuran.
+- Sertifikat SHA-256 `f6700a05aaf7b1a92347a38c54cd65de29099c2c355c7e8b51217b6ecf7f283e`, sama dengan APK lokal sebelumnya. Keystore privat tidak dimasukkan ke Git.
+- `adb devices` berhasil dan menghasilkan **daftar kosong**. **Belum diuji di HP atau emulator.** APK instrumentation berhasil dibangun, belum dijalankan. Tes pause/restore yang dilaporkan adalah tes model JVM, bukan sentuhan/audio native, FPS atau lifecycle perangkat.
+
+Saat pengembangan, tes panduan menemukan indeks state dipakai sebagai indeks bagian sehingga dua fondasi terakhir tidak diminta; kode diperbaiki memakai indeks identitas bagian. Tes batas angin diperbarui ke batas peta baru; fixture migrasi tetap memakai 32 baris lama dan fixture save rusak memakai prefix v16 agar tetap mencapai validasi yang dimaksud. Pratinjau menemukan panel puing berdiri dan orientasi corong/kait kurang tepat; panel ditidurkan sesuai sumbunya, corong mengikuti arah molen dan tinggi kait disesuaikan jenis bagian, kemudian pemeriksaan lengkap diulang. Tidak ada tes yang dihapus, di-skip atau dilemahkan; deadline tes navigasi lama tetap sama.
+
+## Pratinjau renderer asli
+
+```sh
+cd tools/scene-preview
+TINYSIM_PREVIEW_SCENES=district-storm,district-push,district-tip,district-pour,district-lift,district-restored \
+  python3 /tmp/run_ts21_gradle.py -Pkotlin.compiler.execution.strategy=in-process run --args=/tmp/ts21-frames-r2.json
+CHROMIUM_PATH=/tmp/ts21-tools/chrome/chrome-headless-shell-linux64/chrome-headless-shell \
+  PREVIEW_FORMAT=jpeg node shoot.js /tmp/ts21-frames-r2.json /tmp/ts21-shots-r2
+```
+
+Fixture menjalankan aksi model yang sama; tidak mengisi flag selesai secara langsung. Renderer/shader bayangan dan HUD asli direkam di JVM lalu diputar di WebGL/Canvas Chromium. Setiap fixture memuat heightfield penuh untuk konteks WebGL baru; Android tetap memakai mesh inkremental. Gambar berikut **pratinjau desktop, bukan screenshot HP**. Font dan driver dapat berbeda; tidak dipakai sebagai bukti performa perangkat.
+
+| Tahap | Pratinjau |
+| --- | --- |
+| Tornado mengangkat rumah | [district-storm.jpg](docs/verification/alpha21/district-storm.jpg) |
+| Puing mengikuti blade | [district-push.jpg](docs/verification/alpha21/district-push.jpg) |
+| Bak truk mengangkat muatan | [district-tip.jpg](docs/verification/alpha21/district-tip.jpg) |
+| Molen mengecor fondasi | [district-pour.jpg](docs/verification/alpha21/district-pour.jpg) |
+| Crane mengangkat bagian | [district-lift.jpg](docs/verification/alpha21/district-lift.jpg) |
+| Empat rumah selesai | [district-restored.jpg](docs/verification/alpha21/district-restored.jpg) |
+
+**Enam fixture PASS**, semuanya `glError: 0`; shader/linking dan kedua pass berhasil diputar.
+
+Log preview ada di [preview.log](docs/verification/alpha21/preview.log), hasil WebGL ada di [preview-results.json](docs/verification/alpha21/preview-results.json). Seluruh geometri/ikon baru dibuat dengan kode asli TinySim (MIT); bahan foto lama tetap memakai sumber/lisensi terdokumentasi. Suara angin, mesin, transfer dan pengecoran memakai sintesis serta event yang sudah ada. Tidak menambah audio pengisi atau aset kemasan.
+
+## Riwayat verifikasi Alpha.20 — arena tornado
 
 Tanggal: 18 Oktober 2026. `com.dromadi.tinysim`, versionCode 20 / `0.1.0-alpha.20`. Basis `ede31f5` (Alpha.19); tidak ada PR terbuka saat pekerjaan dimulai.
 

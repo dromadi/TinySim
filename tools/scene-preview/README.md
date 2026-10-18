@@ -41,3 +41,5 @@ Each Alpha.17 fixture now records a full terrain VBO upload before drawing. Repl
 Alpha.18 adds `mixer-pour,wreck-impact,yard-finished,keeper-open`. Real model actions pour concrete, swing the wrecking ball, build the bridge and lift the gates; conserved soil, concrete and demolition counts are tested separately. Each fixture uploads its full terrain mesh so the expanded map is correct in a fresh WebGL replay context.
 
 Alpha.20 adds `arena-wind,arena-sand,arena-ice,arena-duo`. They enter real arenas, grow using actual touch targets, freeze/lift training props, and run the offline helper. Original world material is checked before capture. HUD and both shadow/colour passes are recorded; these remain desktop renderer previews, not phone gameplay tests.
+
+Alpha.21 adds `district-storm,district-push,district-tip,district-pour,district-lift,district-restored`. Fixtures run actual tornado, bulldozer/truck jobs, pouring and crane tasks. The sixteen conserved parts move through one main-world district; the enlarged heightfield is uploaded for every fixture. These remain desktop previews, not Android/phone tests.

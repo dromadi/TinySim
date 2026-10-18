@@ -5,11 +5,12 @@ import kotlin.math.*
 /** World metres; game-X coordinates are retained for compatible arm and save data. */
 object WorldMap {
     const val MIN_X=-12f;const val MAX_X=74f
-    const val MIN_Z=-7f;const val MAX_Z=25f
-    const val COLUMNS=86;const val ROWS=32
+    const val MIN_Z=-7f;const val MAX_Z=41f
+    const val COLUMNS=86;const val ROWS=48
     /** Width of the map before the river and east bank existed (alpha.7–11 saves). */
     const val LEGACY_COLUMNS=62
     const val LEGACY_ROWS=22
+    const val ALPHA20_ROWS=32
     const val CELL_COUNT=COLUMNS*ROWS
     const val DRIVE_MIN_X=510f;const val DRIVE_MAX_X=3420f
     /** East bank limit, reachable only over the finished bridge. */
@@ -22,7 +23,7 @@ object WorldMap {
     fun river(index:Int)=cellX(index) in RIVER_MIN_X..RIVER_MAX_X
     /** Material yard on the west bank where the truck unloads bridge material. */
     fun bridgeYard(index:Int)=cellX(index) in 44f..48f && cellZ(index) in 2f..7f
-    const val DRIVE_MIN_Z=-2.8f;const val DRIVE_MAX_Z=21.5f
+    const val DRIVE_MIN_Z=-2.8f;const val DRIVE_MAX_Z=37.5f
     fun worldX(gameX:Float)=(gameX-600f)/60f
     fun gameX(worldX:Float)=600f+worldX*60f
     fun cell(x:Float,z:Float):Int {

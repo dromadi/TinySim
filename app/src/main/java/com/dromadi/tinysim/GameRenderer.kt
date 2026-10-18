@@ -73,6 +73,7 @@ class GameRenderer {
     fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN,targets:List<Pair<Int,Pair<Float,Float>>> = emptyList()) {
         if(g.wind.arena.open && !parents) { arenaHud(c,g.wind.arena,hold,time,hintX,hintY);return }
         rect(c,470f,20f,100f,70f,white,22f);stormIcon(c,520f,54f,0,.7f)
+        rect(c,590f,20f,100f,70f,if(g.recovery.engaged)yellow else white,22f);houseIcon(c,640f,53f)
         progressCard(c,g)
         rect(c,350f,20f,100f,70f,if(g.wind.active)teal else yellow,22f)
         c.save();c.translate(397f,43f);c.scale(.42f,.42f);cloud(c,0f,0f);c.restore()
@@ -162,7 +163,8 @@ class GameRenderer {
     private fun progressCard(c:Canvas,g:GameState) {
         rect(c,24f,20f,300f,70f,white,22f)
         val dots:Int;val done:Int
-        if(g.selected==GameState.Vehicle.MIXER) { mixerIcon(c,72f,53f,.65f);dots=8;done=g.fleet.pad }
+        if(g.recovery.engaged) { houseIcon(c,72f,51f);dots=4;done=(0..3).count { h->(h*4 until h*4+4).all { g.recovery.state[it]==0 } } }
+        else if(g.selected==GameState.Vehicle.MIXER) { mixerIcon(c,72f,53f,.65f);dots=8;done=g.fleet.pad }
         else if(g.selected==GameState.Vehicle.WRECKER) { wreckerIcon(c,72f,53f,.65f);dots=3;done=g.fleet.hits }
         else if(g.pipes.active || g.selected==GameState.Vehicle.EXCAVATOR || g.selected==GameState.Vehicle.DOZER) {
             pipeIcon(c,72f,51f,1f);dots=6
@@ -184,6 +186,17 @@ class GameRenderer {
     }
     /** The single big action, drawn as what will happen next. */
     private fun actionIcon(c:Canvas,g:GameState,x:Float,y:Float) {
+        if(g.recovery.engaged) {
+            if(g.recovery.damaged==0) { stormIcon(c,x-55,y,0,1f);houseIcon(c,x+65,y) }
+            else when(g.selected) {
+                GameState.Vehicle.DOZER->{ dozer(c,x-45,y+32,.55f,1);blockIcon(c,x+70,y) }
+                GameState.Vehicle.TRUCK->{ truck(c,x-30,y+34,.5f,3,if(g.recovery.cargo>0)-32f else 0f);blockIcon(c,x+100,y) }
+                GameState.Vehicle.MIXER->{ mixerIcon(c,x-35,y,1.2f);arrowDown(c,x+95,y-15,white) }
+                GameState.Vehicle.CRANE->{ crane(c,x-60,y+36,.9f,false);houseIcon(c,x+70,y) }
+                else->houseIcon(c,x,y)
+            }
+            return
+        }
         if(g.pipes.active && g.bucket==0 && !g.pipes.complete) {
             val id=g.pipes.next(g)
             if(id<6) { poly(c,floatArrayOf(x-50,y-22,x+10,y-22,x,y+18,x-36,y+18),yellow);arrowDown(c,x+55,y-16,white) }

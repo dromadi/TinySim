@@ -1,0 +1,29 @@
+{
+  "version": "0.1.0-alpha.21",
+  "versionCode": 21,
+  "base": "e11bc9db511865260d739a2f08cae56fee52a1d7",
+  "tests": {
+    "tests": 154,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 1
+  },
+  "apkBytes": 67868716,
+  "apkSHA256": "2e45b92a244fafef0aa318a2d4b53e98764af0ccff1f52ae3333bfdc8c5e392f",
+  "permissions": 0,
+  "zipCRC": "PASS",
+  "packagedAudio": [],
+  "signerSHA256": "f6700a05aaf7b1a92347a38c54cd65de29099c2c355c7e8b51217b6ecf7f283e",
+  "phoneTested": false,
+  "instrumentation": "compiled only",
+  "material": 16572,
+  "districtParts": 16,
+  "mapMeters": [
+    86,
+    48
+  ]
+}

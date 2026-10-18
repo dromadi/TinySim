@@ -24,6 +24,10 @@ object Guide {
     /** Where the truck unloads bridge material (west-bank yard). */
     const val YARD_X=46f;const val YARD_Z=4.5f
     fun next(g:GameState):Hint {
+        if(g.recovery.engaged) {
+            val v=g.recovery.nextVehicle()
+            return if(v==null || g.selected==v)Hint.Action else Hint.Card(v)
+        }
         fun use(vehicle:GameState.Vehicle)=if(g.selected==vehicle)Hint.Action else Hint.Card(vehicle)
         /** Near the target the truck tips only if its bed pours onto it; parked askew, it first drives onto the spot. */
         fun driveTruck(x:Float,z:Float,fits:(Int)->Boolean={ true }):Hint {

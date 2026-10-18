@@ -1,4 +1,14 @@
-# Publikasi Alpha.20
+# Publikasi Alpha.21
+
+`0.1.0-alpha.21` / versionCode 21. Kawasan pulih-bangun di perluasan peta utama 86 × 48 m: empat bangunan latihan/16 bagian diterjang tornado, didorong bulldozer ke tempat muat, diangkut truk ke gudang, lalu dibangun kembali dengan molen dan crane. Siklus bisa diulang tanpa reset atau isi ulang material. Save v16 memigrasikan v15 serta format lama. Kontrol sentuhan/ikon, offline, tanpa izin/iklan/login/IAP/analytics tetap dipertahankan.
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+Artifact Actions: `TinySim-0.1.0-alpha.21-debug`. APK lokal 67.868.716 byte; SHA-256 `2e45b92a244fafef0aa318a2d4b53e98764af0ccff1f52ae3333bfdc8c5e392f`. Kunci debug privat lokal tetap sama dengan versi sebelumnya, tidak diunggah ke Git. APK CI dapat memakai key berbeda. Hasil 154 tes, lint, pratinjau dan batas pengujian ada di [VERIFICATION.md](VERIFICATION.md). Belum diuji di HP/emulator; instrumentation hanya dibangun. Tidak ada target ukuran minimum APK atau aset pengisi.
+
+## Publikasi Alpha.20
 
 `0.1.0-alpha.20` / versionCode 20. Arena tornado: empat tahap pertumbuhan, tiga jenis dengan perilaku berbeda, tiga peta/144 properti, penyerapan dan pelepasan benda, bangunan latihan yang terurai, serta solo/duo pendamping AI offline. Ronde bisa diulang tanpa reset dunia. Save v15 memigrasikan v14 dan format lama; tidak ada jaringan, iklan atau pembelian.
 

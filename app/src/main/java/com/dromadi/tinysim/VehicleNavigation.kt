@@ -93,6 +93,11 @@ class VehicleRoutes {
             if(points.isEmpty()) { clear(unit);return null }
             route=Route(request,points);routes[unit]=route
         }
+        // A vehicle that moved out of the way can make an old detour unnecessary.
+        // Skip remaining corners only when the complete swept shortcut is now clear.
+        if(route.points.size>1 && VehicleNavigation.clear(start,route.points.last(),unit,others,bridge)) {
+            val end=route.points.last();route.points.clear();route.points.add(end)
+        }
         return route.points.firstOrNull()
     }
     fun last(unit:GameState.Vehicle)=routes[unit]?.points?.size==1

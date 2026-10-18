@@ -58,7 +58,7 @@ class VehicleCollisionTest {
             old.excavatorZ=z;old.truckZ=z;old.dozerZ=z
             val g=GameState();g.restore(old.snapshot());safe(g)
             for(unit in GameState.Vehicle.entries)g.driveTo(unit,WorldMap.gameX(x),z)
-            run(g,1500);assertFalse(g.driving)
+            run(g,1500);assertFalse("corner $x,$z: goals=${g.truckGoal}/${g.dozerGoal}/${g.excavatorGoal}/${g.craneGoal}/${g.fleet.mixer.goal}/${g.fleet.wrecker.goal}; crane=${g.vehicleBody(GameState.Vehicle.CRANE).point},travel=${g.craneTravel}; recovery=${g.recovery.busy}",g.driving)
             for(unit in GameState.Vehicle.entries)assertTrue(VehicleNavigation.inside(g.vehicleBody(unit).point,unit))
         }
     }
@@ -117,4 +117,13 @@ class RiverCollisionTest {
             g.update(if(frame%7==0)1f else .03f);safe(g)
         }
     }
+    @Test fun cachedDetourSkipsItsCornersAfterTheBlockingVehicleMovesAway() {
+        val routes=VehicleRoutes();val start=VehicleNavigation.Point(3f,6f);val end=VehicleNavigation.Point(25f,6f)
+        val body=VehicleNavigation.Body(GameState.Vehicle.DOZER,VehicleNavigation.Point(14f,6f))
+        val corner=routes.next(GameState.Vehicle.TRUCK,start,end,listOf(body),false)
+        assertNotNull(corner);assertNotEquals(end,corner)
+        assertEquals(end,routes.next(GameState.Vehicle.TRUCK,start,end,listOf(body.copy(point=VehicleNavigation.Point(14f,25f))),false))
+        assertTrue(routes.last(GameState.Vehicle.TRUCK))
+    }
+
 }

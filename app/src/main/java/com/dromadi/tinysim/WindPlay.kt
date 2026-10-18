@@ -30,9 +30,10 @@ class WindPlay {
         }
         active=true
     }
+    fun place(px:Float,pz:Float) { if(!active && px.isFinite() && pz.isFinite()) { x=px.coerceIn(-8f,47f);z=pz.coerceIn(-2.8f,WorldMap.DRIVE_MAX_Z);targetX=x;targetZ=z } }
     fun aim(px:Float,pz:Float) {
         if(!active || !px.isFinite() || !pz.isFinite())return
-        targetX=px.coerceIn(-8f,47f);targetZ=pz.coerceIn(-2.8f,21.5f)
+        targetX=px.coerceIn(-8f,47f);targetZ=pz.coerceIn(-2.8f,WorldMap.DRIVE_MAX_Z)
     }
     fun halt() { arena.pause();active=false;strength=0f;lift.fill(0f);clock=0f;trailAge=1f }
     fun reset() { halt();arena.reset();prepared=false;x=24f;z=0f;targetX=x;targetZ=z;phase=0f;moved=0 }
@@ -73,7 +74,7 @@ class WindPlay {
     fun restore(s:String) {
         val a=s.split(',');require(a.size==3 && a[0] in listOf("0","1"))
         val px=a[1].toFloat();val pz=a[2].toFloat()
-        require(px.isFinite() && pz.isFinite() && px in -8f..47f && pz in -2.8f..21.5f)
+        require(px.isFinite() && pz.isFinite() && px in -8f..47f && pz in -2.8f..WorldMap.DRIVE_MAX_Z)
         halt();prepared=a[0]=="1";x=px;z=pz;targetX=x;targetZ=z
     }
 }

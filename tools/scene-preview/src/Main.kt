@@ -17,6 +17,12 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("district-storm",0) { g->g.recovery.enter(g);g.wind.toggle(g);repeat(160){g.update(.04f)};check(g.recovery.state.any { it==1 }) },
+        Triple("district-push",0) { g->prepareDistrict(g,0);g.selected=GameState.Vehicle.DOZER;val old=g.recovery.x.copyOf();g.action();repeat(3000){if(g.recovery.x.contentEquals(old))g.update(.04f)};repeat(25){g.update(.04f)} },
+        Triple("district-tip",0) { g->prepareDistrict(g,1);g.selected=GameState.Vehicle.TRUCK;g.action();repeat(6000){if(g.bedAngle> -32f)g.update(.04f)};check(g.recovery.cargo>0 && g.tipping) },
+        Triple("district-pour",0) { g->prepareDistrict(g,2);g.selected=GameState.Vehicle.MIXER;g.action();repeat(6000){if(g.recovery.pads.sum()<1)g.update(.04f)};check(g.recovery.pouring==0) },
+        Triple("district-lift",0) { g->prepareDistrict(g,3);g.selected=GameState.Vehicle.CRANE;g.action();previewIdle(g);check(g.recovery.held==0) },
+        Triple("district-restored",0) { g->prepareDistrict(g,4);repeat(220){g.update(.016f)};check(g.recovery.cycles==1) },
         Triple("arena-wind",0) { g->g.wind.arena.enter();repeat(90){g.update(.016f)};check(g.wind.arena.board.level==1) },
         Triple("arena-sand",0) { g->prepareArena(g,1,com.dromadi.tinysim.TornadoArena.Kind.SAND,4);repeat(20){g.update(.016f)};check(g.wind.arena.board.level==4) },
         Triple("arena-ice",0) { g->prepareArena(g,2,com.dromadi.tinysim.TornadoArena.Kind.ICE,2);val a=g.wind.arena;a.aim(a.board.x[32],a.board.z[32]);repeat(230){g.update(.016f)};check(a.kind==com.dromadi.tinysim.TornadoArena.Kind.ICE) },
@@ -76,6 +82,12 @@ fun main(args: Array<String>) {
                 r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
         }
         val frame=when(name) {
+            "district-storm"->SceneFrame.capture(g,cam,1.2f+i,-12f,12f,.95f,15f,29f)
+            "district-push"->SceneFrame.capture(g,cam,1.2f+i,-18f,12f,1.2f,WorldMap.worldX(g.dozerX)+2f,g.dozerZ)
+            "district-tip"->SceneFrame.capture(g,cam,1.2f+i,-20f,14f,1.1f,39f,29f)
+            "district-pour"->SceneFrame.capture(g,cam,1.2f+i,-24f,12f,1.35f,12f,26f)
+            "district-lift"->SceneFrame.capture(g,cam,1.2f+i,-18f,12f,1.15f,37f,26f)
+            "district-restored"->SceneFrame.capture(g,cam,1.2f+i,-12f,12f,.7f,23f,32f)
             "arena-wind","arena-sand","arena-ice","arena-duo","arena-release"->SceneFrame.capture(g,cam,1.2f+i,-12f,10f,.82f,64.5f,17f)
             "wind-lift","wind-travel","wind-settled"->SceneFrame.capture(g,cam,1.2f+i,-18f,10f,1.05f,26f,1f)
             "wind-bridge"->SceneFrame.capture(g,cam,1.2f+i,-18f,10f,.95f,48f,3f)
@@ -150,4 +162,16 @@ fun prepareArena(g:GameState,map:Int,kind:com.dromadi.tinysim.TornadoArena.Kind,
         g.update(.016f)
     }
     error("arena growth stuck")
+}
+
+/** Uses actual tornado, routes and vehicle jobs; no completed-state fixture shortcuts. */
+fun prepareDistrict(g:GameState,stage:Int) {
+    g.recovery.enter(g);g.wind.toggle(g)
+    for(h in 0..3) { g.wind.aim(com.dromadi.tinysim.RecoverySite.houseX(h),com.dromadi.tinysim.RecoverySite.houseZ(h));repeat(180){g.update(.04f)} }
+    g.wind.toggle(g);previewIdle(g);check(g.recovery.state.count { it==2 }==16)
+    fun act(v:GameState.Vehicle) { g.selected=v;g.action();previewIdle(g) }
+    if(stage>=1)repeat(16){act(GameState.Vehicle.DOZER)}
+    if(stage>=2)repeat(2){act(GameState.Vehicle.TRUCK)}
+    if(stage>=3)repeat(4){act(GameState.Vehicle.MIXER)}
+    if(stage>=4)repeat(16){act(GameState.Vehicle.CRANE);act(GameState.Vehicle.CRANE)}
 }
