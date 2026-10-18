@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.GeometryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:59:02" hostname="f16fdb761c59" time="0.021">
+  <properties/>
+  <testcase name="closedMeshesFaceOutward" classname="com.dromadi.tinysim.GeometryTest" time="0.012"/>
+  <testcase name="sandMoundIsAnUpwardFacingPile" classname="com.dromadi.tinysim.GeometryTest" time="0.008"/>
+  <testcase name="bevelledBoxStaysInsideUnitBounds" classname="com.dromadi.tinysim.GeometryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

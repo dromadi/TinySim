@@ -1,3 +1,53 @@
+# Verifikasi Alpha.18 — armada baru, peta dan penjaga
+
+Tanggal: 18 Oktober 2026 (WIB). `com.dromadi.tinysim`, versionCode 18 / `0.1.0-alpha.18`. Basis `2d288b1` (Alpha.17), tidak ada PR terbuka ketika pekerjaan dimulai.
+
+## Isi permainan yang bertambah
+
+Dua kendaraan baru memakai rute, tabrakan, antrean jembatan dan input sentuh yang sudah ada. Molen mengaduk dua detik kemudian menuang delapan unit beton ke petak, satu unit tiap 0,48 detik. Truk penghancur mengayunkan bola baja tiga kali untuk mengubah sembilan balok bangunan latihan menjadi sembilan puing. Bola disimpan di belakang kabin dan diangkat melewati atas kabin saat boom dibuka. Jalur ayun dan puing deterministik, tanpa impuls fisika bebas. Posisi kerja tidak saling menghalangi.
+
+Peta diperpanjang sepuluh meter ke selatan (86 × 22 → 86 × 32 m, +45,45%). Bertambah bengkel, area cor, bangunan latihan, jalan marka dan area piknik timur. Kegiatan baru langsung bisa dicapai di tepi barat. Palang dua ujung jembatan terbuka setelah penjaga disapa atau kendaraan meminta lewat; kendaraan menunggu hingga palang terangkat. Palang tetap di atas selama dek terisi. Sebelum jembatan selesai, penjaga hanya menyapa, tanpa membuka akses ke air.
+
+Save v13 memuat armada dan progres baru. Payload lama dengan 22 baris dimigrasikan, sedangkan 860 sel baru berisi tanah awal: total tanah/pasir sekarang **11.068 unit**. Beton delapan unit dan sembilan balok latihan adalah properti terpisah seperti `BlockYard`, bukan tanah tambahan. Total beton dan jumlah properti juga diuji. Kunci debug privat lama dipertahankan, tidak dimasukkan ke Git.
+
+## Perintah dan pemeriksaan
+
+JDK 17, Gradle 8.9, compile/target SDK 35. Build-Tools 34 dipilih AGP 8.7.3; inspeksi APK memakai Build-Tools 35. Build dan cache berada di `/tmp` agar tidak terganggu sinkronisasi workspace. Runner Python meneruskan proxy jaringan yang tersedia dan merekam stdout/stderr setelah proses selesai.
+
+```sh
+GRADLE_USER_HOME=/tmp/ts-gradle-home /tmp/ts-downloads/gradle-8.9/bin/gradle \
+  --no-daemon --max-workers=2 -Pkotlin.compiler.execution.strategy=in-process \
+  testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **BUILD SUCCESSFUL in 55s**, 74 task (16 dieksekusi, 58 up-to-date). APK debug **67,798,358 byte**; SHA-256 `0b6a5f14b805afb37b26f8736b73556f51a93afa07889f15edf208e18c23621d`. Log final: [build.log](docs/verification/alpha18/build.log); hitungan, ukuran APK dan SHA-256: [result.json](docs/verification/alpha18/result.json).
+- **117 tes lulus, 0 gagal/error/skipped**: 103 tes lama dan 14 tes `WorkFleetTest`. Cakupan: pengecoran lengkap/parsial, ketukan tombol dan badan truk berulang, ayunan dan puing, pause/cold restore, tabrakan enam kendaraan, lintasan sungai, penjaga/palang, save lama, save rusak, bay kerja terhalang dan evakuasi molen saat jembatan dibangun. Setiap langkah pekerjaan memeriksa material tanah/pasir serta beton.
+- **Lint 0 error, 1 warning** `DiscouragedApi` karena orientasi landscape yang disengaja. Tes lama tetap berjalan; fixture prefix save dan dimensi payload lama disesuaikan agar tetap menguji format lama 22 baris, bukan tanpa sengaja berganti ke peta baru.
+- APK permainan dan APK instrumentation dibangun. `apksigner verify --verbose --print-certs`, `aapt dump permissions`, `aapt dump badging`, pemeriksaan CRC ZIP dan tidak adanya WAV dijalankan pada APK nyata. Hasil mentah berada di direktori verifikasi.
+- Sertifikat SHA-256 `f6700a05aaf7b1a92347a38c54cd65de29099c2c355c7e8b51217b6ecf7f283e`, sama dengan APK lokal Alpha.8–Alpha.17.
+- `adb devices` dijalankan ulang. Tidak ada uji HP/emulator; pengujian lifecycle hanya pada model/save JVM. Runner sentuh diperbarui untuk posisi kartu dan inventaris saat ini, tetapi **hanya dikompilasi**, tidak dijalankan pada perangkat.
+
+Uji pengembangan sempat menemukan tiga kegagalan: setelah molen selesai, posisi parkirnya menghalangi bay penghancur. Bay dipindahkan dari x=28 ke x=28,5, lalu seluruh tes dijalankan kembali. Tes tambahan memeriksa bay yang sengaja dihalangi agar tidak mengulang rute tanpa akhir. Tidak ada tes yang dihapus, dilewati atau dilemahkan agar lulus.
+
+## Pratinjau renderer asli
+
+```sh
+cd tools/scene-preview
+TINYSIM_PREVIEW_SCENES=mixer-pour,wreck-impact,yard-finished,keeper-open \
+  /tmp/ts-downloads/gradle-8.9/bin/gradle --no-daemon --max-workers=2 \
+  -Pkotlin.compiler.execution.strategy=in-process run --args=/tmp/ts-frames18-final.json
+CHROMIUM_PATH=/tmp/ts-chrome/chrome-headless-shell-linux64/chrome-headless-shell \
+  PREVIEW_FORMAT=jpeg node shoot.js /tmp/ts-frames18-final.json /tmp/ts-shots18-final
+```
+
+Fixtures menjalankan model pekerjaan nyata, termasuk pembangunan jembatan sebelum membuka palang. Inventaris tanah/pasir diperiksa sebelum merekam setiap frame. VBO terrain lengkap diunggah per fixture untuk konteks replay baru; Android tetap memakai pembaruan inkremental. Shader, model, tekstur dan HUD asli direkam JVM kemudian diputar di WebGL.
+
+**Empat pratinjau PASS, GL error 0**; hasil mentah pada `results.json`.
+
+Alat preview sempat kehabisan heap Node saat mengirim seluruh rekaman empat adegan sekaligus ke browser. `shoot.js` diperbaiki untuk mengirim adegan yang sedang diputar saja, kemudian keempatnya dirender ulang. Ini masalah alat desktop, bukan bukti performa HP. Gambar di [docs/verification/alpha18](docs/verification/alpha18/) **bukan screenshot Android**, uji sentuh/audio native atau pengukuran FPS HP.
+
+---
+
 # Verifikasi Alpha.17 — proyek pipa bawah tanah
 
 Tanggal: 18 Oktober 2026 (WIB). `com.dromadi.tinysim`, versionCode 17 / `0.1.0-alpha.17`.

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.BridgeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:59:01" hostname="f16fdb761c59" time="0.135">
+  <properties/>
+  <testcase name="excavatorReachesTheQuarryAcrossTheBridge" classname="com.dromadi.tinysim.BridgeTest" time="0.028"/>
+  <testcase name="bridgeSurvivesSavesAndOldSavesGainTheEastBank" classname="com.dromadi.tinysim.BridgeTest" time="0.03"/>
+  <testcase name="riverBlocksTheEastBankUntilTheBridgeIsFinished" classname="com.dromadi.tinysim.BridgeTest" time="0.005"/>
+  <testcase name="buildingClearsTheSiteFirstAndWaterIsNeverADestination" classname="com.dromadi.tinysim.BridgeTest" time="0.051"/>
+  <testcase name="eightUnitsInTheYardLetTheCraneBuildThreeStagesAndOpenTheCrossing" classname="com.dromadi.tinysim.BridgeTest" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

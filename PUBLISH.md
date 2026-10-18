@@ -1,4 +1,14 @@
-# Publikasi Alpha.17
+# Publikasi Alpha.18
+
+`0.1.0-alpha.18` / versionCode 18. Dua truk baru (molen dan bola penghancur), peta 86 × 32 m, penjaga dan palang jembatan. Proyek baru ada di selatan dan langsung bisa dicapai. Lihat README dan VERIFICATION untuk kontrol, migrasi dan bukti.
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+Artifact Actions: `TinySim-0.1.0-alpha.18-debug`. Keystore lokal privat tetap sama dengan APK lokal Alpha.8–Alpha.17; jangan unggah ke Git. APK CI dapat memakai key berbeda. Reset permainan hanya di area orang tua.
+
+## Publikasi Alpha.17
 
 Versi `0.1.0-alpha.17` / code 17. Proyek pipa: gali enam bagian, angkat/pasang tiga pipa dengan crane, timbun dengan bulldozer. Lihat README dan VERIFICATION untuk kontrol dan bukti.
 

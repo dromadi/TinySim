@@ -43,6 +43,8 @@ object Guide {
                 return if(g.selected==v)Hint.Pipe(id) else Hint.Card(v)
             }
         }
+        if(g.selected==GameState.Vehicle.MIXER && g.fleet.concrete>0)return Hint.Action
+        if(g.selected==GameState.Vehicle.WRECKER && g.fleet.hits<3)return Hint.Action
         val house=(g.source==0 || g.delivered>=4) && g.houseStage==0
         // With the house finished, the next project is the bridge across the river.
         val bridge=g.houseStage>=3 && g.bridgeStage==0 && g.bridgeFill<8

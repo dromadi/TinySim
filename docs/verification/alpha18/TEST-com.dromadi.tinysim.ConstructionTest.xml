@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.ConstructionTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:59:02" hostname="f16fdb761c59" time="0.087">
+  <properties/>
+  <testcase name="armPlanePickingMatchesTheRotatedTranslatedRig" classname="com.dromadi.tinysim.ConstructionTest" time="0.001"/>
+  <testcase name="roadMissionIsOptionalAndAlreadyBuiltRoadCanCompleteIt" classname="com.dromadi.tinysim.ConstructionTest" time="0.004"/>
+  <testcase name="bucketTracksTheMobileRotatedRigAndTruckZMatters" classname="com.dromadi.tinysim.ConstructionTest" time="0.006"/>
+  <testcase name="aRealTruckDeliveryBuildsTheWholeRoadWithOneBladePass" classname="com.dromadi.tinysim.ConstructionTest" time="0.009"/>
+  <testcase name="loadAssistParksInsideMapEvenWhenExcavatorFacesOutAtBoundary" classname="com.dromadi.tinysim.ConstructionTest" time="0.043"/>
+  <testcase name="excavatorTravelsToFarSiteThenScoopsDumpedSandAndLoadsNearbyTruck" classname="com.dromadi.tinysim.ConstructionTest" time="0.009"/>
+  <testcase name="alpha5SaveMigratesAndMalformedRoadOrMarksResetSafely" classname="com.dromadi.tinysim.ConstructionTest" time="0.005"/>
+  <testcase name="roadRequiresSandAndLoweredBladeAndConservesInstalledMaterial" classname="com.dromadi.tinysim.ConstructionTest" time="0.005"/>
+  <testcase name="stopAndSaveCancelExcavatorRoutesAndPreservePoseAndDigMarks" classname="com.dromadi.tinysim.ConstructionTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

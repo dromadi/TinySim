@@ -40,28 +40,32 @@ class Soundscape(val zone:Int) {
  */
 class MachineSounds {
     /** Engine effort per vehicle (excavator, truck, dozer, crane): 0 off, ~.2 idle, 1 full. */
-    val engine=FloatArray(4)
+    val engine=FloatArray(GameState.Vehicle.entries.size)
     @Volatile var hydraulic=0f
+    @Volatile var keeperSerial=0
+    @Volatile var impactSerial=0
+    private var keeperSeen=0;private var keeperAge=1.0
+    private var impactSeen=0;private var impactAge=1.0
     @Volatile var blockSerial=0
     private var blockSeen=0;private var blockAge=1.0
     @Volatile var pourSerial=0
     @Volatile var hornSerial=0
     @Volatile var hornVehicle=0
     private val random=Random(911)
-    private val phase=DoubleArray(4);private val level=DoubleArray(4);private val rumble=DoubleArray(4)
+    private val phase=DoubleArray(GameState.Vehicle.entries.size);private val level=DoubleArray(GameState.Vehicle.entries.size);private val rumble=DoubleArray(GameState.Vehicle.entries.size)
     private var whinePhase=0.0;private var whine=0.0;private var hissLow=0.0;private var hissBand=0.0
     private var pourSeen=0;private var pourLeft=0.0
     private var hornSeen=0;private var hornAge=10.0;private var hornKind=0;private var hornPhase=0.0;private var hornPhase2=0.0
     /** Mono sample for this instant, roughly within ±0.3. */
     fun next(step:Double):Double {
         var out=0.0
-        for(v in 0..3) {
+        for(v in engine.indices) {
             val target=engine[v].toDouble().coerceIn(0.0,1.0)
             level[v]+=(target-level[v])*step*6
             if(level[v]<1e-4)continue
             // Firing frequency: big machines chug low, the truck revs a little higher.
-            val base=if(v==1)34.0 else 27.0
-            phase[v]+=2*PI*(base+level[v]*(if(v==1)38.0 else 26.0))*step
+            val base=if(v==1 || v>=4)34.0 else 27.0
+            phase[v]+=2*PI*(base+level[v]*(if(v==1 || v>=4)38.0 else 26.0))*step
             val p=phase[v]
             rumble[v]=.995*rumble[v]+.005*(random.nextDouble()*2-1)
             val chug=.55*sin(p)+.28*sin(2*p+.6)+.16*sin(3*p+1.3)+.08*sin(5*p)
@@ -86,9 +90,9 @@ class MachineSounds {
         if(hornAge<.6) {
             hornAge+=step
             // Truck: beep-beep; tracked machines: one longer, lower toot.
-            val on=if(hornKind==1)(hornAge<.16 || hornAge in .24..0.40) else hornAge<.38
+            val on=if(hornKind==1 || hornKind>=4)(hornAge<.16 || hornAge in .24..0.40) else hornAge<.38
             if(on) {
-                val f=if(hornKind==1)440.0 else 330.0
+                val f=if(hornKind==1 || hornKind>=4)440.0 else 330.0
                 hornPhase+=2*PI*f*step;hornPhase2+=2*PI*f*1.26*step
                 val square={ x:Double-> sin(x)+sin(3*x)/3+sin(5*x)/5 }
                 out+=.045*(square(hornPhase)+square(hornPhase2))
@@ -99,6 +103,18 @@ class MachineSounds {
             blockAge+=step
             val envelope=min(1.0,blockAge/.012)*exp(-blockAge*17)
             out+=.14*envelope*(sin(2*PI*220*blockAge)+.4*sin(2*PI*355*blockAge))
+        }
+        if(keeperSerial!=keeperSeen) { keeperSeen=keeperSerial;keeperAge=0.0 }
+        if(keeperAge<.55) {
+            keeperAge+=step
+            val e=min(1.0,keeperAge/.035)*min(1.0,(.55-keeperAge)/.09)
+            out+=.055*e*sin(2*PI*(if(keeperAge<.26)740 else 880)*keeperAge)
+        }
+        if(impactSerial!=impactSeen) { impactSeen=impactSerial;impactAge=0.0 }
+        if(impactAge<.65) {
+            impactAge+=step
+            val e=min(1.0,impactAge/.025)*exp(-impactAge*8)
+            out+=e*(.11*sin(2*PI*85*impactAge)+.035*(random.nextDouble()*2-1))
         }
         return out
     }

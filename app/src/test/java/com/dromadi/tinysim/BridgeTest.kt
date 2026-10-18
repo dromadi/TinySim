@@ -70,8 +70,8 @@ class BridgeTest {
         // A pre-bridge alpha.7 save: 62-column arrays, no bridge part, no quarry.
         val legacy=GameState()
         val parts=legacy.snapshot().substringAfter("|").split(';')
-        fun narrow(part:String)=part.split(',').filterIndexed { i,_->i%WorldMap.COLUMNS<WorldMap.LEGACY_COLUMNS }.joinToString(",")
-        val westSand=parts[1].split(',').mapIndexed { i,n->if(i%WorldMap.COLUMNS<WorldMap.LEGACY_COLUMNS)n else "0" }
+        fun narrow(part:String)=part.split(',').filterIndexed { i,_->i/WorldMap.COLUMNS<WorldMap.LEGACY_ROWS && i%WorldMap.COLUMNS<WorldMap.LEGACY_COLUMNS }.joinToString(",")
+        val westSand=parts[1].split(',').mapIndexed { i,n->if(i/WorldMap.COLUMNS<WorldMap.LEGACY_ROWS && i%WorldMap.COLUMNS<WorldMap.LEGACY_COLUMNS)n else "0" }
         val old="7|"+parts[0]+";"+narrow(westSand.joinToString(","))+";"+parts[2]+";"+narrow(parts[3])+";"+narrow(parts[4])+";"+parts[5]
         val migrated=GameState();migrated.restore(old);assertTrue("legacy save accepted",migrated.snapshot()!=GameState().snapshot() || old.isNotEmpty())
         assertEquals(Terrain.INITIAL_MASS,migrated.totalMaterial);assertFalse(migrated.bridgeOpen)

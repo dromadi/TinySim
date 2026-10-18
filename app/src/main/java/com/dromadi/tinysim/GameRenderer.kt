@@ -56,10 +56,18 @@ class GameRenderer {
         }
         // Large targets with room for imprecise touches.
         rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
-        button(c,20f,160f,g.selected==GameState.Vehicle.EXCAVATOR);miniExcavator(c,cardCenter(GameState.Vehicle.EXCAVATOR),615f)
-        button(c,192f,160f,g.selected==GameState.Vehicle.TRUCK);truck(c,cardCenter(GameState.Vehicle.TRUCK)+2f,620f,.46f,2,0f)
-        button(c,364f,160f,g.selected==GameState.Vehicle.DOZER);dozer(c,cardCenter(GameState.Vehicle.DOZER)+2f,622f,.46f,1)
-        button(c,536f,160f,g.selected==GameState.Vehicle.CRANE);crane(c,cardCenter(GameState.Vehicle.CRANE),640f,.9f,false)
+        for(v in GameState.Vehicle.entries) {
+            val x=cardCenter(v)
+            button(c,x-54f,108f,g.selected==v)
+            when(v) {
+                GameState.Vehicle.EXCAVATOR -> { c.save();c.translate(x,607f);c.scale(.68f,.68f);miniExcavator(c,0f,8f);c.restore() }
+                GameState.Vehicle.TRUCK -> truck(c,x,623f,.32f,2,0f)
+                GameState.Vehicle.DOZER -> dozer(c,x,623f,.32f,1)
+                GameState.Vehicle.CRANE -> crane(c,x,635f,.62f,false)
+                GameState.Vehicle.MIXER -> mixerIcon(c,x,615f,.85f)
+                GameState.Vehicle.WRECKER -> wreckerIcon(c,x,617f,.85f)
+            }
+        }
         if(advanced) { rect(c,712f,557f,100f,98f,white,24f);rect(c,745f,585f,34f,34f,ink,6f) }
         rect(c,840f,556f,340f,104f,teal,28f)
         actionIcon(c,g,1010f,608f)
@@ -81,6 +89,19 @@ class GameRenderer {
         }
     }
     /** Pictogram progress: mission icon or the house project stage, with dots instead of words. */
+    private fun mixerIcon(c:Canvas,x:Float,y:Float,s:Float) {
+        c.save();c.translate(x,y);c.scale(s,s)
+        rect(c,-45f,3f,90f,12f,ink,4f);rect(c,20f,-22f,28f,27f,teal,5f);rect(c,26f,-17f,17f,13f,col("#A5DBE0"),3f)
+        poly(c,floatArrayOf(-37f,-28f,-5f,-34f,16f,-18f,8f,0f,-31f,-2f),white)
+        line(c,-20f,-28f,-7f,-4f,orange,7f);line(c,-36f,-22f,-24f,-4f,orange,6f)
+        wheel(c,-27f,16f,10f);wheel(c,31f,16f,10f);c.restore()
+    }
+    private fun wreckerIcon(c:Canvas,x:Float,y:Float,s:Float) {
+        c.save();c.translate(x,y);c.scale(s,s)
+        rect(c,-45f,4f,90f,13f,orange,4f);rect(c,-30f,-18f,25f,26f,yellow,4f)
+        line(c,-9f,1f,21f,-40f,yellow,9f);line(c,21f,-40f,42f,-20f,yellow,8f);line(c,42f,-20f,42f,-1f,ink,3f);circle(c,42f,5f,12f,ink)
+        wheel(c,-26f,20f,10f);wheel(c,23f,20f,10f);c.restore()
+    }
     private fun pipeIcon(c:Canvas,x:Float,y:Float,scale:Float) {
         rect(c,x-22*scale,y-10*scale,44*scale,20*scale,orange,3f)
         circle(c,x+20*scale,y,12*scale,teal);circle(c,x+20*scale,y,7*scale,ink)
@@ -92,7 +113,9 @@ class GameRenderer {
     private fun progressCard(c:Canvas,g:GameState) {
         rect(c,24f,20f,300f,70f,white,22f)
         val dots:Int;val done:Int
-        if(g.pipes.active || g.selected==GameState.Vehicle.EXCAVATOR || g.selected==GameState.Vehicle.DOZER) {
+        if(g.selected==GameState.Vehicle.MIXER) { mixerIcon(c,72f,53f,.65f);dots=8;done=g.fleet.pad }
+        else if(g.selected==GameState.Vehicle.WRECKER) { wreckerIcon(c,72f,53f,.65f);dots=3;done=g.fleet.hits }
+        else if(g.pipes.active || g.selected==GameState.Vehicle.EXCAVATOR || g.selected==GameState.Vehicle.DOZER) {
             pipeIcon(c,72f,51f,1f);dots=6
             done=if(g.pipes.complete)6 else if(g.pipes.installed==7)g.pipes.filled.countOneBits()*2 else if(g.pipes.open(g))g.pipes.installed.countOneBits()*2 else (0..5).count { g.pipes.dug(g,it) }
         } else if(g.selected==GameState.Vehicle.CRANE && !g.bridgeReady && g.craneCargo==0) {
@@ -134,6 +157,8 @@ class GameRenderer {
                 dozer(c,x-30f,y+38f,.5f,1)
                 poly(c,floatArrayOf(x+40f,y+30f,x+70f,y-2f,x+100f,y+30f),col("#F7D583"))
             }
+            GameState.Vehicle.MIXER -> { mixerIcon(c,x-20f,y,1.3f);arrowDown(c,x+105,y-15,white) }
+            GameState.Vehicle.WRECKER -> { wreckerIcon(c,x-20f,y,1.3f);rect(c,x+95,y-30,28f,50f,orange,3f) }
             GameState.Vehicle.CRANE -> when {
                 g.blocks.carried>=0 || (!g.blocks.complete && hypot(g.craneWorldX-BlockYard.TARGET_X,g.craneZ-BlockYard.TARGET_Z)<12f) -> { crane(c,x-50f,y+40f,1f,false);blockIcon(c,x+70f,y);arrowDown(c,x+110f,y-18f,white) }
                 // Bridge ready: the crane lifts the next piece over the water.
@@ -189,6 +214,9 @@ class GameRenderer {
         circle(c,mx(WorldMap.worldX(g.excavatorX)),mz(g.excavatorZ),6f,yellow)
         circle(c,mx(WorldMap.worldX(g.truckX)),mz(g.truckZ),5f,teal)
         circle(c,mx(WorldMap.worldX(g.dozerX)),mz(g.dozerZ),5f,ink)
+        circle(c,mx(WorldMap.worldX(g.fleet.mixer.x)),mz(g.fleet.mixer.z),5f,white)
+        circle(c,mx(WorldMap.worldX(g.fleet.wrecker.x)),mz(g.fleet.wrecker.z),5f,orange)
+        line(c,mx(4f),mz(18.5f),mx(43f),mz(18.5f),yellow,5f)
         val goal=if(g.selected==GameState.Vehicle.TRUCK)g.truckGoal else if(g.selected==GameState.Vehicle.DOZER)g.dozerGoal else g.excavatorGoal
         if(goal!=null)star(c,mx(WorldMap.worldX(goal.x)),mz(goal.z),6f,white)
         val fx=mx(panX-.3f).coerceIn(37f,219f);val fz=mz(panZ).coerceIn(319f,391f)
@@ -210,7 +238,7 @@ class GameRenderer {
 
         const val PARENT_TOP=160f;const val PARENT_STEP=70f
         /** Horizontal centre of each vehicle card in the bottom bar (1200-wide HUD space). */
-        fun cardCenter(vehicle:GameState.Vehicle)=100f+vehicle.ordinal*172f
+        fun cardCenter(vehicle:GameState.Vehicle)=74f+vehicle.ordinal*116f
     }
     /** Arched bridge over blue water, as a pictogram. */
     private fun bridgeIcon(c:Canvas,x:Float,y:Float,s:Float) {

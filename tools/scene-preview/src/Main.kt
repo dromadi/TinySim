@@ -17,6 +17,10 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("mixer-pour",0) { g->g.selected=GameState.Vehicle.MIXER;g.action();repeat(20000){if(g.fleet.pad<3)g.update(.016f)};check(g.fleet.pouring && g.fleet.pad==3) },
+        Triple("wreck-impact",0) { g->g.selected=GameState.Vehicle.WRECKER;g.action();repeat(20000){if(g.fleet.hits==0)g.update(.016f)};repeat(45){g.update(.016f)};check(g.fleet.hits==1) },
+        Triple("yard-finished",0) { g->g.selected=GameState.Vehicle.MIXER;g.action();previewIdle(g);g.selected=GameState.Vehicle.WRECKER;repeat(3){g.action();previewIdle(g)};repeat(180){g.update(.016f)};check(g.fleet.pad==8 && g.fleet.hits==3) },
+        Triple("keeper-open",0) { g->previewBridge(g);g.guardTap();repeat(90){g.update(.016f)};check(g.keeper.open) },
         Triple("pipe-trench",0) { g->preparePipes(g,0) },
         Triple("pipe-lift",0) { g->preparePipes(g,1) },
         Triple("pipe-laid",0) { g->preparePipes(g,2) },
@@ -63,6 +67,10 @@ fun main(args: Array<String>) {
                 r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
         }
         val frame=when(name) {
+            "mixer-pour"->SceneFrame.capture(g,cam,1.2f+i,-23f,7f,1.35f,20f,18f)
+            "wreck-impact"->SceneFrame.capture(g,cam,1.2f+i,-22f,5f,1.2f,31f,18f)
+            "yard-finished"->SceneFrame.capture(g,cam,1.2f+i,-22f,12f,.88f,26f,17f)
+            "keeper-open"->SceneFrame.capture(g,cam,1.2f+i,-18f,10f,1.1f,49f,2f)
             "pipe-trench","pipe-lift","pipe-laid","pipe-complete"->SceneFrame.capture(g,cam,1.2f+i,-12f,8f,1.2f,13f,5.8f)
             "orbit-close"->SceneFrame.capture(g,cam,1.2f+i,18f,8f,1.35f)
             "orbit-wide"->SceneFrame.capture(g,cam,1.2f+i,-18f,14f,.8f)
@@ -114,4 +122,10 @@ fun preparePipes(g:GameState,stage:Int) {
     // Clear the cut by driving the excavator away, rather than hiding it or editing terrain.
     g.driveTo(GameState.Vehicle.EXCAVATOR,WorldMap.gameX(6f),10.5f);idle()
     repeat(180) { g.update(.016f) }
+}
+
+fun previewIdle(g:GameState) { repeat(20000) { if(!g.driving)return;g.update(.016f) };error("activity stuck") }
+fun previewBridge(g:GameState) {
+    g.truckX=WorldMap.gameX(48f);g.truckZ=4.5f;g.load=8;g.source-=8;g.selected=GameState.Vehicle.TRUCK;g.action();repeat(400){g.update(.016f)};g.action();repeat(200){g.update(.016f)}
+    repeat(3){check(g.buildBridge());previewIdle(g);repeat(300){g.update(.016f)}};check(g.bridgeOpen)
 }

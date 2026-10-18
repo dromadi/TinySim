@@ -1,0 +1,30 @@
+[
+  {
+    "name": "mixer-pour",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3104,
+    "triangles": 704804
+  },
+  {
+    "name": "wreck-impact",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3111,
+    "triangles": 710204
+  },
+  {
+    "name": "yard-finished",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3073,
+    "triangles": 710260
+  },
+  {
+    "name": "keeper-open",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3236,
+    "triangles": 722260
+  }
+]

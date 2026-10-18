@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.GuideTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:59:02" hostname="f16fdb761c59" time="0.068">
+  <properties/>
+  <testcase name="aChildFollowingOnlyTheHandFinishesTheHouse" classname="com.dromadi.tinysim.GuideTest" time="0.066"/>
+  <testcase name="firstHintsWalkThroughTheSandLoop" classname="com.dromadi.tinysim.GuideTest" time="0.001"/>
+  <testcase name="dozerActionDrivesThroughTheNearestTallPileWithTheBladeDown" classname="com.dromadi.tinysim.GuideTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

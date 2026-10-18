@@ -76,15 +76,15 @@ class PipeSiteTest {
     }
     @Test fun migrateV10AndV11PreservesWorldAndBlockCargo() {
         val g=GameState();g.load=3;g.source-=3;g.blocks.pick(1)
-        val old=g.snapshot().substringAfter('|').split(';').take(9).joinToString(";")
+        val old=g.snapshot().substringAfter('|').split(';').take(9).mapIndexed { i,s->if(i in listOf(1,3,4))s.split(',').take(WorldMap.COLUMNS*WorldMap.LEGACY_ROWS).joinToString(",") else s }.joinToString(";")
         for(v in listOf("10|$old","11|$old;1")) {
             val copy=GameState();copy.restore(v);assertEquals(3,copy.load);assertEquals(1,copy.blocks.carried);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
         }
     }
     @Test fun malformedSavesAndParentResetCannotCreatePipesOrSoil() {
-        val g=GameState();val base=g.snapshot().substringBeforeLast(';')
+        val g=GameState()
         for(s in listOf("1,1,7,-1","1,8,0,-1","1,1,0,0","1,0,0,4","NaN")) {
-            g.restore("$base;$s");assertEquals(GameState().snapshot(),g.snapshot())
+            g.restore(g.snapshot().substringAfter('|').split(';').toMutableList().also { it[9]=s }.joinToString(";",prefix="13|"));assertEquals(GameState().snapshot(),g.snapshot())
         }
         g.startPipes();dig(g);install(g);g.reset();assertEquals(0,g.pipes.installed);assertFalse(g.pipes.active);assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
     }

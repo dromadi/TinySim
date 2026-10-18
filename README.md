@@ -1,11 +1,21 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.17**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.18**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Pipa dipasang di parit](docs/verification/alpha17/pipe-laid.jpg)
+![Truk molen menuang beton](docs/verification/alpha18/mixer-pour.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.18: molen, bola penghancur dan penjaga jembatan
+
+- **Dua kendaraan baru yang bisa dikendarai:** truk molen toska-putih dan truk bola penghancur jingga. Enam kartu kendaraan tetap bergambar tanpa joystick. Ketuk tanah atau seret badan untuk berjalan; sistem rute, batas bodi, sungai dan antrean jembatan berlaku untuk keenamnya. Roda, sopir, mesin, asap, debu dan bekas ban mengikuti gerakan.
+- **Molen:** pilih kartunya, sentuh kartu progres untuk melihat bengkel beton, lalu tekan aksi atau sentuh petak beton. Truk mendekat ke posisi tuang, mengaduk selama dua detik dengan drum berputar dan garis spiral jingga, kemudian menyalurkan **8 unit beton** lewat corong. Petak abu-abu muncul bertahap. Posisi kosong diperlukan; bila terhalang kendaraan lain, pindahkan penghalang lalu tekan lagi.
+- **Bola penghancur:** pilih kartunya dan sentuh bangunan latihan atau tombol aksi. Truk mendekat dan mengayunkan bola baja dengan kabel. **Tiga ayunan** meruntuhkan tiga tingkat bangunan menjadi **sembilan puing** yang jatuh lalu menetap. Bunyinya berupa benturan rendah dengan attack lembut. Ayunan dibatasi lewat animasi deterministik, bukan simulasi rigid-body bebas.
+- **Peta 45% lebih luas:** 86 × 22 menjadi **86 × 32 m**, dengan jalur dan bengkel baru di selatan, petak pengecoran, bangunan latihan, serta area piknik tambahan di timur sungai. Molen dan penghancur bisa langsung dimainkan tanpa harus menyelesaikan jembatan lebih dahulu.
+- **Penjaga jembatan:** pondok toska, petugas berhelm yang melambai dan dua palang bergaris. Sentuh petugas/pondok untuk menyapa dan mengangkat palang jika jembatan sudah jadi. Palang juga terbuka otomatis saat kendaraan hendak menyeberang, tetap terangkat selama ada kendaraan di jembatan, dan turun perlahan setelah jalur kosong. Tidak ada hukuman atau kewajiban membaca.
+- **Save v13:** menyimpan posisi dua truk, sisa beton, petak yang dicor, tingkat kerusakan dan sudut drum. Save Alpha.17/v12 serta versi lama dimigrasikan ke peta lebih besar; tanah, pipa, balok dan muatan lama dipertahankan. Pause membatalkan gerak/pekerjaan dan mempertahankan progres. Tekan aksi lagi untuk meneruskan.
+- Beton (8 unit) dan balok latihan (9 buah) adalah inventaris properti terpisah, seperti balok crane, sehingga tidak menciptakan tanah/pasir. Kegiatan baru dapat dimainkan lagi setelah **reset dunia di area orang tua**. Tidak ada WAV, padding atau aset pengisi; seluruh model, ikon dan suara tambahan dibuat dengan kode asli TinySim (MIT).
 
 ## Alpha.17: gali, pasang pipa, lalu timbun
 
@@ -103,7 +113,7 @@ Fitur tabrakan ini dibuat ChatGPT di `main` (commit `9b9df77`) di atas alpha.7, 
 
 ## Cara bermain
 
-Layar anak hanya berisi **empat kartu kendaraan**, **satu tombol aksi besar**, kartu progres bergambar, dan gembok orang tua. Tidak ada tulisan yang harus dibaca.
+Layar anak hanya berisi **enam kartu kendaraan**, **satu tombol aksi besar**, kartu progres bergambar, dan gembok orang tua. Tidak ada tulisan yang harus dibaca.
 
 1. **Pilih kendaraan** dengan kartunya atau dengan menyentuh modelnya.
 2. **Tombol aksi** menampilkan gambar langkah berikutnya:
@@ -117,19 +127,22 @@ Layar anak hanya berisi **empat kartu kendaraan**, **satu tombol aksi besar**, k
 6. **Alur bermain:** ambil pasir, isi truk, tuang, ratakan dengan bulldozer. Setelah pengiriman pertama, tangan mengarah ke **fondasi rumah**: gali empat titik, antar delapan unit tanah ke kotak fondasi, lalu rumah **dirakit sendiri** dalam tiga tahap.
 7. **Area orang tua** (tahan gembok **3 detik**): suara, sudut kamera, **Kontrol lanjutan** (tombol zoom +/−, kamera/orbit, Ikuti, minimap, Stop, dan speaker di layar), mode bebas/misi bergambar, mulai ulang dunia. Back menutup panel lalu mengikuti perilaku Android. Perjalanan dibatalkan ketika aplikasi masuk background; posisi terakhir tersimpan.
 
+Molen dan penghancur memakai kegiatan bergambar di kartu progres masing-masing; sentuh kartu untuk memusatkan kamera, lalu aksi untuk bekerja.
+
 Misi bergambar (diaktifkan di area orang tua): isi 4 unit, tuang 4 unit, ratakan, bangun 4 bagian jalan di petak jingga, lalu rumah. Tidak ada kalah, hukuman, atau batas waktu.
 
-Sumber awal berisi 36 unit pasir, ditambah 24 unit di tambang timur. Tanah dasar memiliki 4 unit per sel (1.892 sel): total **7.628 unit material** selalu terhitung di tanah, sumber, bucket, bak, grab crane, timbunan, jalan, rumah, dan jembatan. Reset orang tua memulai dunia baru. Kendaraan dibatasi di dalam lahan kerja; dekorasi tidak memakai simulasi tabrakan rigid-body.
+Sumber awal berisi 36 unit pasir, ditambah 24 unit di tambang timur. Tanah dasar memiliki 4 unit per sel (2.752 sel): total **11.068 unit material** selalu terhitung di tanah, sumber, bucket, bak, grab crane, timbunan, jalan, rumah, dan jembatan. Reset orang tua memulai dunia baru. Kendaraan dibatasi di dalam lahan kerja; dekorasi tidak memakai simulasi tabrakan rigid-body.
 
 ## Teknologi dan struktur
 
 Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas untuk HUD. Integrasi native mempertahankan lifecycle Android dan memisahkan input, simulasi, serta rendering. Tidak ada dependency runtime pihak ketiga; seluruh model dan material dihasilkan lokal tanpa unduhan aset.
 
 - `GameState`: perjalanan ke tujuan, putaran kendaraan, transfer pasir, misi, dan snapshot.
+- `WorkFleet` / `BridgeKeeper`: molen, pengecoran, ayunan penghancur, puing dan palang/penjaga.
 - `PipeSite`: aktivitas penggalian, pemasangan pipa dan penimbunan, dengan transfer tanah konservatif.
 - `BlockYard`: tiga balok, posisi dan tingkat susunan, muatan crane, validasi serta save.
 - `Terrain`: heightfield kontinu, batas tanah dasar, dan zona fondasi rumah.
-- `WorldMap`: batas lahan, grid 86 × 22 sel pasir, konversi posisi dan tetangga sel.
+- `WorldMap`: batas lahan, grid 86 × 32 sel pasir, konversi posisi dan tetangga sel.
 - `ArmRig`: inverse kinematics dua ruas dan batas jangkauan excavator.
 - `TouchController`: state machine gestur murni Kotlin; `GameInput` mengadaptasi event/pointer Android ke pengenal tersebut.
 - `scene/WorldCamera`: kamera perspektif, pan/orbit/zoom, ray picking tanah dan bidang lengan.
@@ -143,7 +156,7 @@ Kotlin + **OpenGL ES 2.0 / GLSurfaceView** menggambar dunia 3D, dengan Canvas un
 
 Material memakai sel deterministik, bukan granular physics bebas. Heightfield digambar pada grid 0,25 unit dengan normal permukaan; tanah dapat turun 0,88 unit hingga lapisan dasar. Tinggi timbunan visual dibatasi 24 unit material (3,12 unit tinggi), sementara seluruh material tambahan tetap tersimpan dan bisa diambil kembali. Kendaraan mengikuti tinggi permukaan pada titik pusat; belum ada suspensi/kemiringan sasis atau tabrakan bangunan/dekorasi.
 
-Save baru berawalan `12|`. Format `11|`, `10|`, `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
+Save baru berawalan `13|`. Format `12|`, `11|`, `10|`, `9|`, `8|`, `7|`, `6|`, `5|` serta format 12/16 field lama dimigrasikan. Bekas galian alpha.6 dahulu hanya penanda sehingga tidak diubah menjadi lubang saat migrasi. Rute dan animasi perakitan yang belum selesai dibatalkan saat background/cold restore; posisi, muatan dan tahap rumah terakhir tetap tersimpan. Jalan/rumah yang terpasang tetap ada sampai reset.
 
 ## Build dan pemasangan
 
@@ -156,7 +169,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.dromadi.tinysim/.MainActivity
 ```
 
-Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.17-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
+Actions **Android debug** menyediakan artifact **TinySim-0.1.0-alpha.18-debug** dan **verification-reports**. Debug key lokal dan CI dapat berbeda. Pembaruan lintas key ditolak Android; uninstall menghapus save. APK lokal alpha.8 dari sesi ini dibuat dengan debug key lingkungan berbeda dari APK lokal alpha.4–alpha.7; untuk memperbarui tanpa kehilangan save, pakai APK dari GitHub Actions bila versi sebelumnya juga dari Actions.
 
 Runner pengujian sentuh terpisah:
 

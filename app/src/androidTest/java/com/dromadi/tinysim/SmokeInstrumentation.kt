@@ -73,8 +73,8 @@ class SmokeInstrumentation:Instrumentation() {
                 tap(1020f,605f);waitUntil("scoop") { view.game.bucket==2 }
                 tap(1020f,605f);waitUntil("pour") { view.game.bucket==0 }
             }
-            ui { check(view.game.load==4 && view.game.source==32 && view.game.totalSand==36) }
-            tap(218f,605f)
+            ui { check(view.game.load==4 && view.game.source==32 && view.game.totalSand==GameState.START_SAND) }
+            tap(GameRenderer.cardCenter(GameState.Vehicle.TRUCK),605f)
             // Minimap moves the camera to the second zone, then a real ground touch sets a route.
             tap(128f,355f)
             fun destination(wx:Float,wz:Float) {
@@ -86,26 +86,26 @@ class SmokeInstrumentation:Instrumentation() {
             waitUntil("truck reaches second zone") { view.game.truckGoal==null && kotlin.math.abs(WorldMap.worldX(view.game.truckX)-18f)<.1f }
             ui { check(kotlin.math.abs(view.game.truckZ-6f)<.1f) }
             tap(1020f,605f);waitUntil("dump") { view.game.load==0 }
-            ui { check(view.game.sand.sum()==4 && view.game.delivered==4 && view.game.totalSand==36) }
+            ui { check(view.game.sand.sum()==4+6*Terrain.QUARRY_SAND && view.game.delivered==4 && view.game.totalSand==GameState.START_SAND) }
             var pileX=0f;var pileZ=0f
             ui { val cell=view.game.sand.indexOfFirst { it>0 };pileX=WorldMap.cellX(cell);pileZ=WorldMap.cellZ(cell) }
             // Clear the parked truck before the blade approaches its freshly dumped pile.
             tap(128f,355f);destination(40f,-2f)
             waitUntil("truck clears the dozer work area") { view.game.truckGoal==null && kotlin.math.abs(WorldMap.worldX(view.game.truckX)-40f)<.1f }
-            tap(475f,605f);tap(128f,355f)
+            tap(GameRenderer.cardCenter(GameState.Vehicle.DOZER),605f);tap(128f,355f)
             destination(pileX-4f,pileZ)
             waitUntil("dozer lines up behind the pile") { view.game.dozerGoal==null && kotlin.math.abs(WorldMap.worldX(view.game.dozerX)-(pileX-4f))<.1f }
             tap(128f,355f);destination(pileX+6f,pileZ)
             waitUntil("dozer spreads sand in second zone") { view.game.flattened>0 }
             tap(765f,605f)
-            ui { check(!view.game.driving && view.game.totalSand==36) }
+            ui { check(!view.game.driving && view.game.totalSand==GameState.START_SAND) }
             // Select the mobile excavator and tap real sand left by the truck/dozer.
             ui { val cell=view.game.sand.indexOfFirst { it>0 };pileX=WorldMap.cellX(cell);pileZ=WorldMap.cellZ(cell) }
             tap(81f,605f);tap(128f,355f);destination(pileX,pileZ)
             waitUntil("mobile excavator reaches and re-scoops deposit") { view.game.excavatorGoal==null && view.game.bucket>0 }
             tap(1020f,605f);waitUntil("truck collects re-scooped sand") { view.game.bucket==0 && view.game.load>0 }
             ui {
-                check(view.game.dug.any { it>0 } && view.game.totalSand==36)
+                check(view.game.dug.any { it>0 } && view.game.totalSand==GameState.START_SAND)
                 val saved=view.game.snapshot();view.pause();view.resume()
                 check(!view.game.driving && view.game.snapshot()==saved) { "Pause/resume changed inventory or pose" }
             }
@@ -119,7 +119,7 @@ class SmokeInstrumentation:Instrumentation() {
                 tap(1020f,605f);waitUntil("load foundation material") { view.game.bucket==0 }
             }
             ui { check(view.game.foundationProgress==4 && view.game.load==8) }
-            tap(218f,605f);tap(1020f,605f)
+            tap(GameRenderer.cardCenter(GameState.Vehicle.TRUCK),605f);tap(1020f,605f)
             waitUntil("deliver eight units to the foundation") { view.game.houseFill==8 }
             // The three house stages assemble by themselves once materials are delivered.
             repeat(3) { stage->waitUntil("build house stage ${stage+1}") { view.game.houseStage==stage+1 } }

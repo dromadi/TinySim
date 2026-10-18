@@ -15,7 +15,7 @@ object VehicleNavigation {
         val radius get()=radius(unit)
     }
     const val GAP=.08f
-    fun radius(unit:GameState.Vehicle)=when(unit) { GameState.Vehicle.EXCAVATOR->2f;GameState.Vehicle.TRUCK->2.4f;GameState.Vehicle.DOZER->2.5f;GameState.Vehicle.CRANE->2.2f }
+    fun radius(unit:GameState.Vehicle)=when(unit) { GameState.Vehicle.EXCAVATOR->2f;GameState.Vehicle.TRUCK->2.4f;GameState.Vehicle.DOZER->2.5f;GameState.Vehicle.CRANE->2.2f;GameState.Vehicle.MIXER->2.7f;GameState.Vehicle.WRECKER->2.7f }
     fun minX(unit:GameState.Vehicle)=if(unit==GameState.Vehicle.EXCAVATOR)-8.5f else WorldMap.worldX(WorldMap.DRIVE_MIN_X)
     fun maxX(bridge:Boolean)=WorldMap.worldX(if(bridge)WorldMap.EAST_MAX_X else WorldMap.DRIVE_MAX_X)
     fun bounded(p:Point,unit:GameState.Vehicle,bridge:Boolean=false)=Point(p.x.coerceIn(minX(unit),maxX(bridge)),p.z.coerceIn(WorldMap.DRIVE_MIN_Z,WorldMap.DRIVE_MAX_Z))

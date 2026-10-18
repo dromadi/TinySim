@@ -50,14 +50,14 @@ class BlockYardTest {
     }
     @Test fun savesFromBeforeBlocksMigrateWithoutLosingTheExistingWorld() {
         val g=GameState();g.load=3;g.source-=3;g.sand[WorldMap.cell(15f,4f)]=2;g.source-=2
-        val v9="9|"+g.snapshot().substringAfter('|').split(';').take(8).joinToString(";")
+        val v9="9|"+g.snapshot().substringAfter('|').split(';').take(8).mapIndexed { i,s->if(i in listOf(1,3,4))s.split(',').take(WorldMap.COLUMNS*WorldMap.LEGACY_ROWS).joinToString(",") else s }.joinToString(";")
         val copy=GameState();copy.restore(v9)
         assertEquals(g.snapshot(),copy.snapshot());assertEquals(3,copy.load);assertEquals(31,copy.source)
         assertEquals(0,copy.blocks.placed);assertEquals(Terrain.INITIAL_MASS,copy.totalMaterial)
     }
     @Test fun invalidBlockSavesAreRejectedAndResetRestoresAllThreeBlocks() {
         val g=GameState();g.blocks.pick(1)
-        val bad=g.snapshot().substringAfter('|').split(';').toMutableList().also { it[8]="1:24.0,-1.0,-1:NaN,1.0,-1:24.0,3.0,-1" }.joinToString(";",prefix="12|")
+        val bad=g.snapshot().substringAfter('|').split(';').toMutableList().also { it[8]="1:24.0,-1.0,-1:NaN,1.0,-1:24.0,3.0,-1" }.joinToString(";",prefix="13|")
         val copy=GameState();copy.restore(bad);assertEquals(GameState().snapshot(),copy.snapshot())
         g.reset();assertEquals(-1,g.blocks.carried);assertEquals(0,g.blocks.placed)
         assertEquals(listOf(24f,24f,24f),g.blocks.x.toList())

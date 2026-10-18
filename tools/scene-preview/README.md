@@ -37,3 +37,5 @@ Alpha.15 adds `block-lift` and `block-tower`: real crane/block tasks lift a colo
 Alpha.17 adds `pipe-trench,pipe-lift,pipe-laid,pipe-complete`. All fixtures execute real excavation, crane tasks and backfill; they check material conservation. The exact camera also projects the touch pictograms into the HUD. These are JVM/WebGL renderer previews, not Android/phone tests.
 
 Each Alpha.17 fixture now records a full terrain VBO upload before drawing. Replay uses a fresh WebGL context per screenshot; reusing only incremental changes from a previous fixture otherwise left later screenshots with flat initial ground. This reset is JVM-harness-only; Android still uses incremental terrain updates.
+
+Alpha.18 adds `mixer-pour,wreck-impact,yard-finished,keeper-open`. Real model actions pour concrete, swing the wrecking ball, build the bridge and lift the gates; conserved soil, concrete and demolition counts are tested separately. Each fixture uploads its full terrain mesh so the expanded map is correct in a fresh WebGL replay context.

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.VehicleLifeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:59:04" hostname="f16fdb761c59" time="0.059">
+  <properties/>
+  <testcase name="firstFrameAndBadInputDoNotSpike" classname="com.dromadi.tinysim.VehicleLifeTest" time="0.001"/>
+  <testcase name="hornPourAndHydraulicsAreShortAudibleEvents" classname="com.dromadi.tinysim.VehicleLifeTest" time="0.029"/>
+  <testcase name="machinesAreSilentUntilSomethingHappens" classname="com.dromadi.tinysim.VehicleLifeTest" time="0.0"/>
+  <testcase name="motionFollowsTravelThenSettlesWithADampedBob" classname="com.dromadi.tinysim.VehicleLifeTest" time="0.001"/>
+  <testcase name="engineGetsLouderWithEffortAndStopsWhenOff" classname="com.dromadi.tinysim.VehicleLifeTest" time="0.027"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

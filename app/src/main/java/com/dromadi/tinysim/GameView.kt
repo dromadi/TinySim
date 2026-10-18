@@ -48,17 +48,17 @@ class GameView(context: Context): FrameLayout(context) {
     fun followSelected() { following=true }
     fun pan(fromX:Float,fromY:Float,toX:Float,toY:Float) {
         val camera=cameraSpec();val a=camera.ground(fromX,fromY,game::surface) ?: return;val b=camera.ground(toX,toY,game::surface) ?: return
-        following=false;panX=(panX+a.x-b.x).coerceIn(-8f,PAN_MAX_X);panZ=(panZ+a.z-b.z).coerceIn(-3f,11f)
+        following=false;panX=(panX+a.x-b.x).coerceIn(-8f,PAN_MAX_X);panZ=(panZ+a.z-b.z).coerceIn(-3f,21f)
     }
     fun jumpMap(x:Float,y:Float) {
         following=false
         panX=(WorldMap.MIN_X+(x-32f)/192f*(WorldMap.MAX_X-WorldMap.MIN_X)+.3f).coerceIn(-8f,PAN_MAX_X)
-        panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,11f)
+        panZ=(WorldMap.MIN_Z+(y-314f)/82f*(WorldMap.MAX_Z-WorldMap.MIN_Z)).coerceIn(-3f,21f)
     }
-    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
+    fun selectUnit(vehicle:GameState.Vehicle,focus:Boolean=true) { if(game.pipes.active && vehicle in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER))game.leavePipes();game.selected=vehicle;following=focus && !game.pipes.active;game.greet(vehicle) }
     fun vehicleAt(x:Float,y:Float):GameState.Vehicle? {
         val camera=cameraSpec()
-        val candidates=listOf(Triple(GameState.Vehicle.EXCAVATOR,WorldMap.worldX(game.excavatorX),game.excavatorZ),Triple(GameState.Vehicle.TRUCK,WorldMap.worldX(game.truckX),game.truckZ),Triple(GameState.Vehicle.DOZER,WorldMap.worldX(game.dozerX),game.dozerZ),Triple(GameState.Vehicle.CRANE,game.craneWorldX,game.craneZ))
+        val candidates=GameState.Vehicle.entries.map { v->game.vehicleBody(v).let { Triple(v,it.point.x,it.point.z) } }
         return candidates.mapNotNull { (unit,wx,wz)->
             val p=runCatching { camera.project(com.dromadi.tinysim.scene.Vec3(wx,1.1f,wz)) }.getOrNull() ?: return@mapNotNull null
             val distance=kotlin.math.hypot(x-p.first,y-p.second)
@@ -74,6 +74,13 @@ class GameView(context: Context): FrameLayout(context) {
         // A dumped pile lies close to the truck: prioritize the intended digging surface
         // over the forgiving vehicle hit radius when the excavator is selected.
         // With an empty bucket the excavator digs wherever the child touches, driving there if needed.
+        val keeper=cameraSpec().project(com.dromadi.tinysim.scene.Vec3(BridgeKeeper.X,1.4f,BridgeKeeper.Z))
+        if(kotlin.math.hypot(x-keeper.first,y-keeper.second)<48f) { game.guardTap();return }
+        if(game.selected==GameState.Vehicle.MIXER || game.selected==GameState.Vehicle.WRECKER) {
+            val wx=if(game.selected==GameState.Vehicle.MIXER)WorkFleet.PAD_X else WorkFleet.TOWER_X
+            val mark=cameraSpec().project(com.dromadi.tinysim.scene.Vec3(wx,if(game.selected==GameState.Vehicle.MIXER).3f else 1.4f,WorkFleet.YARD_Z))
+            if(kotlin.math.hypot(x-mark.first,y-mark.second)<65f) { game.action();return }
+        }
         if(game.pipes.active) {
             val id=pipeMarkers().minByOrNull { kotlin.math.hypot(x-it.second.first,y-it.second.second) }
             if(id!=null && kotlin.math.hypot(x-id.second.first,y-id.second.second)<40f) { pipeTouch(id.first);return }
@@ -102,7 +109,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(unit!=null) {
             if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket>0 && unit==GameState.Vehicle.TRUCK)game.action()
             else if(unit==game.selected && unit!=GameState.Vehicle.EXCAVATOR) {
-                game.stopMovement();game.action()
+                game.tapSelectedVehicle()
             } else selectUnit(unit)
             return
         }
@@ -132,7 +139,7 @@ class GameView(context: Context): FrameLayout(context) {
     private var lastTransfer=0
     private var lastGreet=0
     private var lastArmX=Float.NaN;private var lastArmY=Float.NaN
-    private val motion=Array(4) { VehicleMotion() }
+    private val motion=Array(GameState.Vehicle.entries.size) { VehicleMotion() }
     private var lastReward=0
     private var scale=1f
     private var offsetX=0f
@@ -183,16 +190,16 @@ class GameView(context: Context): FrameLayout(context) {
             if(game.selected==GameState.Vehicle.EXCAVATOR) { if(game.canAutoScoop)game.scoop();game.pour() }
             game.nextMission()
             if(game.rewardSerial!=lastReward) { audio.play(settings.sound,true);lastReward=game.rewardSerial }
-            if(game.transferSerial!=lastTransfer) { if(game.transferKind==6)audio.machines.blockSerial++ else audio.machines.pourSerial++ }
+            if(game.transferSerial!=lastTransfer) { when(game.transferKind) { 6->audio.machines.blockSerial++;7->audio.machines.keeperSerial++;8->audio.machines.impactSerial++;else->audio.machines.pourSerial++ } }
             lastTransfer=game.transferSerial
             machineSounds(dt)
         }
         if(following && !parents) {
-            val targetX=when(game.selected) { GameState.Vehicle.EXCAVATOR -> WorldMap.worldX(game.excavatorX)+3.3f;GameState.Vehicle.TRUCK->WorldMap.worldX(game.truckX)+.3f;GameState.Vehicle.DOZER->WorldMap.worldX(game.dozerX)+.3f;GameState.Vehicle.CRANE->game.craneWorldX+.3f }
-            val targetZ=when(game.selected) { GameState.Vehicle.EXCAVATOR->game.excavatorZ;GameState.Vehicle.TRUCK->game.truckZ;GameState.Vehicle.DOZER->game.dozerZ;GameState.Vehicle.CRANE->game.craneZ }
+            val targetX=game.vehicleBody(game.selected).point.x+if(game.selected==GameState.Vehicle.EXCAVATOR)3.3f else .3f
+            val targetZ=game.vehicleBody(game.selected).point.z
             val dt=if(previous==0L)0f else ((now-previous)/1000f).coerceIn(0f,.04f)
             val ease=1f-kotlin.math.exp(-4f*dt)
-            panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,11f)-panZ)*ease
+            panX+=(targetX.coerceIn(-8f,PAN_MAX_X)-panX)*ease;panZ+=(targetZ.coerceIn(-3f,21f)-panZ)*ease
         }
         if(running && !parents)houseAndHelp(now)
         audio.update(settings.sound,if(panX<10f)0 else if(panX<28f)1 else 2)
@@ -224,15 +231,16 @@ class GameView(context: Context): FrameLayout(context) {
             if(x in 1098f..1178f && y in 282f..358f)return "focus"
             if(x in 712f..812f && y in 557f..655f)return "stop"
         }
+        if((game.selected==GameState.Vehicle.MIXER || game.selected==GameState.Vehicle.WRECKER) && x in 24f..324f && y in 20f..90f)return "workyard"
         if((game.pipes.active || game.selected==GameState.Vehicle.EXCAVATOR || game.selected==GameState.Vehicle.DOZER) && x in 24f..324f && y in 20f..90f)return "pipes"
         if(game.selected==GameState.Vehicle.CRANE && !game.bridgeReady && game.craneCargo==0 && x in 24f..324f && y in 20f..90f)return "blocks"
-        if(y in 556f..660f)return when(x) {
-            in 20f..180f -> "excavator"
-            in 192f..352f -> "truck"
-            in 364f..524f -> "dozer"
-            in 536f..696f -> "crane"
-            in 840f..1180f -> "action"
-            else -> null
+        if(y in 556f..660f) {
+            if(x in 840f..1180f)return "action"
+            if(x in 20f..708f) {
+                val n=((x-20f)/116f).toInt()
+                if(n in 0..5 && (x-20f)%116f<=108f)return listOf("excavator","truck","dozer","crane","mixer","wrecker")[n]
+            }
+            return null
         }
         if(y in 100f..535f) {
             if(game.pipes.active && pipeMarkers().any { kotlin.math.hypot(x-it.second.first,y-it.second.second)<40f })return "scene"
@@ -247,8 +255,8 @@ class GameView(context: Context): FrameLayout(context) {
     }
     /** Engines follow each vehicle's real speed; the selected one idles; arm motion drives hydraulics. */
     private fun machineSounds(dt:Float) {
-        val travel=floatArrayOf(game.excavatorTravel,game.truckTravel,game.dozerTravel,game.craneTravel)
-        for(v in 0..3) {
+        val travel=floatArrayOf(game.excavatorTravel,game.truckTravel,game.dozerTravel,game.craneTravel,game.fleet.mixer.travel,game.fleet.wrecker.travel)
+        for(v in motion.indices) {
             motion[v].update(travel[v],dt)
             audio.machines.engine[v]=when {
                 motion[v].moving -> .35f+.65f*motion[v].effort
@@ -259,7 +267,7 @@ class GameView(context: Context): FrameLayout(context) {
         val arm=if(lastArmX.isNaN() || dt<=0f)0f else kotlin.math.hypot(game.armX-lastArmX,game.armY-lastArmY)/dt
         lastArmX=game.armX;lastArmY=game.armY
         // The crane's slewing and hoisting also run on hydraulics.
-        audio.machines.hydraulic=maxOf((arm/240f).coerceIn(0f,1f),if(game.craneBusy || game.bridgeClock>0f).7f else 0f)
+        audio.machines.hydraulic=maxOf((arm/240f).coerceIn(0f,1f),if(game.craneBusy || game.bridgeClock>0f || game.fleet.busy).7f else 0f)
         if(game.greetSerial!=lastGreet) { lastGreet=game.greetSerial;audio.machines.hornVehicle=game.greetVehicle.ordinal;audio.machines.hornSerial++ }
     }
     /** House stages assemble by themselves once the foundation and materials are ready. */
@@ -314,6 +322,9 @@ class GameView(context: Context): FrameLayout(context) {
             "truck" -> selectUnit(GameState.Vehicle.TRUCK)
             "dozer" -> selectUnit(GameState.Vehicle.DOZER)
             "crane" -> selectUnit(GameState.Vehicle.CRANE)
+            "mixer" -> selectUnit(GameState.Vehicle.MIXER)
+            "wrecker" -> selectUnit(GameState.Vehicle.WRECKER)
+            "workyard" -> { if(game.pipes.active)game.leavePipes();following=false;panX=if(game.selected==GameState.Vehicle.MIXER)20f else 33f;panZ=17f;camera=0;yaw=-12f;pitch=8f;zoom=1.1f;saveCamera() }
             "pipes" -> {
                 if(game.pipes.active)game.leavePipes() else game.startPipes()
                 camera=0;settings.camera=0;yaw=-12f;pitch=8f;zoom=1.2f;panX=13f;panZ=5.8f;following=false;orbitMode=false;saveCamera()
@@ -328,7 +339,7 @@ class GameView(context: Context): FrameLayout(context) {
             "close" -> parents=false
         }
         // Vehicle cards honk instead of beeping.
-        if(action !in listOf("sound","excavator","truck","dozer","crane"))audio.play(settings.sound)
+        if(action !in listOf("sound","excavator","truck","dozer","crane","mixer","wrecker"))audio.play(settings.sound)
     }
     override fun onInterceptTouchEvent(event: MotionEvent)=true
     override fun onTouchEvent(event: MotionEvent): Boolean {

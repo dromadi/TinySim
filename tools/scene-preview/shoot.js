@@ -13,7 +13,9 @@ const fs=require('fs');
       page.on('console',m=>console.log('console',m.text()));
       try {
         await page.goto('file://'+__dirname+'/replay.html');
-        await page.evaluate(d=>{window.DATA=d},data);
+        // Each replay context needs one fixture, not the entire recording of every scene.
+        const sceneData={init:data.init,frames:{[name]:data.frames[name]},hud:{[name]:data.hud?.[name]||[]}};
+        await page.evaluate(d=>{window.DATA=d},sceneData);
         const error=await page.evaluate(n=>run(n),name);
         if(error!==0)throw new Error(`GL error ${error}`);
         await page.locator('#scene').screenshot({path:`${process.argv[3]}/${name}.${jpeg?'jpg':'png'}`,...(jpeg?{type:'jpeg',quality:90}:{})});

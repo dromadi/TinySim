@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.CraneTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:59:02" hostname="f16fdb761c59" time="0.027">
+  <properties/>
+  <testcase name="aFarTouchDrivesWithinReachThenGrabs" classname="com.dromadi.tinysim.CraneTest" time="0.003"/>
+  <testcase name="craneActionDrivesBackToItsSpotAndBuildsEachBridgeStage" classname="com.dromadi.tinysim.CraneTest" time="0.004"/>
+  <testcase name="craneStateSurvivesSavesAndOlderSavesGetADefaultCrane" classname="com.dromadi.tinysim.CraneTest" time="0.017"/>
+  <testcase name="dropsIntoTheBridgeYardAndNeverIntoTheRiver" classname="com.dromadi.tinysim.CraneTest" time="0.001"/>
+  <testcase name="grabsSandWithinReachAndDropsItIntoTheTruck" classname="com.dromadi.tinysim.CraneTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

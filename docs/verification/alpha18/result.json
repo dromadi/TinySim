@@ -1,0 +1,23 @@
+{
+  "tests": {
+    "tests": 117,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 1
+  },
+  "apkBytes": 67798358,
+  "apkSha256": "0b6a5f14b805afb37b26f8736b73556f51a93afa07889f15edf208e18c23621d",
+  "mapMeters": [
+    86,
+    32
+  ],
+  "soilUnits": 11068,
+  "concreteUnits": 8,
+  "demolitionProps": 9,
+  "deviceTested": false,
+  "emulatorTested": false
+}

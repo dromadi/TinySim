@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.dromadi.tinysim.SoundscapeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-18T03:59:03" hostname="f16fdb761c59" time="0.165">
+  <properties/>
+  <testcase name="mixerFadesInOutAndCrossfadesAreasWithoutClicks" classname="com.dromadi.tinysim.SoundscapeTest" time="0.078"/>
+  <testcase name="everyAreaIsAudibleQuietAndBounded" classname="com.dromadi.tinysim.SoundscapeTest" time="0.065"/>
+  <testcase name="areasSoundDifferentAndAreDeterministic" classname="com.dromadi.tinysim.SoundscapeTest" time="0.005"/>
+  <testcase name="birdsSingInTheirWindow" classname="com.dromadi.tinysim.SoundscapeTest" time="0.016"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
