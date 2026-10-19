@@ -3,7 +3,7 @@
 
 Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.25**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Mencuci excavator dengan semprotan satu jari](docs/verification/alpha24/wash-spray.jpg)
+![Membilas busa molen dengan semprotan satu jari](docs/verification/alpha25/fleet-mixer.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
 

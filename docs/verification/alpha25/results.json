@@ -1,0 +1,44 @@
+[
+  {
+    "name": "fleet-excavator",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3763,
+    "triangles": 887748
+  },
+  {
+    "name": "fleet-truck",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3782,
+    "triangles": 897684
+  },
+  {
+    "name": "fleet-dozer",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3803,
+    "triangles": 908340
+  },
+  {
+    "name": "fleet-crane",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3810,
+    "triangles": 914900
+  },
+  {
+    "name": "fleet-mixer",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3783,
+    "triangles": 895604
+  },
+  {
+    "name": "fleet-wrecker",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3727,
+    "triangles": 858212
+  }
+]
