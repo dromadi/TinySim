@@ -1,3 +1,7 @@
+# Publikasi Alpha.24
+
+`0.1.0-alpha.24` / versionCode 24, save v18. Excavator berlumpur sesudah menggali, perjalanan ke petak cuci dan semprotan satu jari yang membersihkan bagian terkena air. Artifact: `TinySim-0.1.0-alpha.24-debug`. [Build Android](https://github.com/dromadi/TinySim/actions/runs/39261169242) sukses: 168 tes, lint, APK debug dan APK instrumentation. [Unduh ZIP APK alpha.24](https://github.com/dromadi/TinySim/actions/runs/39261169242/artifacts/12190497237). Ukuran APK 67.779.682 byte. Ketiga pratinjau renderer lulus dan gambarnya tersedia di docs/verification/alpha24. Belum diuji di HP/emulator. APK CI dapat berbeda penanda tangan dari APK lokal pengguna; tidak dibuat key lokal pengganti.
+
 # Publikasi Alpha.23
 
 `0.1.0-alpha.23` / versionCode 23, save v17. Penduduk setelah pemulihan rumah, taman satu sentuhan dan shelter saat tornado. Artifact Actions: `TinySim-0.1.0-alpha.23-debug`. [Build Android](https://github.com/dromadi/TinySim/actions/runs/39257796925) sukses: 161 tes lulus, lint, APK debug dan APK instrumentation. [Unduh ZIP APK alpha.23](https://github.com/dromadi/TinySim/actions/runs/39257796925/artifacts/12188296869). Ketiga pratinjau renderer lulus; gambar tersedia di docs/verification/alpha23. Belum diuji di HP/emulator; instrumentation hanya dibangun. APK CI dapat berbeda penanda tangan dari APK lokal pengguna. Keystore privat lama belum tersedia di workspace, sehingga tidak dibuat APK lokal dengan key pengganti.

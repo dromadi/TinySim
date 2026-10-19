@@ -47,7 +47,7 @@ class VillageLifeTest {
         val g=recovered();val old="16|"+g.snapshot().substringAfter('|').split(';').take(14).joinToString(";")
         val c=GameState();c.restore(old)
         assertEquals(g.totalMaterial,c.totalMaterial);assertEquals(g.recovery.snapshot(),c.recovery.snapshot())
-        assertEquals(15,c.village.welcomed);assertEquals(0,c.village.planted);assertTrue(c.snapshot().startsWith("17|"))
+        assertEquals(15,c.village.welcomed);assertEquals(0,c.village.planted);assertTrue(c.snapshot().startsWith("18|"))
         val fresh=GameState();val oldFresh="16|"+fresh.snapshot().substringAfter('|').split(';').take(14).joinToString(";")
         c.restore(oldFresh);assertEquals(0,c.village.welcomed)
     }
@@ -56,7 +56,7 @@ class VillageLifeTest {
         g.village.plant(g,0);g.reset();assertEquals(1,frame.village.welcomed);assertEquals(0,frame.village.planted)
         assertTrue(frame.village.arrival[0]>0f)
         for(bad in listOf("0,1","16,0","1,NaN","1,-1","1,1,1")) {
-            val s=g.snapshot().substringBeforeLast(';')+";"+bad
+            val s="18|"+g.snapshot().substringAfter('|').split(';').toMutableList().also { it[14]=bad }.joinToString(";")
             val c=GameState();c.restore(s);assertEquals(GameState().snapshot(),c.snapshot())
         }
     }

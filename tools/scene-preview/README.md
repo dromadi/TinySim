@@ -45,3 +45,5 @@ Alpha.20 adds `arena-wind,arena-sand,arena-ice,arena-duo`. They enter real arena
 Alpha.21 adds `district-storm,district-push,district-tip,district-pour,district-lift,district-restored`. Fixtures run actual tornado, bulldozer/truck jobs, pouring and crane tasks. The sixteen conserved parts move through one main-world district; the enlarged heightfield is uploaded for every fixture. These remain desktop previews, not Android/phone tests.
 
 Alpha.23 adds `village-welcome,village-garden,village-shelter`: real house recovery unlocks residents, actual planting fills gardens, and active weather hides all residents. New household frames own their arrays; these remain JVM/WebGL renderer previews rather than phone tests.
+
+Alpha.24 adds `wash-dirty,wash-spray,wash-clean`, using real travel to the wash bay, shared close-up camera/picking, held spray and per-patch cleanliness. The water stream is recorded from the actual HUD and dirt from the 3D model. These remain desktop renderer previews, not phone input tests.

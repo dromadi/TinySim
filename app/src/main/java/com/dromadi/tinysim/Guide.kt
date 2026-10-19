@@ -9,6 +9,7 @@ sealed class Hint {
     object Blocks:Hint()
     data class Pipe(val id:Int):Hint()
     data class Garden(val house:Int):Hint()
+    data class Wash(val patch:Int):Hint()
     /** A spot on the ground (world metres) for the selected vehicle. */
     data class Ground(val x:Float,val z:Float):Hint()
 }
@@ -25,6 +26,7 @@ object Guide {
     /** Where the truck unloads bridge material (west-bank yard). */
     const val YARD_X=46f;const val YARD_Z=4.5f
     fun next(g:GameState):Hint {
+        if(g.wash.open) { val i=g.wash.mud.indexOfFirst { it>.005f };return if(g.wash.ready(g) && i>=0)Hint.Wash(i) else Hint.Action }
         if(g.recovery.engaged) {
             if(g.recovery.complete)g.village.nextGarden(g).takeIf { it>=0 }?.let { return Hint.Garden(it) }
             val v=g.recovery.nextVehicle()

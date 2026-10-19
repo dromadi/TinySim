@@ -57,7 +57,7 @@ class BlockYardTest {
     }
     @Test fun invalidBlockSavesAreRejectedAndResetRestoresAllThreeBlocks() {
         val g=GameState();g.blocks.pick(1)
-        val bad=g.snapshot().substringAfter('|').split(';').toMutableList().also { it[8]="1:24.0,-1.0,-1:NaN,1.0,-1:24.0,3.0,-1" }.joinToString(";",prefix="17|")
+        val bad=g.snapshot().substringAfter('|').split(';').toMutableList().also { it[8]="1:24.0,-1.0,-1:NaN,1.0,-1:24.0,3.0,-1" }.joinToString(";",prefix="18|")
         val copy=GameState();copy.restore(bad);assertEquals(GameState().snapshot(),copy.snapshot())
         g.reset();assertEquals(-1,g.blocks.carried);assertEquals(0,g.blocks.placed)
         assertEquals(listOf(24f,24f,24f),g.blocks.x.toList())

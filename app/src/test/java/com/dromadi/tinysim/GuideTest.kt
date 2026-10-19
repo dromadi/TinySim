@@ -14,6 +14,7 @@ class GuideTest {
             Hint.Blocks -> { g.stopMovement();g.blockAction() }
             is Hint.Pipe -> g.pipes.tap(g,hint.id)
             is Hint.Garden -> g.village.plant(g,hint.house)
+            is Hint.Wash -> Unit
             is Hint.Ground -> if(!(g.selected==GameState.Vehicle.EXCAVATOR && g.bucket==0 && g.digAt(hint.x,hint.z)))
                 g.driveTo(g.selected,WorldMap.gameX(hint.x),hint.z)
         }

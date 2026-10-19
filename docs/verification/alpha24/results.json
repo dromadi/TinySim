@@ -1,0 +1,23 @@
+[
+  {
+    "name": "wash-dirty",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3683,
+    "triangles": 837828
+  },
+  {
+    "name": "wash-spray",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3683,
+    "triangles": 837828
+  },
+  {
+    "name": "wash-clean",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3667,
+    "triangles": 827844
+  }
+]

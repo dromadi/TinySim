@@ -1,11 +1,20 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.23**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.24**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Penduduk dan taman setelah kota dipulihkan](docs/verification/alpha23/village-garden.jpg)
+![Mencuci excavator dengan semprotan satu jari](docs/verification/alpha24/wash-spray.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.24: cuci excavator dengan sentuhan
+
+- Penggalian yang berhasil menambah lumpur kosmetik pada delapan bagian bodi/tracks excavator, tanpa mengurangi atau menambah inventaris tanah. Mencuci opsional; kendaraan kotor tetap dapat dipakai.
+- Sentuh ikon tetesan air untuk menuju tempat cuci di peta utama. Excavator benar-benar berjalan ke petak cuci. Sesudah sampai, kamera mendekat dan kontrol berubah menjadi selang; tombol rumah atau Back keluar. Bila jalur terhalang, tombol kendaraan/panah mencoba perjalanan lagi tanpa teleportasi.
+- Tahan/geser satu jari pada lumpur untuk menyemprot. Air digambar dari selang ke titik sentuh, dan hanya patch dalam jangkauan semprotan yang berkurang secara bertahap. Melepas jari, membatalkan gestur, membuka area orang tua atau background menghentikan air. Tidak ada joystick atau kewajiban membaca.
+- Delapan titik progres berubah hijau ketika bagian bersih. Setelah semua bersih, pengemudi melambai dan hadiah diberikan sekali per siklus kotor-bersih. Ketukan pada kendaraan yang sudah bersih tidak menggandakan hadiah.
+- Save v18 menyimpan lumpur per bagian dan jumlah siklus; save v17/Alpha.23 serta format sebelumnya dimigrasikan. Cold restore tidak membuka tempat cuci atau menyalakan air sendiri. Muatan bucket dan progres proyek tetap dipertahankan.
+- Versi ini berfokus pada excavator dan air. Sabun, busa dan kendaraan lain belum ditambahkan. Model petak/selang, lumpur dan efek air dibuat dengan kode asli; tidak ada izin, jaringan, aset pengisi atau target ukuran minimum.
 
 ## Alpha.23: penduduk dan taman kecil
 
