@@ -2,7 +2,9 @@
 
 Lima tes WashBay ditambah dua tes gestur menguji penggalian nyata → kotor → perjalanan ke petak, proyeksi patch yang dapat disentuh, hit/miss, berhenti menyemprot saat pelepasan, hadiah sekali, save/migrasi dan penolakan save rusak. Semua tick logika baru memeriksa konservasi material. Fixture korupsi yang dibangun dari snapshot saat ini memakai v18; fixture migrasi v16/v17 tetap eksplisit.
 
-Perintah lokal `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba, namun berhenti sebelum kompilasi karena unduhan Gradle `Network is unreachable`. CI Android dan tiga pratinjau renderer wash-dirty, wash-spray, wash-clean disiapkan; hasil menunggu eksekusi. Belum diuji di HP/emulator. Tidak dibuat debug key lokal pengganti.
+Perintah lokal `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba, namun berhenti sebelum kompilasi karena unduhan Gradle `Network is unreachable`. [CI Android commit d4fd1879af4ec1f3077dee44ed0943f02d0b9504](https://github.com/dromadi/TinySim/actions/runs/39261169242) sukses: **168 tes, 0 gagal, 0 diabaikan**, lintDebug, assembleDebug dan assembleDebugAndroidTest. [Pratinjau renderer](https://github.com/dromadi/TinySim/actions/runs/39261169302) sukses pada wash-dirty, wash-spray dan wash-clean, seluruhnya GL error 0. Gambar di docs/verification/alpha24 diperiksa visual; bercak tracks dipindahkan ke depan permukaan roda agar terlihat, lalu build/tes/pratinjau diulang dan lulus. Semprotan HUD dan posisi picking memakai kamera yang sama dengan renderer 3D.
+
+APK app-debug.apk berukuran **67.779.682 byte** (ukuran tidak terkompresi dalam central directory ZIP artifact build final). Gambar dirty/spray/clean dan results.json disimpan sebagai bukti. Pratinjau desktop tidak membuktikan performa atau input Android. Belum diuji di HP/emulator. Tidak dibuat debug key lokal pengganti.
 
 # Alpha.23 — kota yang hidup
 
