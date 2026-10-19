@@ -259,6 +259,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         pipeSite(f)
         workYard(f)
         recoverySite(f)
+        village(f)
         serviceTruck(f,false)
         serviceTruck(f,true)
         bridgeKeeper(f)
@@ -477,6 +478,49 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         for(x in floatArrayOf(35.5f,40f)) { box(x,1.2f,24.4f,.18f,2.4f,.18f,teal,PAINT) }
         box(37.75f,2.4f,24.4f,4.7f,.28f,.3f,teal,PAINT)
         for(x in floatArrayOf(5f,19f,34f,46f)) { tree(x,43f,1.3f);trafficCone(x,24f) }
+    }
+    /** Residents stay on their own porch/yard; storms hide them before the next rendered frame. */
+    private fun village(f:SceneFrame) {
+        val v=f.village;val site=com.dromadi.tinysim.VillageLife
+        for(h in 0..3) {
+            val gx=site.gardenX(h);val gz=site.gardenZ(h)
+            if(v.welcomed and (1 shl h)!=0) {
+                val ground=support(f,gx,gz)
+                surface(gx,ground+.08f,gz,2.2f,.12f,1.8f,rgba(107,154,84),GRASS)
+                for(dx in floatArrayOf(-1.15f,1.15f))box(gx+dx,ground+.18f,gz,.1f,.22f,1.95f,bark,WOOD)
+                for(dz in floatArrayOf(-.95f,.95f))box(gx,ground+.18f,gz+dz,2.4f,.22f,.1f,bark,WOOD)
+            }
+            if(v.planted and (1 shl h)!=0) {
+                push();translate(0f,support(f,gx,gz)+.15f,0f);tree(gx,gz,.18f+.58f*v.growth[h]);pop()
+                for(k in 0..3) { val fx=gx-.8f+k*.5f;shape(cylinder,fx,support(f,fx,gz+.65f)+.25f,gz+.65f,.035f,.35f,.035f,leaf,MATTE);blob(fx,support(f,fx,gz+.65f)+.45f,gz+.65f,.14f,.1f,.14f,if(k%2==0)yellow else orange,MATTE) }
+            }
+            if(!v.outside[h])continue
+            val t=v.arrival[h];val x=site.residentX(h,t);val z=site.residentZ(h,t)
+            push();translate(x,support(f,x,z)+.12f,z)
+            val shirt=if(h%2==0)teal else orange
+            val face=if(h<2)skin else rgba(150,103,76)
+            val walk=if(t<1f)sin(t*34f)*.14f else 0f
+            for(side in floatArrayOf(-1f,1f)) {
+                box(side*.13f,.29f,side*walk,.16f,.48f,.18f,trousers,MATTE)
+                box(side*.13f,.06f,.06f+side*walk,.21f,.13f,.28f,ink,MATTE)
+            }
+            box(0f,.71f,0f,.48f,.47f,.3f,shirt,PAINT)
+            blob(0f,1.12f,0f,.32f,.34f,.3f,face,MATTE)
+            blob(0f,1.33f,-.02f,.34f,.15f,.32f,ink,MATTE)
+            for(dx in floatArrayOf(-.1f,.1f))blob(dx,1.15f,.275f,.035f,.045f,.025f,ink,MATTE)
+            val wave=if(v.wave[h]>0f || v.planted and (1 shl h)==0)1f else 0f
+            val handX=.34f+sin(f.seconds*9f+h)*.12f*wave
+            rod3(.25f,.82f,0f,handX,.63f+.5f*wave,.05f,.07f,shirt)
+            blob(handX,.63f+.5f*wave,.05f,.1f,.1f,.1f,face,MATTE)
+            rod3(-.25f,.82f,0f,-.34f,.5f,.02f,.07f,shirt)
+            blob(-.34f,.5f,.02f,.1f,.1f,.1f,face,MATTE)
+            if(v.planted and (1 shl h)==0) {
+                blob(.65f,1.9f,.1f,.5f,.43f,.12f,paintWhite,MATTE)
+                box(.65f,1.78f,.23f,.07f,.32f,.05f,bark,MATTE)
+                blob(.65f,2.01f,.24f,.25f,.23f,.06f,leaf,MATTE)
+            }
+            pop()
+        }
     }
     private fun arenaScene(f:SceneFrame) {
         val a=f.arena

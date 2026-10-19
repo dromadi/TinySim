@@ -70,7 +70,7 @@ class RecoverySiteTest {
     }
     @Test fun expandedMapAndLegacyAlpha20MigrateWithoutLosingChildrenMaterial() {
         val g=GameState();g.load=3;g.source-=3
-        val parts=g.snapshot().removePrefix("16|").split(';').take(13).toMutableList()
+        val parts=g.snapshot().substringAfter('|').split(';').take(13).toMutableList()
         for(i in listOf(1,3,4))parts[i]=parts[i].split(',').take(86*32).joinToString(",")
         val restored=GameState();restored.restore("15|"+parts.joinToString(";"))
         assertEquals(48,WorldMap.ROWS);assertEquals(16572,Terrain.INITIAL_MASS)
@@ -136,7 +136,7 @@ class RecoverySiteTest {
             val p=g.snapshot().substringAfter('|').split(';').toMutableList()
             val a=p[13].split('#').toMutableList();val cells=a[2].split(':').toMutableList()
             val cell=cells[0].split(',').toMutableList();cell[1]=bad;cells[0]=cell.joinToString(",");a[2]=cells.joinToString(":");p[13]=a.joinToString("#")
-            val copy=GameState();copy.restore("16|"+p.joinToString(";"));assertEquals(GameState().snapshot(),copy.snapshot())
+            val copy=GameState();copy.restore("17|"+p.joinToString(";"));assertEquals(GameState().snapshot(),copy.snapshot())
         }
     }
 

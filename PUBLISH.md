@@ -1,3 +1,7 @@
+# Publikasi Alpha.23
+
+`0.1.0-alpha.23` / versionCode 23, save v17. Penduduk setelah pemulihan rumah, taman satu sentuhan dan shelter saat tornado. Artifact Actions: `TinySim-0.1.0-alpha.23-debug`. Build/test/pratinjau menunggu CI; belum diuji di HP/emulator. APK CI dapat berbeda penanda tangan dari APK lokal pengguna. Keystore privat lama belum tersedia di workspace, sehingga tidak dibuat APK lokal dengan key pengganti.
+
 # Publikasi Alpha.22
 
 `0.1.0-alpha.22` / versionCode 22. Tombol pemulihan kota satu langkah, pemilihan kendaraan otomatis, lima ikon tahap dan pergantian tornado ke kendaraan. Format save tetap v16.

@@ -1,3 +1,11 @@
+# Alpha.23 — kota yang hidup
+
+Fitur penduduk per rumah yang benar-benar dipulihkan, permintaan taman bergambar, penanaman satu sentuhan, pertumbuhan pohon, sapaan dan perlindungan dari tornado. Save v17 memigrasikan v16 serta format lama; model renderer menggunakan salinan array milik frame.
+
+Lima tes VillageLife ditambahkan: rumah awal belum dihuni; pemulihan nyata → penduduk → petunjuk → pohon/hadiah sekali; shelter/save/arena; migrasi v16; kepemilikan frame dan penolakan save rusak. Fixture tes korupsi yang dibangun dari snapshot saat ini memakai prefix v17 agar benar-benar mencapai validator konten (bukan gagal hanya karena jumlah field); fixture migrasi v16 tetap eksplisit.
+
+Perintah `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba lokal, tetapi unduhan Gradle terhalang `Network is unreachable` sebelum kompilasi. CI Android dan tiga pratinjau renderer village-welcome, village-garden, village-shelter disiapkan; hasil belum diklaim sebelum selesai. Belum diuji di HP/emulator. Tidak dibuat key debug lokal pengganti.
+
 # Alpha.22 — pemulihan kota terpandu
 
 Perubahan: tombol kerja otomatis memilih kendaraan sesuai inventaris, mematikan/menetapkan tornado sebelum bekerja, menjaga pekerjaan saat ketukan berulang, dan tidak memulai cuaca lagi setelah selesai. HUD menunjukkan lima tahap.
