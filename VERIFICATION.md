@@ -1,3 +1,9 @@
+# Alpha.26 — grafis seluruh kendaraan
+
+Peningkatan renderer untuk keenam kendaraan, ban berprofil dan tapak dalam satu mesh, tracks dengan lintasan tertutup, hardware kabin serta detail alat kerja. Dua tes geometri baru memeriksa batas ban/lubang hub, posisi/normal finite, winding yang searah normal serta arah normal lubang dalam. Tes permainan lama dipertahankan dan save tetap v19.
+
+Sembilan fixture renderer disiapkan: enam close-up kendaraan bersih di petak cuci, bak truk sedang terangkat, crane mengangkat bagian rumah, dan truk penghancur sedang bekerja. Semuanya memakai renderer/HUD asli. Perintah lokal `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba, namun unduhan Gradle 8.9 gagal `Network is unreachable` sebelum kompilasi. Build dan hasil pratinjau menunggu CI. Belum diuji di HP/emulator. Tidak dibuat key debug lokal pengganti.
+
 # Alpha.25 — seluruh armada dan busa
 
 Tujuh tes FleetWash ditambahkan: keenam kendaraan masuk/keluar bay yang sama, jangkauan delapan titik per model, sabun/bilas dan hadiah per kendaraan, air tanpa sabun serta larangan farming pada kendaraan bersih, snapshot busa/alat dan salinan frame, migrasi v18, pilihan kendaraan cepat saat selang aktif, kotoran sangat tipis yang tetap bisa dipulihkan, serta pause/retry saat mengantre. Setiap tick tes baru memeriksa konservasi material. Tes WashBay sebelumnya tetap berjalan; fixture korupsi dibuat dalam format v19 agar memeriksa isi, bukan sekadar gagal jumlah field.

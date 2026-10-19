@@ -1,3 +1,7 @@
+# Publikasi Alpha.26
+
+`0.1.0-alpha.26` / versionCode 26, save v19. Pembaruan grafis keenam kendaraan: ban/tracks, hardware kabin, detail sasis dan alat kerja. Artifact `TinySim-0.1.0-alpha.26-debug`; hasil CI menunggu. Belum diuji di HP/emulator. APK CI dapat berbeda penanda tangan dari APK lokal pengguna; tidak dibuat key lokal pengganti.
+
 # Publikasi Alpha.25
 
 `0.1.0-alpha.25` / versionCode 25, save v19. Enam kendaraan di tempat cuci, sabun/busa dan bilas air, pergantian lewat parkir serta progres tiap kendaraan. Artifact: `TinySim-0.1.0-alpha.25-debug`. [Build Android](https://github.com/dromadi/TinySim/actions/runs/39264575240) sukses: 175 tes, lint, APK debug dan APK instrumentation. [Unduh ZIP APK alpha.25](https://github.com/dromadi/TinySim/actions/runs/39264575240/artifacts/12192920868). Ukuran APK 67.787.878 byte. [Enam pratinjau renderer](https://github.com/dromadi/TinySim/actions/runs/39264575183) lulus dengan GL error 0, bukti tersimpan di docs/verification/alpha25. Belum diuji di HP/emulator. APK CI dapat berbeda penanda tangan dari APK lokal pengguna; tidak dibuat key lokal pengganti.

@@ -17,6 +17,12 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("detail-excavator",0) { g->prepareVehicleDetail(g,GameState.Vehicle.EXCAVATOR) },
+        Triple("detail-truck",0) { g->prepareVehicleDetail(g,GameState.Vehicle.TRUCK) },
+        Triple("detail-dozer",0) { g->prepareVehicleDetail(g,GameState.Vehicle.DOZER) },
+        Triple("detail-crane",0) { g->prepareVehicleDetail(g,GameState.Vehicle.CRANE) },
+        Triple("detail-mixer",0) { g->prepareVehicleDetail(g,GameState.Vehicle.MIXER) },
+        Triple("detail-wrecker",0) { g->prepareVehicleDetail(g,GameState.Vehicle.WRECKER) },
         Triple("fleet-excavator",0) { g->prepareFleetWash(g,GameState.Vehicle.EXCAVATOR) },
         Triple("fleet-truck",0) { g->prepareFleetWash(g,GameState.Vehicle.TRUCK) },
         Triple("fleet-dozer",0) { g->prepareFleetWash(g,GameState.Vehicle.DOZER) },
@@ -202,4 +208,10 @@ fun prepareFleetWash(g:GameState,v:GameState.Vehicle) {
         for(p in g.wash.targets(g).take(if(v==GameState.Vehicle.MIXER)3 else 8)) { g.wash.spray(g,p.first,p.second);repeat(30){g.update(.04f)} }
         if(v==GameState.Vehicle.WRECKER) { g.wash.stop();repeat(90){g.update(.016f)};check(g.wash.clean) }
     }
+}
+
+/** Clean vehicles at the same real wash-bay pose make geometry changes directly comparable. */
+fun prepareVehicleDetail(g:GameState,v:GameState.Vehicle) {
+    g.wash.enter(g,v);previewIdle(g);g.update(.04f)
+    check(g.wash.ready(g));check(g.totalMaterial==com.dromadi.tinysim.Terrain.INITIAL_MASS)
 }

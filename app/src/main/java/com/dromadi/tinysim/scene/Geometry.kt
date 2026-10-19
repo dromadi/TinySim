@@ -83,6 +83,35 @@ class Geometry private constructor(private val vertices: FloatArray): Mesh {
                 facing(a,b,c,Vec3(sx,sy,sz))
             }
         }
+        /** Hollow rounded tyre, axis Z. Tread blocks are baked into the same static mesh. */
+        fun tyre(segments:Int=48)=build {
+            val profile=listOf(.30f to -.20f,.40f to -.20f,.46f to -.15f,.48f to -.09f,
+                .48f to .09f,.46f to .15f,.40f to .20f,.30f to .20f)
+            fun point(a:Double,r:Float,z:Float)=Vec3(cos(a).toFloat()*r,sin(a).toFloat()*r,z)
+            for(j in profile.indices) {
+                val (r0,z0)=profile[j];val (r1,z1)=profile[(j+1)%profile.size]
+                for(i in 0 until segments) {
+                    val a=i*2*PI/segments;val b=(i+1)*2*PI/segments;val m=(a+b)/2
+                    val n=Vec3(cos(m).toFloat()*(z1-z0),sin(m).toFloat()*(z1-z0),r0-r1)
+                    val p0=point(a,r0,z0);val p1=point(b,r0,z0);val p2=point(b,r1,z1);val p3=point(a,r1,z1)
+                    facing(p0,p1,p2,n);facing(p0,p2,p3,n)
+                }
+            }
+            // Two staggered rows of diagonal tread blocks, with a visible central groove.
+            for(i in 0 until 32)for(side in floatArrayOf(-1f,1f)) {
+                val a=(i+if(side>0).4f else 0f)*2*PI/32
+                fun p(rad:Float,tan:Float,z:Float):Vec3 {
+                    val t=tan+side*z*.35f
+                    return Vec3((cos(a)*(.486f+rad)-sin(a)*t).toFloat(),
+                        (sin(a)*(.486f+rad)+cos(a)*t).toFloat(),side*.095f+z)
+                }
+                val v=arrayOf(p(-.013f,-.03f,-.073f),p(.013f,-.03f,-.073f),p(.013f,.03f,-.073f),p(-.013f,.03f,-.073f),
+                    p(-.013f,-.03f,.073f),p(.013f,-.03f,.073f),p(.013f,.03f,.073f),p(-.013f,.03f,.073f))
+                for(q in arrayOf(intArrayOf(0,3,2,1),intArrayOf(4,5,6,7),intArrayOf(0,4,7,3),intArrayOf(1,2,6,5),intArrayOf(0,1,5,4),intArrayOf(3,7,6,2))) {
+                    triangle(v[q[0]],v[q[1]],v[q[2]]);triangle(v[q[0]],v[q[2]],v[q[3]])
+                }
+            }
+        }
         fun cylinder(segments: Int=24)=build {
             for(i in 0 until segments) {
                 val a=i*2*PI/segments;val b=(i+1)*2*PI/segments

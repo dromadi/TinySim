@@ -51,4 +51,30 @@ class GeometryTest {
             assertTrue("seen from above",(b-a).cross(c-a).y>0f)
         }
     }
+    @Test fun tyreHasAHollowHubAndStaysInsideTheWheelEnvelope() {
+        val mesh=Geometry.tyre();var inner=0;var outer=0
+        for(t in triangles(mesh))for((p,_) in t) {
+            val r=kotlin.math.hypot(p.x,p.y)
+            assertTrue("radial envelope",r>=.2999f && r<=.51f)
+            assertTrue("axial envelope",kotlin.math.abs(p.z)<=.2001f)
+            if(r<.301f)inner++
+            if(r>.49f)outer++
+        }
+        assertTrue("hub opening",inner>0);assertTrue("raised tread",outer>0)
+    }
+    @Test fun tyreSidewallsBoreAndTreadHaveFiniteNormalsAndMatchingWinding() {
+        var inwardBore=false
+        for(t in triangles(Geometry.tyre())) {
+            val (a,b,c)=t.map { it.first };val face=(b-a).cross(c-a)
+            assertTrue("nondegenerate triangle",face.dot(face)>1e-12f)
+            for((p,n) in t) {
+                assertTrue(listOf(p.x,p.y,p.z,n.x,n.y,n.z).all { it.isFinite() })
+                assertEquals(1f,kotlin.math.sqrt(n.dot(n)),1e-3f)
+                assertTrue("CCW agrees with shading",face.dot(n)>0f)
+                if(kotlin.math.hypot(p.x,p.y)<.301f && n.x*p.x+n.y*p.y<-.29f)inwardBore=true
+            }
+        }
+        assertTrue("inner wall faces the open hub",inwardBore)
+    }
+
 }
