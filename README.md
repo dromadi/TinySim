@@ -1,11 +1,20 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.25**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.26**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
 ![Membilas busa molen dengan semprotan satu jari](docs/verification/alpha25/fleet-mixer.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.26: detail grafis keenam kendaraan
+
+- Ban truk, crane, molen dan truk penghancur memakai mesh baru berprofil membulat, lubang pelek, delapan baut, tutup hub serta dua baris tapak diagonal yang mengikuti putaran roda. Mesh ban diunggah sekali per konteks GL.
+- Excavator dan bulldozer mempunyai mata rantai tracks yang mengitari lintasan tertutup, sepatu baja, grousers, roller dan baut sprocket. Kabin seluruh kendaraan mendapatkan seal jendela, wiper, gagang/engsel pintu, pijakan bergerigi, pegangan dan lampu kerja.
+- Excavator: pagar mesin, kisi berventilasi, penguat boom, selang, sepasang silinder/rod hidrolik dan gigi bucket yang mengarah ke depan. Dump truck: pegas/poros roda, mudflap, kotak peralatan, ram bak, bibir bak tebal, engsel dan pengunci pintu belakang.
+- Bulldozer: tiga gigi ripper, kisi mesin, selang silinder blade serta pelat penguat dan baut mata pisau. Crane: boks dek, winch, kaki outrigger yang terhubung ke tapak, counterweight bertingkat, collar teleskopik, sheave dan kabel.
+- Molen: dudukan drum, bearing, tangki air, hopper dan pengikat cincin drum. Truk penghancur: dua winch, tambahan ikatan boom kisi, pulley serta kabel penarik menuju ujung boom. Detail mengikuti transformasi bagian yang bergerak.
+- Format save tetap v19; kontrol dan inventaris tidak berubah. Seluruh detail dibuat dengan geometri asli, tanpa aset pengisi atau izin tambahan. Hasil build dan pratinjau dicatat di VERIFICATION.md.
 
 ## Alpha.25: seluruh armada, sabun dan busa
 

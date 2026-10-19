@@ -49,3 +49,5 @@ Alpha.23 adds `village-welcome,village-garden,village-shelter`: real house recov
 Alpha.24 adds `wash-dirty,wash-spray,wash-clean`, using real travel to the wash bay, shared close-up camera/picking, held spray and per-patch cleanliness. The water stream is recorded from the actual HUD and dirt from the 3D model. These remain desktop renderer previews, not phone input tests.
 
 Alpha.25 adds `fleet-excavator,fleet-truck,fleet-dozer,fleet-crane,fleet-mixer,fleet-wrecker`: actual routes to the bay, per-model soap clusters, partial rinse and fully clean state. These use the same projected patch coordinates and close-up camera as Android.
+
+Alpha.26 adds `detail-excavator,detail-truck,detail-dozer,detail-crane,detail-mixer,detail-wrecker`: clean models driven to the bay with the actual camera, so tyres/tracks, cab hardware and equipment can be inspected. The workflow also captures `district-tip,district-lift,wreck-impact` to verify details follow articulated parts. These are desktop previews, not Android device tests.

@@ -20,7 +20,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Record actual district renderer and HUD
         env:
-          TINYSIM_PREVIEW_SCENES: fleet-excavator,fleet-truck,fleet-dozer,fleet-crane,fleet-mixer,fleet-wrecker
+          TINYSIM_PREVIEW_SCENES: detail-excavator,detail-truck,detail-dozer,detail-crane,detail-mixer,detail-wrecker,district-tip,district-lift,wreck-impact
         run: ./gradlew --no-daemon -p tools/scene-preview run --args="$GITHUB_WORKSPACE/tools/scene-preview/frames.json"
       - name: Install preview browser
         working-directory: tools/scene-preview
@@ -30,10 +30,10 @@ jobs:
       - name: Replay renderer and capture pictogram HUD
         env:
           PREVIEW_FORMAT: jpeg
-        run: node tools/scene-preview/shoot.js tools/scene-preview/frames.json docs/verification/alpha25
+        run: node tools/scene-preview/shoot.js tools/scene-preview/frames.json docs/verification/alpha26
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: TinySim-alpha25-renderer-preview
-          path: docs/verification/alpha25/
+          name: TinySim-alpha26-renderer-preview
+          path: docs/verification/alpha26/
           if-no-files-found: error

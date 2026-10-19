@@ -30,6 +30,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
     private val cube=Geometry.cube()
     private val panelMesh=Geometry.bevelCube()
     private val cylinder=Geometry.cylinder()
+    private val tyreMesh=Geometry.tyre()
     private val cone=Geometry.cone()
     private val sphere=Geometry.sphere()
     private val moundMesh=Geometry.mound()
@@ -153,7 +154,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         uTime=GL.glGetUniformLocation(program,"uTime")
         uTexFrame=GL.glGetUniformLocation(program,"uTexFrame");uTexRot=GL.glGetUniformLocation(program,"uTexRot")
         textures.load()
-        for(mesh in arrayOf(cube,panelMesh,cylinder,cone,sphere,moundMesh,plane,gable,funnelMesh,ribbonMesh)) { mesh.contextLost();mesh.upload() }
+        for(mesh in arrayOf(cube,panelMesh,cylinder,tyreMesh,cone,sphere,moundMesh,plane,gable,funnelMesh,ribbonMesh)) { mesh.contextLost();mesh.upload() }
         terrain.update(frame.earth,frame.sand);terrain.contextLost();terrain.upload()
         GL.glEnable(GL.GL_DEPTH_TEST);GL.glDepthFunc(GL.GL_LEQUAL)
         GL.glEnable(GL.GL_CULL_FACE);GL.glCullFace(GL.GL_BACK)
@@ -780,7 +781,15 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         exhaust(.5f,1.92f,-.5f,f,0)
         // Counterweight, engine grille, exhaust and beacon.
         panel(.86f,1.38f,0f,.78f,.5f,1.62f,yellowDark)
-        for(i in 0..3)box(.5f+i*.16f,1.33f,.82f,.07f,.32f,.02f,ink,MATTE)
+        grille(.85f,1.38f,.826f,.62f,.31f)
+        safetyPanel(.04f,1.08f,.844f,1.6f,.14f)
+        panel(.84f,1.65f,0f,.7f,.04f,1.4f,yellow)
+        for(z in floatArrayOf(-.56f,.56f)) {
+            rod3(.36f,1.58f,z,.36f,1.94f,z,.022f,darkSteel,METAL)
+            rod3(.36f,1.94f,z,1.12f,1.94f,z,.022f,darkSteel,METAL)
+            rod3(1.12f,1.94f,z,1.12f,1.58f,z,.022f,darkSteel,METAL)
+        }
+        for(x in floatArrayOf(-1f,1f))wheelDisc(x,1.04f,.85f,.055f,.03f,chrome,METAL)
         shape(cylinder,.5f,1.65f,-.5f,.1f,.5f,.1f,darkSteel,METAL)
         beaconLight(-.6f,2.58f,0f,f.seconds)
         box(-1.24f,1.5f,.73f,.04f,.7f,.04f,ink,METAL)
@@ -791,24 +800,44 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         val bx=WorldCamera.x(f.armX);val by=WorldCamera.y(f.armY)
         beam(px,py,jx,jy,.38f,.5f,yellow,PAINT)
         beam(jx,jy,bx,by,.28f,.36f,yellow,PAINT)
+        for(z in floatArrayOf(-.265f,.265f)) {
+            rod3(px,py,z,jx,jy,z,.035f,yellowDark,METAL)
+            hose(px,py+.18f,z,jx,jy+.2f,z,.26f)
+            hose(jx,jy+.16f,z,bx,by+.23f,z,.18f)
+        }
         // Hydraulic cylinders: painted barrel with a polished rod.
         hydraulic(px-.14f,py+.27f,jx-.12f,jy-.31f,.11f)
         hydraulic(jx+.08f,jy-.12f,bx-.08f,by+.48f,.08f)
         wheelDisc(px,py,0f,.23f,.63f,darkSteel,METAL)
         wheelDisc(jx,jy,0f,.21f,.6f,darkSteel,METAL)
         wheelDisc(bx,by,0f,.12f,.54f,darkSteel,METAL)
+        for(z in floatArrayOf(-.33f,.33f)) {
+            wheelDisc(px,py,z,.11f,.035f,chrome,METAL)
+            wheelDisc(jx,jy,z,.09f,.035f,chrome,METAL)
+            wheelDisc(bx,by,z*.86f,.06f,.035f,chrome,METAL)
+        }
         push();translate(bx,by-.22f,0f);rotate(if(f.bucket>0)10f else -12f,0f,0f,1f)
         box(0f,-.18f,0f,.88f,.1f,.92f,darkSteel,METAL)
         box(-.36f,.05f,0f,.11f,.5f,.92f,darkSteel,METAL)
         box(0f,.0f,-.43f,.83f,.43f,.07f,darkSteel,METAL);box(0f,.0f,.43f,.83f,.43f,.07f,darkSteel,METAL)
-        for(i in 0..3)shape(cone,.46f,-.18f,-.32f+i*.21f,.1f,.24f,.1f,metal,METAL)
+        for(i in 0..3) {
+            push();translate(.46f,-.18f,-.32f+i*.21f);rotate(-90f,0f,0f,1f)
+            shape(cone,0f,0f,0f,.12f,.26f,.13f,metal,METAL);pop()
+        }
+        for(z in floatArrayOf(-.48f,.48f)) {
+            box(-.24f,.04f,z,.065f,.39f,.045f,metal,METAL)
+            wheelDisc(-.25f,.12f,z,.035f,.04f,chrome,METAL)
+        }
         if(f.bucket>0)mound(0f,-.13f,0f,.74f,.32f,.78f,sandColor)
         pop();endTexFrame();pop()
     }
     private fun hydraulic(ax:Float,ay:Float,bx:Float,by:Float,radius:Float) {
         val mx=ax+(bx-ax)*.55f;val my=ay+(by-ay)*.55f
-        rod(ax,ay,mx,my,radius,yellowDark,PAINT)
-        rod(mx,my,bx,by,radius*.55f,chrome,METAL)
+        for(z in floatArrayOf(-.30f,.30f)) {
+            rod3(ax,ay,z,mx,my,z,radius,yellowDark,PAINT)
+            rod3(mx,my,z,bx,by,z,radius*.52f,chrome,METAL)
+            rod3(mx-(bx-ax)*.025f,my-(by-ay)*.025f,z,mx+(bx-ax)*.025f,my+(by-ay)*.025f,z,radius*1.18f,darkSteel,METAL)
+        }
     }
     private fun truck(f:SceneFrame) {
         val tx=WorldCamera.x(f.truckX)
@@ -819,6 +848,15 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         // Body rides on the suspension: it settles after stopping and trembles while idling.
         translate(0f,bob(f,1),0f);windSway(f,1)
         box(0f,.67f,0f,3.85f,.25f,1.25f,darkSteel,METAL)
+        for(x in floatArrayOf(-1.25f,1.24f)) {
+            rod3(x,.48f,-.83f,x,.48f,.83f,.09f,darkSteel,METAL)
+            for(z in floatArrayOf(-.59f,.59f))for(i in 0..2)box(x,.58f+i*.045f,z,.8f-i*.12f,.026f,.08f,metal,METAL)
+        }
+        for(z in floatArrayOf(-.94f,.94f)) {
+            panel(-.3f,.72f,z,.68f,.24f,.24f,tealDark)
+            box(-1.72f,.42f,z,.06f,.43f,.3f,rubber,RUBBER)
+            box(-.3f,.85f,z,.56f,.035f,.26f,chrome,METAL)
+        }
         // Mudguards and fuel tank.
         for(x in floatArrayOf(-1.25f,1.24f))for(z in floatArrayOf(-.92f,.92f))panel(x,1.0f,z,1.08f,.07f,.36f,ink)
         push();translate(.15f,.62f,-.66f);rotate(90f,0f,0f,1f);shape(cylinder,0f,0f,0f,.34f,.7f,.34f,chrome,METAL);pop()
@@ -835,17 +873,27 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         }
         shape(cylinder,.42f,1.9f,-.72f,.11f,1.6f,.11f,chrome,METAL)
         exhaust(.42f,2.72f,-.72f,f,1)
+        // Tip ram follows the changing front of the bed, with a thicker barrel at the chassis.
+        val tip=-f.bedAngle*PI.toFloat()/180f
+        val ramX=-1.66f+cos(tip)*2.05f;val ramY=.91f+sin(tip)*2.05f
+        rod3(-.5f,.72f,0f,ramX,ramY,0f,.075f,chrome,METAL)
+        rod3(-.5f,.72f,0f,(-.5f+ramX)*.5f,(.72f+ramY)*.5f,0f,.13f,darkSteel,METAL)
         // Bed hinge at the rear; positive world-Z rotation lifts the front.
         push();translate(-1.66f,.91f,0f);rotate(-f.bedAngle,0f,0f,1f)
         panel(1.05f,.07f,0f,2.7f,.14f,1.88f,teal)
         for(z in floatArrayOf(-.9f,.9f)) {
             panel(1.05f,.48f,z,2.7f,.8f,.12f,teal)
             for(i in 0..4)box(-.02f+i*.53f,.48f,z*1.08f,.055f,.66f,.05f,tealDark,PAINT)
-            box(1.05f,.86f,z*1.03f,2.74f,.06f,.06f,tealDark,PAINT)
+            panel(1.05f,.86f,z*1.03f,2.8f,.085f,.13f,tealDark)
+            if(z>0) safetyPanel(1.05f,.22f,z*1.11f,1.4f,.14f)
+            for(i in 0..4)wheelDisc(-.02f+i*.53f,.7f,z*1.11f,.025f,.02f,chrome,METAL)
         }
         panel(2.35f,.62f,0f,.12f,1.08f,1.88f,teal)
         push();translate(-.3f,.12f,0f);rotate(if(f.tipping)-65f else 0f,0f,0f,1f)
-        panel(0f,.36f,0f,.12f,.72f,1.88f,teal);pop()
+        panel(0f,.36f,0f,.12f,.72f,1.88f,teal)
+        for(z in floatArrayOf(-.7f,.7f))box(-.075f,.36f,z,.03f,.58f,.06f,tealDark,PAINT)
+        for(z in floatArrayOf(-.86f,.86f))wheelDisc(0f,.76f,z,.07f,.15f,metal,METAL)
+        pop()
         if(f.load>0)mound(1.05f,.13f,0f,2.5f,.12f+f.load*.08f,1.7f,sandColor)
         for((n,id) in f.recovery.state.indices.filter { f.recovery.state[it]==4 }.withIndex()) {
             push();translate(.3f+(n%4)*.47f,.16f+(n/4)*.35f,0f);scale(.23f,.23f,.23f);recoveryPart(id);pop()
@@ -869,14 +917,31 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         shape(cylinder,.7f,1.86f,-.42f,.11f,.7f,.11f,darkSteel,METAL)
         exhaust(.7f,2.23f,-.42f,f,2)
         beaconLight(-.5f,2.54f,0f,f.seconds+.35f)
+        grille(.78f,1.35f,.67f,.84f,.26f)
+        safetyPanel(.15f,1.02f,.79f,1.9f,.14f)
+        for(z in floatArrayOf(-.6f,.6f)) {
+            rod3(-1.23f,1.23f,z,-1.23f,1.63f,z,.024f,chrome,METAL)
+            rod3(-1.23f,1.63f,z,-.99f,1.63f,z,.024f,chrome,METAL)
+        }
         // Rear ripper.
         box(-1.45f,.8f,0f,.18f,.18f,1.0f,darkSteel,METAL)
-        box(-1.6f,.45f,0f,.12f,.6f,.14f,darkSteel,METAL)
+        for(z in floatArrayOf(-.43f,0f,.43f)) {
+            box(-1.6f,.45f,z,.12f,.6f,.14f,darkSteel,METAL)
+            push();translate(-1.63f,.18f,z);rotate(115f,0f,0f,1f);shape(cone,0f,0f,0f,.15f,.26f,.17f,metal,METAL);pop()
+        }
         push();translate(0f,if(f.bladeDown)0f else .55f,0f)
         for(z in floatArrayOf(-.57f,.57f))box(1.21f,.5f,z,1.05f,.14f,.15f,darkSteel,METAL)
-        for(z in floatArrayOf(-.4f,.4f))rod(.95f,1.25f,1.7f,.8f,.07f,chrome,METAL)
+        for(z in floatArrayOf(-.4f,.4f)) {
+            rod3(.95f,1.25f,z,1.7f,.8f,z,.07f,chrome,METAL)
+            rod3(.95f,1.25f,z,1.28f,1.05f,z,.105f,yellowDark,PAINT)
+            hose(.8f,1.32f,z,1.28f,1.05f,z,.19f)
+        }
         panel(1.83f,.53f,0f,.16f,.91f,2.15f,yellow)
         box(1.95f,.13f,0f,.16f,.1f,2.25f,metal,METAL)
+        for(z in floatArrayOf(-.84f,-.42f,0f,.42f,.84f)) {
+            shape(cylinder,2.037f,.16f,z,.035f,.055f,.055f,darkSteel,METAL)
+            box(1.735f,.53f,z,.045f,.7f,.065f,yellowDark,PAINT)
+        }
         for(z in floatArrayOf(-1.02f,1.02f))box(1.79f,.5f,z,.35f,.84f,.08f,yellowDark,PAINT)
         if(f.bladeDown && f.sand[WorldMap.cell(dx+cos(f.dozerHeading*PI.toFloat()/180)*1.8f,f.dozerZ-sin(f.dozerHeading*PI.toFloat()/180)*1.8f)]>0)mound(2.1f,.05f,0f,.5f,.18f,1.6f,sandColor)
         pop();endTexFrame();pop()
@@ -997,7 +1062,26 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         box(-2.18f,.85f,0f,.18f,.2f,1.8f,paintWhite,PAINT)
         for(zz in floatArrayOf(-.65f,.65f))box(-2.29f,.91f,zz,.03f,.14f,.24f,rgba(215,54,45),EMISSIVE)
         exhaust(.65f,2.1f,-.75f,f,v);beaconLight(1.1f,2.7f,.1f,f.seconds)
+        for(side in floatArrayOf(-1f,1f)) {
+            panel(-1.12f,1.01f,side*.93f,1.95f,.12f,.3f,paint)
+            box(-2.02f,.44f,side*.94f,.06f,.43f,.34f,rubber,RUBBER)
+            panel(.35f,.78f,side*.91f,.52f,.3f,.22f,metal)
+            box(.35f,.78f,side*1.035f,.035f,.28f,.025f,ink,METAL)
+            if(side>0) safetyPanel(-.8f,1.08f,side*.94f,1.7f,.13f)
+        }
+        for(wx in floatArrayOf(-1.55f,-.65f,1.55f))rod3(wx,.48f,-.9f,wx,.48f,.9f,.07f,darkSteel,METAL)
         if(!wreck) {
+            // Cradle, roller bearings, water tank and feed hopper remain outside the rotating drum.
+            for(xx in floatArrayOf(-1.45f,-.05f)) {
+                for(zz in floatArrayOf(-.52f,.52f)) {
+                    rod3(xx,1.08f,zz,xx,1.36f,zz*.8f,.075f,tealDark,METAL)
+                    wheelDisc(xx,1.29f,zz,.15f,.16f,darkSteel,METAL)
+                }
+            }
+            shape(cylinder,.32f,1.9f,-.68f,.42f,.7f,.42f,paintWhite,PAINT)
+            shape(cylinder,.32f,2.28f,-.68f,.15f,.08f,.15f,ink,METAL)
+            panel(-1.98f,2.55f,0f,.52f,.12f,.65f,metal)
+            for(side in floatArrayOf(-1f,1f))panel(-1.98f,2.68f,side*.32f,.6f,.28f,.045f,paintWhite)
             // Turning drum with a continuous orange helical stripe and two steel support rings.
             push();translate(-.65f,1.9f,0f);rotate(a.drum,1f,0f,0f)
             rod3(-1.2f,0f,0f,1f,0f,0f,.76f,paintWhite,PAINT)
@@ -1007,6 +1091,10 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
                 rod3(-1.1f+t*2f,cos(q)*.77f,sin(q)*.77f,-1.1f+t2*2f,cos(q2)*.77f,sin(q2)*.77f,.055f,orange,PAINT)
             }
             for(xx in floatArrayOf(-.8f,.6f))rod3(xx-.035f,0f,0f,xx+.035f,0f,0f,.8f,chrome,METAL)
+            for(i in 0..7) {
+                val q=i*PI.toFloat()/4
+                rod3(.55f,cos(q)*.81f,sin(q)*.81f,.65f,cos(q)*.81f,sin(q)*.81f,.025f,darkSteel,METAL)
+            }
             pop()
             for(yy in floatArrayOf(1.1f,1.35f,1.6f,1.85f,2.1f))box(-2f,yy,.9f,.38f,.045f,.07f,chrome,METAL)
             for(xx in floatArrayOf(-2.2f,-1.8f))box(xx,1.6f,.9f,.045f,1.1f,.045f,chrome,METAL)
@@ -1019,6 +1107,12 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
             }
         } else {
             panel(-.75f,1.2f,0f,2.3f,.45f,1.6f,orange)
+            grille(-.85f,1.24f,.826f,1.15f,.25f)
+            // Twin winch drums and cable guide behind the boom pivot.
+            for(zz in floatArrayOf(-.45f,.45f)) {
+                wheelDisc(-1.45f,1.65f,zz,.26f,.35f,darkSteel,METAL)
+                for(i in 0..6)wheelDisc(-1.45f,1.65f,zz-.13f+i*.043f,.235f,.022f,metal,METAL)
+            }
             val progress=if(a.swing>0)1f-a.swing/com.dromadi.tinysim.WorkFleet.SWING_SECONDS else 0f
             val unfold=if(a.swing>0)min(1f,min(progress*6f,(1-progress)*6f)) else 0f
             val tipX=-1.4f+unfold*4.6f;val tipY=4.5f+unfold*3f
@@ -1032,6 +1126,12 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
                     rod3(-.7f+(tipX+.7f)*t,1.5f+(tipY-1.5f)*t,zz,-.7f+(tipX+.7f)*t2,1.5f+(tipY-1.5f)*t2,-zz,.035f,yellowDark,METAL)
                 }
             }
+            for(i in 0..3) {
+                val t=i/3f
+                rod3(-.7f+(tipX+.7f)*t,1.5f+(tipY-1.5f)*t,-.3f,-.7f+(tipX+.7f)*t,1.5f+(tipY-1.5f)*t,.3f,.04f,yellowDark,METAL)
+            }
+            wheelDisc(tipX,tipY,0f,.17f,.17f,darkSteel,METAL)
+            rod3(-1.45f,1.85f,0f,tipX,tipY,0f,.018f,metal,METAL)
             rod3(tipX,tipY,0f,bx,by,0f,.028f,darkSteel,METAL)
             blob(bx,by-.4f,0f,.9f,.9f,.9f,darkSteel,METAL)
             rod3(bx,by,0f,bx,by+.15f,0f,.1f,chrome,METAL)
@@ -1178,8 +1278,18 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         val parked=!motion[3].moving
         for(x in floatArrayOf(-1.9f,1.9f))for(z in floatArrayOf(-1.4f,1.4f)) {
             box(x,.62f,z*.8f,.14f,.14f,.9f,darkSteel,METAL)
-            if(parked)surface(x,.07f,z,.5f,.08f,.5f,darkSteel,CONCRETE)
+            if(parked) {
+                rod3(x,.62f,z,x,.14f,z,.055f,chrome,METAL)
+                surface(x,.09f,z,.5f,.1f,.5f,darkSteel,METAL)
+                box(x,.14f,z,.18f,.08f,.18f,yellowDark,PAINT)
+            }
         }
+        for(side in floatArrayOf(-1f,1f)) {
+            panel(-1.35f,1.12f,side*.72f,1.0f,.25f,.42f,yellowDark)
+            if(side>0)safetyPanel(0f,.82f,side*.97f,2.1f,.16f)
+            for(i in 0..5)box(-.7f+i*.22f,1.02f,side*.77f,.035f,.022f,.24f,metal,METAL)
+        }
+        grille(-1.35f,1.15f,.95f,.8f,.19f)
         cab(1.75f,1f,2f,1.2f,1.9f,.9f,.8f,yellow) { driver(1.65f,1.3f,0f,wave(f,3),f.seconds) }
         exhaust(-1.6f,1.6f,-.7f,f,3)
         beaconLight(-1.2f,1.12f,.7f,f.seconds+.7f)
@@ -1201,12 +1311,24 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         val hookY=(if(building)0f else base)+hy
         val tipX=pivotX+cos(angle)*(radius+.2f);val tipZ=pivotZ+sin(angle)*(radius+.2f);val tipY=max(hookY+2.2f,5.2f)
         push();translate(pivotX,pivotY-.25f,pivotZ);rotate(-angle*180f/PI.toFloat(),0f,1f,0f)
-        surface(0f,0f,0f,1.6f,.5f,1.3f,yellowDark,PAINT);panel(-.75f,.35f,0f,.6f,.4f,1.2f,ink)
+        shape(cylinder,0f,-.22f,0f,1.48f,.16f,1.48f,darkSteel,METAL)
+        surface(0f,0f,0f,1.6f,.5f,1.3f,yellowDark,PAINT)
+        for(i in 0..2)panel(-.8f,.12f+i*.15f,0f,.65f,.13f,1.3f,darkSteel)
+        wheelDisc(-.45f,.44f,0f,.23f,.8f,darkSteel,METAL)
+        for(i in 0..5)wheelDisc(-.45f,.44f,-.32f+i*.13f,.22f,.035f,metal,METAL)
         pop()
         val midX=pivotX+(tipX-pivotX)*.55f;val midY=pivotY+(tipY-pivotY)*.55f;val midZ=pivotZ+(tipZ-pivotZ)*.55f
         rod3(pivotX,pivotY,pivotZ,midX,midY,midZ,.24f,yellow,PAINT)
         rod3(midX,midY,midZ,tipX,tipY,tipZ,.16f,yellowDark,PAINT)
         rod3(pivotX+.3f,pivotY-.3f,pivotZ,pivotX+(midX-pivotX)*.5f,pivotY+(midY-pivotY)*.5f-.25f,pivotZ+(midZ-pivotZ)*.5f,.08f,chrome,METAL)
+        // Telescopic collars and cable sheaves share the existing boom endpoints.
+        for(t in floatArrayOf(.5f,.57f,.92f)) {
+            val x=pivotX+(tipX-pivotX)*t;val y=pivotY+(tipY-pivotY)*t;val z=pivotZ+(tipZ-pivotZ)*t
+            val u=(t+.025f).coerceAtMost(1f)
+            rod3(x,y,z,pivotX+(tipX-pivotX)*u,pivotY+(tipY-pivotY)*u,pivotZ+(tipZ-pivotZ)*u,if(t<.6f).28f else .20f,darkSteel,METAL)
+        }
+        rod3(pivotX-.3f,pivotY+.7f,pivotZ,tipX,tipY+.1f,tipZ,.018f,metal,METAL)
+        wheelDisc(tipX,tipY,tipZ,.19f,.2f,darkSteel,METAL)
         rod3(tipX,tipY,tipZ,hx,hookY+.45f,hz,.02f,ink,METAL)
         box(hx,hookY+.4f,hz,.22f,.18f,.18f,yellow,PAINT)
         if(building) {
@@ -1335,6 +1457,29 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         else if(dy<0f)rotate(180f,1f,0f,0f)
         scale(radius*2,length,radius*2);draw(cylinder,color,material);pop()
     }
+    private fun workLamp(x:Float,y:Float,z:Float) {
+        panel(x,y,z,.13f,.13f,.22f,ink)
+        box(x+.069f,y,z,.012f,.08f,.15f,lamp,EMISSIVE)
+    }
+    private fun safetyPanel(x:Float,y:Float,z:Float,width:Float,height:Float) {
+        panel(x,y,z,width,height,.035f,ink)
+        for(i in 0..3) {
+            val px=x-width*.36f+i*width*.24f
+            rod3(px-height*.18f,y-height*.31f,z+.025f,px+height*.18f,y+height*.31f,z+.025f,height*.075f,yellow,PAINT)
+        }
+    }
+    private fun grille(x:Float,y:Float,z:Float,width:Float,height:Float,slots:Int=7) {
+        panel(x,y,z,width,height,.035f,ink)
+        for(i in 0 until slots)box(x-width*.42f+i*width*.84f/(slots-1),y,z+.025f,.025f,height*.8f,.025f,darkSteel,METAL)
+        for(sx in floatArrayOf(-1f,1f))for(sy in floatArrayOf(-1f,1f))wheelDisc(x+sx*width*.43f,y+sy*height*.38f,z+.028f,.014f,.014f,metal,METAL)
+    }
+    private fun hose(ax:Float,ay:Float,az:Float,bx:Float,by:Float,bz:Float,sag:Float=.18f) {
+        for(i in 0 until 8) {
+            val t=i/8f;val u=(i+1)/8f
+            rod3(ax+(bx-ax)*t,ay+(by-ay)*t-sin(t*PI.toFloat())*sag,az+(bz-az)*t,
+                ax+(bx-ax)*u,ay+(by-ay)*u-sin(u*PI.toFloat())*sag,az+(bz-az)*u,.022f,ink,RUBBER)
+        }
+    }
     private fun beaconLight(x:Float,y:Float,z:Float,seconds:Float) {
         shape(cylinder,x,y-.04f,z,.16f,.06f,.16f,ink,METAL)
         val glow=.78f+.22f*(.5f+.5f*sin(seconds*2f))
@@ -1354,43 +1499,77 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         box(x+width/2-.01f,mid,0f,.02f,h,length-.16f,glass,GLASS)
         box(x-width/2+.01f,mid,0f,.02f,h,length-.16f,glass,GLASS)
         for(sz in floatArrayOf(-1f,1f))box(x,mid,sz*(length/2-.01f),width-.16f,h,.02f,glass,GLASS)
+        for(side in floatArrayOf(-1f,1f)) {
+            val z=side*(length/2+.012f)
+            box(x,glassBottom,z,width-.14f,.036f,.025f,ink,RUBBER)
+            box(x,glassTop,z,width-.14f,.036f,.025f,ink,RUBBER)
+            // Door seam, handle, hinge plates and a serrated access step.
+            box(x-width*.34f,(bottom+glassBottom)/2,z,.014f,glassBottom-bottom-.04f,.02f,darkSteel,METAL)
+            panel(x-width*.18f,glassBottom-.11f,z+side*.025f,width*.22f,.035f,.055f,chrome)
+            for(y in floatArrayOf(bottom+.07f,glassBottom-.08f))box(x+width*.36f,y,z,.04f,.06f,.028f,metal,METAL)
+            panel(x,bottom-.1f,z+side*.09f,width*.8f,.07f,.22f,darkSteel)
+            for(i in 0..5)box(x-width*.32f+i*width*.125f,bottom-.06f,z+side*.09f,.026f,.014f,.18f,chrome,METAL)
+            rod3(x-width*.45f,bottom+.1f,z+side*.065f,x-width*.45f,glassBottom+.12f,z+side*.065f,.022f,chrome,METAL)
+            workLamp(x+width*.4f,top+.055f,side*length*.32f)
+        }
+        val front=x+width/2+.012f
+        rod3(front,glassBottom+.04f,-length*.25f,front,glassBottom+h*.6f,length*.08f,.012f,ink,RUBBER)
+        rod3(front+.005f,glassBottom+h*.5f,-length*.05f,front+.005f,glassBottom+h*.68f,length*.22f,.017f,ink,RUBBER)
+        panel(x+width*.47f,glassTop-.015f,0f,.16f,.06f,length*.95f,ink)
     }
     private fun tracks(length:Float,travel:Float) {
-        val pitch=(length-.4f)/8
-        val shift=((travel%pitch)+pitch)%pitch
+        val half=length/2-.34f;val r=.35f;val straight=half*2;val arc=PI.toFloat()*r
+        val perimeter=straight*2+arc*2
         for(z in floatArrayOf(-.78f,.78f)) {
-            box(0f,.41f,z,length-.55f,.7f,.5f,rubber,RUBBER)
-            wheelDisc(-length/2+.34f,.41f,z,.35f,.5f,rubber,RUBBER)
-            wheelDisc(length/2-.34f,.41f,z,.35f,.5f,rubber,RUBBER)
-            // Sprocket, idler and road wheels visible on the outside.
-            for(i in 0..4)wheelDisc(-length/2+.37f+i*(length-.74f)/4,.32f,z+sign(z)*.27f,.17f,.06f,darkSteel,METAL)
-            wheelDisc(-length/2+.34f,.41f,z+sign(z)*.27f,.26f,.05f,metal,METAL)
-            wheelDisc(length/2-.34f,.41f,z+sign(z)*.27f,.26f,.05f,metal,METAL)
-            box(0f,.55f,z+sign(z)*.26f,length-.9f,.12f,.04f,darkSteel,METAL)
-            // Grousers slide with travel so the tracks visibly roll.
-            noCast {
+            box(0f,.41f,z,length-.55f,.62f,.48f,rubber,RUBBER)
+            val outer=z+sign(z)*.27f
+            for(i in 0..4) {
+                val x=-half+i*straight/4
+                wheelDisc(x,.32f,outer,.18f,.07f,darkSteel,METAL)
+                wheelDisc(x,.32f,outer+sign(z)*.045f,.075f,.03f,chrome,METAL)
+            }
+            for(x in floatArrayOf(-half,half)) {
+                wheelDisc(x,.41f,z,.33f,.48f,rubber,RUBBER)
+                wheelDisc(x,.41f,outer,.27f,.05f,yellowDark,PAINT)
+                wheelDisc(x,.41f,outer+sign(z)*.035f,.12f,.035f,darkSteel,METAL)
                 for(i in 0..7) {
-                    val gx=-length/2+.2f+(i*pitch+shift)%(length-.4f)
-                    box(gx,.77f,z,.1f,.05f,.54f,ink,RUBBER)
-                    box(-gx,.06f,z,.1f,.05f,.54f,ink,RUBBER)
+                    val a=i*PI.toFloat()/4-travel/r
+                    wheelDisc(x+cos(a)*.19f,.41f+sin(a)*.19f,outer+sign(z)*.045f,.025f,.025f,chrome,METAL)
                 }
+            }
+            box(0f,.55f,outer,length-.9f,.1f,.04f,darkSteel,METAL)
+            // Each shoe follows one continuous closed loop, including both curved ends.
+            for(i in 0 until 36) {
+                val t=((i*perimeter/36+travel)%perimeter+perimeter)%perimeter
+                var x:Float;var y:Float;var angle:Float
+                when {
+                    t<straight -> { x=-half+t;y=.41f+r;angle=0f }
+                    t<straight+arc -> { val a=PI.toFloat()/2-(t-straight)/r;x=half+cos(a)*r;y=.41f+sin(a)*r;angle=a*180f/PI.toFloat()-90f }
+                    t<straight*2+arc -> { x=half-(t-straight-arc);y=.41f-r;angle=180f }
+                    else -> { val a=-PI.toFloat()/2-(t-straight*2-arc)/r;x=-half+cos(a)*r;y=.41f+sin(a)*r;angle=a*180f/PI.toFloat()-90f }
+                }
+                push();translate(x,y,z);rotate(angle,0f,0f,1f)
+                panel(0f,0f,0f,perimeter/36-.014f,.045f,.55f,darkSteel)
+                box(0f,.032f,0f,.045f,.035f,.58f,metal,METAL)
+                pop()
             }
         }
     }
     private fun wheel(x:Float,y:Float,z:Float,angle:Float) {
-        wheelDisc(x,y,z,.47f,.32f,rubber,RUBBER)
-        val outer=z+sign(z)*.17f
-        wheelDisc(x,y,outer,.3f,.04f,metal,METAL)
-        wheelDisc(x,y,outer+sign(z)*.03f,.1f,.05f,chrome,METAL)
-        // Spokes and tread blocks rotate with the wheel; they stay inside its shadow silhouette.
-        noCast {
-            push();translate(x,y,outer+sign(z)*.03f);rotate(angle,0f,0f,1f)
-            for(k in 0..2) { rotate(60f,0f,0f,1f);box(0f,0f,0f,.5f,.05f,.02f,darkSteel,METAL) }
-            pop()
-            push();translate(x,y,z);rotate(angle,0f,0f,1f)
-            for(k in 0..9) { rotate(36f,0f,0f,1f);box(.47f,0f,0f,.04f,.12f,.3f,rubber,RUBBER) }
-            pop()
+        val side=sign(z)
+        push();translate(x,y,z);rotate(angle,0f,0f,1f)
+        shape(tyreMesh,0f,0f,0f,.94f,.94f,1f,rubber,RUBBER)
+        // Recessed rim, dark ventilation holes, centre cap and eight actual lug nuts.
+        wheelDisc(0f,0f,side*.177f,.30f,.045f,darkSteel,METAL)
+        wheelDisc(0f,0f,side*.204f,.267f,.025f,chrome,METAL)
+        for(i in 0..7) {
+            val a=i*PI.toFloat()/4
+            wheelDisc(cos(a)*.21f,sin(a)*.21f,side*.221f,.033f,.014f,ink,MATTE)
+            wheelDisc(cos(a)*.128f,sin(a)*.128f,side*.237f,.023f,.028f,metal,METAL)
         }
+        wheelDisc(0f,0f,side*.241f,.086f,.065f,darkSteel,METAL)
+        wheelDisc(0f,0f,side*.278f,.05f,.014f,chrome,METAL)
+        pop()
     }
     private fun wrist(f:SceneFrame):Pair<Float,Float> {
         val a=f.excavatorHeading*PI.toFloat()/180f;val d=(f.armX-200f)/60f
