@@ -83,7 +83,7 @@ class WashBay {
         val d=row(p[1]);val f=row(p[2]);val r=p[3].split(',');require(r.size==6 && r.all { it in listOf("0","1") })
         for(i in 0..5) {
             val indices=i*8 until i*8+8
-            require(if(r[i]=="1")indices.all { d[it]<=.005f } else indices.any { d[it]>.005f || f[it]>.005f })
+            require(if(r[i]=="1")indices.all { d[it]<=.005f } else indices.any { d[it]>0f || f[it]>0f })
         }
         reset();cycles=count;vehicle=GameState.Vehicle.entries[v];tool=Tool.entries[t]
         for(i in 0 until 48) { dirt[i/8][i%8]=d[i];bubbles[i/8][i%8]=f[i] }
