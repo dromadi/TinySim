@@ -9,6 +9,7 @@ class GameState {
     private val paths=VehicleRoutes()
     val recovery=RecoverySite()
     val village=VillageLife()
+    val wash=WashBay()
     val wind=WindPlay()
     val fleet=WorkFleet()
     val keeper=BridgeKeeper()
@@ -417,7 +418,7 @@ class GameState {
     }
     /** The next waypoint once the current one is reached, or null at the destination. */
     private fun nextLeg(vehicle:Vehicle)=routes[vehicle.ordinal].removeFirstOrNull()
-    fun stopMovement() { recovery.cancel(this);wind.halt();fleet.cancel();pipes.cancel();truckGoal=null;dozerGoal=null;excavatorGoal=null;craneGoal=null;craneTask=null;pendingCrane=null;pendingBridge=false;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() };paths.clear();deckOwner=null }
+    fun stopMovement() { wash.stop(); recovery.cancel(this);wind.halt();fleet.cancel();pipes.cancel();truckGoal=null;dozerGoal=null;excavatorGoal=null;craneGoal=null;craneTask=null;pendingCrane=null;pendingBridge=false;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() };paths.clear();deckOwner=null }
     val driving get()=recovery.busy || fleet.busy || fleet.mixer.goal!=null || fleet.wrecker.goal!=null || pipes.busy || truckGoal!=null || dozerGoal!=null || excavatorGoal!=null || craneGoal!=null || craneTask!=null
     var bladeDown = true
     var dozerFacing = 1
@@ -451,7 +452,7 @@ class GameState {
             val n=if(sand[siteCell]>0) min(2,sand[siteCell]) else min(2,(earth[siteCell]-2).coerceAtLeast(0))
             if(n==0)return false
             if(sand[siteCell]>0)sand[siteCell]-=n else earth[siteCell]-=n
-            bucket=n;dug[siteCell]=(dug[siteCell]+n).coerceAtMost(3);transferKind=1;transferSerial++;return true
+            bucket=n;dug[siteCell]=(dug[siteCell]+n).coerceAtMost(3);wash.soil();transferKind=1;transferSerial++;return true
         }
         val index=nearbyPile(x,z)
         if(index!=null) {
@@ -466,7 +467,7 @@ class GameState {
             bucket=min(2,earth[cell]);earth[cell]-=bucket;dug[cell]=(dug[cell]+bucket).coerceAtMost(3)
             checkMission()
         }
-        transferKind=1;transferSerial++;return true
+        wash.soil();transferKind=1;transferSerial++;return true
     }
     fun pour(): Boolean {
         val (x,z)=bucketPosition
@@ -583,6 +584,7 @@ class GameState {
         recovery.followBlade(this)
         recovery.update(this,dt)
         village.update(this,dt)
+        wash.update(this,dt)
         fleet.update(this,dt)
         keeper.update(dt,bridgeOpen,Vehicle.entries.any { onDeck(vehicleBody(it).point) },Vehicle.entries.any { goalOf(it)?.deck in listOf(1,2) },wind.nearBridge)
         pipes.update(this,dt)
@@ -675,14 +677,15 @@ class GameState {
         }
     }
     fun toggleMode() { leavePipes();missionMode=!missionMode; mission=0; delivered=0; flattened=0; pendingReward=false; celebrating=0f; checkMission() }
-    fun reset() { village.reset();recovery.reset();wind.reset();fleet.reset();keeper.reset();pipes.reset();blocks.reset();earth.fill(Terrain.INITIAL_EARTH);houseFill=0;houseStage=0;buildClock=0f;bridgeFill=0;bridgeStage=0;bridgeClock=0f;craneX=WorldMap.gameX(CRANE_SPOT_X);craneZ=CRANE_SPOT_Z;craneHeading=0f;craneTravel=0f;craneAngle=-90f;craneReach=4.7f;hookY=HOOK_REST;craneCargo=0; excavatorX=200f;excavatorZ=0f;excavatorHeading=0f;excavatorTravel=0f;road.fill(0);dug.fill(0);truckX=620f; dozerX=1000f; armX=365f; armY=340f; targetX=armX; targetY=armY
+    fun reset() { wash.reset();village.reset();recovery.reset();wind.reset();fleet.reset();keeper.reset();pipes.reset();blocks.reset();earth.fill(Terrain.INITIAL_EARTH);houseFill=0;houseStage=0;buildClock=0f;bridgeFill=0;bridgeStage=0;bridgeClock=0f;craneX=WorldMap.gameX(CRANE_SPOT_X);craneZ=CRANE_SPOT_Z;craneHeading=0f;craneTravel=0f;craneAngle=-90f;craneReach=4.7f;hookY=HOOK_REST;craneCargo=0; excavatorX=200f;excavatorZ=0f;excavatorHeading=0f;excavatorTravel=0f;road.fill(0);dug.fill(0);truckX=620f; dozerX=1000f; armX=365f; armY=340f; targetX=armX; targetY=armY
         bucket=0; load=0; source=36; sand.fill(0); Terrain.QUARRY.forEach { sand[it]=Terrain.QUARRY_SAND }; delivered=0; flattened=0; mission=0
         tipping=false;stopMovement();truckZ=0f;dozerZ=2.25f;truckHeading=0f;dozerHeading=0f;truckTravel=0f;dozerTravel=0f; bladeDown=true; dozerFacing=1; bedAngle=0f; celebrating=0f; tipClock=0f; pendingReward=false }
-    fun snapshot():String="17|"+listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal,if(bladeDown)1 else 0,if(tipping)1 else 0,dozerFacing,bedAngle,truckZ,dozerZ,truckHeading,dozerHeading,excavatorX,excavatorZ,excavatorHeading).joinToString(",")+";"+sand.joinToString(",")+";"+road.joinToString(",")+";"+dug.joinToString(",")+";"+earth.joinToString(",")+";"+listOf(houseFill,houseStage).joinToString(",")+";"+listOf(bridgeFill,bridgeStage).joinToString(",")+";"+listOf(craneX,craneZ,craneHeading,craneAngle,craneReach,craneCargo).joinToString(",")+";"+blocks.snapshot()+";"+pipes.snapshot()+";"+fleet.snapshot()+";"+wind.snapshot()+";"+wind.arena.snapshot()+";"+recovery.snapshot()+";"+village.snapshot()
+    fun snapshot():String="18|"+listOf(truckX,dozerX,armX,armY,bucket,load,source,delivered,flattened,mission,if(missionMode)1 else 0,selected.ordinal,if(bladeDown)1 else 0,if(tipping)1 else 0,dozerFacing,bedAngle,truckZ,dozerZ,truckHeading,dozerHeading,excavatorX,excavatorZ,excavatorHeading).joinToString(",")+";"+sand.joinToString(",")+";"+road.joinToString(",")+";"+dug.joinToString(",")+";"+earth.joinToString(",")+";"+listOf(houseFill,houseStage).joinToString(",")+";"+listOf(bridgeFill,bridgeStage).joinToString(",")+";"+listOf(craneX,craneZ,craneHeading,craneAngle,craneReach,craneCargo).joinToString(",")+";"+blocks.snapshot()+";"+pipes.snapshot()+";"+fleet.snapshot()+";"+wind.snapshot()+";"+wind.arena.snapshot()+";"+recovery.snapshot()+";"+village.snapshot()+";"+wash.snapshot()
     fun restore(value:String?) {
         if(value==null)return
         runCatching {
-            val alpha17=value.startsWith("17|")
+            val alpha18=value.startsWith("18|")
+            val alpha17=alpha18 || value.startsWith("17|")
             val alpha16=alpha17 || value.startsWith("16|")
             val alpha15=alpha16 || value.startsWith("15|")
             val alpha14=alpha15 || value.startsWith("14|")
@@ -695,7 +698,7 @@ class GameState {
             val alpha7=alpha8 || value.startsWith("7|")
             val alpha6=alpha7 || value.startsWith("6|")
             val modern=alpha6 || value.startsWith("5|")
-            val parts=value.removePrefix("17|").removePrefix("16|").removePrefix("15|").removePrefix("14|").removePrefix("13|").removePrefix("12|").removePrefix("11|").removePrefix("10|").removePrefix("9|").removePrefix("8|").removePrefix("7|").removePrefix("6|").removePrefix("5|").split(';');require(parts.size==if(alpha17)15 else if(alpha16)14 else if(alpha15)13 else if(alpha14)12 else if(alpha13)11 else if(alpha12 || alpha11)10 else if(alpha10)9 else if(alpha9)8 else if(alpha8)7 else if(alpha7)6 else if(alpha6)4 else 2)
+            val parts=value.removePrefix("18|").removePrefix("17|").removePrefix("16|").removePrefix("15|").removePrefix("14|").removePrefix("13|").removePrefix("12|").removePrefix("11|").removePrefix("10|").removePrefix("9|").removePrefix("8|").removePrefix("7|").removePrefix("6|").removePrefix("5|").split(';');require(parts.size==if(alpha18)16 else if(alpha17)15 else if(alpha16)14 else if(alpha15)13 else if(alpha14)12 else if(alpha13)11 else if(alpha12 || alpha11)10 else if(alpha10)9 else if(alpha9)8 else if(alpha8)7 else if(alpha7)6 else if(alpha6)4 else 2)
             // Saves before alpha.12 hold the 62-column map; widen them, east-bank cells start fresh.
             val cells=if(alpha16)WorldMap.CELL_COUNT else if(alpha13)WorldMap.COLUMNS*WorldMap.ALPHA20_ROWS else if(alpha8)WorldMap.COLUMNS*WorldMap.LEGACY_ROWS else WorldMap.LEGACY_COLUMNS*WorldMap.LEGACY_ROWS
             fun widen(index:Int)=if(alpha8)index else index/WorldMap.LEGACY_COLUMNS*WorldMap.COLUMNS+index%WorldMap.LEGACY_COLUMNS
@@ -753,6 +756,7 @@ class GameState {
             if(alpha15)wind.arena.restore(parts[12])
             if(alpha16)recovery.restore(parts[13])
             if(alpha17)village.restore(parts[14],this) else village.migrate(this)
+            if(alpha18)wash.restore(parts[15])
             require(recovery.held<0 || (blocks.carried<0 && pipes.carried<0 && craneCargo==0))
             if(!bridgeOpen)require(listOf(fleet.mixer,fleet.wrecker).all { it.x<=WorldMap.DRIVE_MAX_X })
             require(listOf(fleet.mixer,fleet.wrecker).all { VehicleNavigation.land(VehicleNavigation.Point(WorldMap.worldX(it.x),it.z),bridgeOpen) })

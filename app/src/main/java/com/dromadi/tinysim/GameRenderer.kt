@@ -62,6 +62,36 @@ class GameRenderer {
         if(a.celebrating>0) { for(i in 0..4)star(c,450f+i*75,190f+sin(time*2+i)*12f,20f,yellow) }
         if(!hintX.isNaN())hand(c,hintX,hintY,time)
     }
+    private fun drop(c:Canvas,x:Float,y:Float,size:Float,color:Int) {
+        circle(c,x,y+size*.25f,size*.55f,color)
+        poly(c,floatArrayOf(x-size*.5f,y+size*.1f,x,y-size*.8f,x+size*.5f,y+size*.1f),color)
+    }
+    private fun washHud(c:Canvas,g:GameState,hold:Float,time:Float,hintX:Float,hintY:Float) {
+        val w=g.wash
+        rect(c,24f,20f,300f,70f,white,22f);drop(c,58f,53f,25f,teal)
+        for(i in w.mud.indices)circle(c,105f+i*26,55f,9f,if(w.mud[i]<=.005f)teal else col("#946B43"))
+        rect(c,350f,20f,100f,70f,white,22f);houseIcon(c,400f,52f)
+        rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
+        if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
+        if(w.spraying && w.ready(g)) {
+            val x=w.aimX;val y=w.aimY
+            for(k in -1..1)line(c,1100f+k*4,524f,x+k*7,y,col("#91E1F5"),3f)
+            for(k in 0..13) {
+                val t=(time*2f+k/14f)%1f
+                drop(c,1100f+(x-1100f)*t+sin(k*2f)*7f,524f+(y-524f)*t,3f+3f*t,white)
+            }
+            for(k in 0..7)circle(c,x+cos(k*PI.toFloat()/4)*22f,y+sin(k*PI.toFloat()/4)*14f,3f,white)
+        }
+        rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
+        c.save();c.translate(110f,600f);c.scale(.8f,.8f);miniExcavator(c,0f,8f);c.restore()
+        drop(c,270f,601f,29f,teal)
+        if(w.clean)star(c,600f,600f,35f,yellow)
+        else if(w.ready(g)) { hand(c,600f+sin(time)*50f,602f,time);line(c,510f,605f,690f,605f,teal,4f) }
+        else { rect(c,840f,556f,340f,104f,teal,28f);truck(c,960f,628f,.45f,0,0f);arrowDown(c,1100f,585f,white) }
+        if(w.ready(g)) { line(c,1140f,646f,1080f,569f,ink,14f);line(c,1080f,569f,1100f,526f,teal,15f);drop(c,1100f,512f,14f,teal) }
+        if(g.celebrating>0)for(k in 0..4)star(c,440f+k*75,140f+sin(time*3+k)*12,18f,yellow)
+        if(!hintX.isNaN())hand(c,hintX,hintY,time)
+    }
     private fun star(c:Canvas,x:Float,y:Float,r:Float,color:Int) {
         val a=FloatArray(20);for(i in 0..9) {val t=i*PI/5-PI/2;val rad=if(i%2==0)r else r*.48f;a[i*2]=x+(cos(t)*rad).toFloat();a[i*2+1]=y+(sin(t)*rad).toFloat()};poly(c,a,color)
     }
@@ -71,10 +101,12 @@ class GameRenderer {
      * hintX/hintY place the pointing hand (NaN hides it).
      */
     fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN,targets:List<Pair<Int,Pair<Float,Float>>> = emptyList(),gardens:List<Pair<Int,Pair<Float,Float>>> = emptyList()) {
+        if(g.wash.open && !parents) { washHud(c,g,hold,time,hintX,hintY);return }
         if(g.wind.arena.open && !parents) { arenaHud(c,g.wind.arena,hold,time,hintX,hintY);return }
         rect(c,470f,20f,100f,70f,white,22f);stormIcon(c,520f,54f,0,.7f)
         rect(c,590f,20f,100f,70f,if(g.recovery.engaged)yellow else white,22f);houseIcon(c,640f,53f)
         progressCard(c,g)
+        rect(c,870f,20f,108f,70f,white,22f);drop(c,924f,54f,27f,teal)
         rect(c,350f,20f,100f,70f,if(g.wind.active)teal else yellow,22f)
         c.save();c.translate(397f,43f);c.scale(.42f,.42f);cloud(c,0f,0f);c.restore()
         for(i in 0..2)line(c,380f+i*5,65f+i*6,420f-i*6,65f+i*6,if(g.wind.active)white else ink,3f)

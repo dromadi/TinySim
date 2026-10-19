@@ -17,6 +17,9 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("wash-dirty",0) { g->prepareWash(g) },
+        Triple("wash-spray",0) { g->prepareWash(g);val p=g.wash.targets(g)[0];g.wash.spray(g,p.first,p.second);repeat(8){g.update(.04f)} },
+        Triple("wash-clean",0) { g->prepareWash(g);for(p in g.wash.targets(g)) { g.wash.spray(g,p.first,p.second);repeat(30){g.update(.04f)} };g.wash.stop();repeat(90){g.update(.016f)};check(g.wash.clean) },
         Triple("village-welcome",0) { g->prepareDistrict(g,4);repeat(180){g.update(.016f)};check(g.village.welcomed==15) },
         Triple("village-garden",0) { g->prepareDistrict(g,4);repeat(4){check(g.village.plant(g,it))};repeat(180){g.update(.016f)};check(g.village.planted==15) },
         Triple("village-shelter",0) { g->prepareDistrict(g,4);check(g.village.plant(g,0));g.wind.toggle(g);repeat(80){g.update(.016f)};check((0..3).none { g.village.outside(g,it) }) },
@@ -178,4 +181,8 @@ fun prepareDistrict(g:GameState,stage:Int) {
     if(stage>=2)repeat(2){act(GameState.Vehicle.TRUCK)}
     if(stage>=3)repeat(4){act(GameState.Vehicle.MIXER)}
     if(stage>=4)repeat(16){act(GameState.Vehicle.CRANE);act(GameState.Vehicle.CRANE)}
+}
+
+fun prepareWash(g:GameState) {
+    repeat(4){g.wash.soil()};g.wash.enter(g);previewIdle(g);g.update(.04f);check(g.wash.ready(g))
 }

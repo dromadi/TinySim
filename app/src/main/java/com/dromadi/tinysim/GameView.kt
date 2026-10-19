@@ -44,6 +44,7 @@ class GameView(context: Context): FrameLayout(context) {
     private var panZ=settings.panZ
     private data class CameraPose(val camera:Int,val yaw:Float,val pitch:Float,val zoom:Float,val x:Float,val z:Float)
     private var worldCamera:CameraPose?=null
+    private var washCamera:CameraPose?=null
     private var lastArenaReward=0
     private var lastArenaAbsorb=0
     private var following=false
@@ -57,7 +58,17 @@ class GameView(context: Context): FrameLayout(context) {
         worldCamera?.let { camera=it.camera;yaw=it.yaw;pitch=it.pitch;zoom=it.zoom;panX=it.x;panZ=it.z }
         worldCamera=null;saveCamera()
     }
-    fun cameraSpec()=WorldCamera.spec(camera,yaw,pitch,zoom,panX,panZ)
+    private fun enterWash() {
+        if(game.wind.arena.open)leaveArena()
+        if(washCamera==null)washCamera=CameraPose(camera,yaw,pitch,zoom,panX,panZ)
+        game.wash.enter(game);following=true;orbitMode=false
+    }
+    private fun leaveWash() {
+        game.wash.leave(game);following=false
+        washCamera?.let { camera=it.camera;yaw=it.yaw;pitch=it.pitch;zoom=it.zoom;panX=it.x;panZ=it.z }
+        washCamera=null;saveCamera()
+    }
+    fun cameraSpec()=if(game.wash.ready(game))WashBay.camera(game) else WorldCamera.spec(camera,yaw,pitch,zoom,panX,panZ)
     private fun groundAt(x:Float,y:Float)=if(game.wind.arena.open)cameraSpec().ground(x,y) else cameraSpec().ground(x,y,game::surface)
     fun followSelected() { following=true }
     fun pan(fromX:Float,fromY:Float,toX:Float,toY:Float) {
@@ -207,6 +218,7 @@ class GameView(context: Context): FrameLayout(context) {
     }
     fun closePanel(): Boolean {
         if(parents) { parents=false;input.cancel();hud.invalidate();return true }
+        if(game.wash.open) { leaveWash();input.cancel();hud.invalidate();return true }
         if(game.wind.arena.open) { leaveArena();input.cancel();hud.invalidate();return true }
         return false
     }
@@ -271,6 +283,11 @@ class GameView(context: Context): FrameLayout(context) {
             return listOf("sound","cameraPreset","advanced","mode","reset","close").getOrNull(row)
         }
         if(x in 1100f..1176f && y in 20f..84f)return "parents"
+        if(game.wash.open) {
+            if(x in 350f..450f && y in 20f..90f)return "washExit"
+            if(x in 840f..1180f && y in 556f..660f && !game.wash.ready(game))return "washRetry"
+            return if(y in 100f..535f)"wash" else null
+        }
         if(game.wind.arena.open) {
             if(x in 350f..450f && y in 20f..90f)return "arenaExit"
             if(x in 470f..570f && y in 20f..90f)return "arenaReplay"
@@ -286,6 +303,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(x in 350f..450f && y in 20f..90f)return "windToggle"
         if(x in 470f..570f && y in 20f..90f)return "arena"
         if(x in 590f..690f && y in 20f..90f)return "district"
+        if(x in 870f..978f && y in 20f..90f)return "washEnter"
         if(game.recovery.engaged && x in 714f..854f && y in 20f..90f)return "districtWork"
         if(game.recovery.engaged && x in 24f..324f && y in 20f..90f)return "action"
         if(advanced) {
@@ -341,7 +359,11 @@ class GameView(context: Context): FrameLayout(context) {
     }
     /** House stages assemble by themselves once the foundation and materials are ready. */
     private fun houseAndHelp(now:Long) {
-        if(game.wind.arena.open || game.wind.active || game.wind.strength>0f || (game.recovery.engaged && game.recovery.damaged==0 && game.village.nextGarden(game)<0)) { hint=null;return }
+        if(game.wash.open) {
+            hint=if(helpEnabled && game.wash.ready(game) && !game.wash.clean && !game.wash.spraying && now-lastTouch>HINT_AFTER_MS)Guide.next(game) else null
+            return
+        }
+        if(!game.wash.open && (game.wind.arena.open || game.wind.active || game.wind.strength>0f || (game.recovery.engaged && game.recovery.damaged==0 && game.village.nextGarden(game)<0))) { hint=null;return }
         if(!game.recovery.engaged && game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
             following=false;panX=36.3f;panZ=7f
         }
@@ -358,10 +380,11 @@ class GameView(context: Context): FrameLayout(context) {
     private fun perform(next:Hint) {
         when(next) {
             is Hint.Card -> selectUnit(next.vehicle)
-            Hint.Action -> if(game.recovery.engaged)districtWork() else game.action()
+            Hint.Action -> if(game.wash.open) { if(!game.wash.ready(game))enterWash() } else if(game.recovery.engaged)districtWork() else game.action()
             Hint.Blocks -> activate("blocks")
             is Hint.Pipe -> pipeTouch(next.id)
             is Hint.Garden -> game.village.plant(game,next.house)
+            is Hint.Wash -> Unit
             is Hint.Ground -> {
                 if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && game.digAt(next.x,next.z))return
                 game.driveTo(game.selected,WorldMap.gameX(next.x),next.z);followSelected()
@@ -374,6 +397,7 @@ class GameView(context: Context): FrameLayout(context) {
         is Hint.Card -> GameRenderer.cardCenter(next.vehicle) to 590f
         Hint.Action -> 1010f to 590f
         Hint.Blocks -> 170f to 55f
+        is Hint.Wash -> game.wash.targets(game).getOrNull(next.patch)
         is Hint.Garden -> gardenMarkers().firstOrNull { it.first==next.house }?.second
         is Hint.Pipe -> pipeMarkers().firstOrNull { it.first==next.id }?.second ?: (1010f to 590f)
         is Hint.Ground -> runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(next.x,game.surface(next.x,next.z),next.z)) }.getOrNull()
@@ -381,6 +405,8 @@ class GameView(context: Context): FrameLayout(context) {
     }
     fun activate(action: String) {
         when(action) {
+            "washEnter","washRetry" -> enterWash()
+            "washExit" -> leaveWash()
             "district" -> {
                 if(game.wind.arena.open)leaveArena()
                 if(game.recovery.engaged) { game.stopMovement();game.recovery.engaged=false }

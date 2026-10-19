@@ -11,6 +11,19 @@ class TouchControllerTest {
         fun point(x:Float,y:Float=330f,id:Int=7)=TouchPoint(id,x,y)
         fun has(kind:GestureKind)=events.any { it.kind==kind }
     }
+    @Test fun heldWashSpraysUntilReleaseWithoutDrivingPanningOrArmMovement() {
+        val h=Harness("wash",GameState.Vehicle.EXCAVATOR)
+        h.event(TouchPhase.DOWN,h.point(500f));h.controller.tick(50);h.event(TouchPhase.MOVE,h.point(550f));h.event(TouchPhase.UP,h.point(550f))
+        assertTrue(h.has(GestureKind.WASH));assertTrue(h.has(GestureKind.WASH_END))
+        assertFalse(h.has(GestureKind.DRIVE));assertFalse(h.has(GestureKind.ARM));assertFalse(h.has(GestureKind.PAN))
+        val count=h.events.count { it.kind==GestureKind.WASH };h.controller.tick(100)
+        assertEquals(count,h.events.count { it.kind==GestureKind.WASH })
+    }
+    @Test fun secondFingerAndCancellationStopTheHose() {
+        val h=Harness("wash");h.event(TouchPhase.DOWN,h.point(500f))
+        h.event(TouchPhase.ADD,h.point(500f),h.point(600f,id=8));assertTrue(h.has(GestureKind.WASH_END));assertFalse(h.has(GestureKind.PAN))
+        h.events.clear();h.event(TouchPhase.DOWN,h.point(500f));h.event(TouchPhase.CANCEL,h.point(500f));assertTrue(h.has(GestureKind.WASH_END))
+    }
     @Test fun singleGroundTapDoesNotPanOrDrag() {
         val h=Harness();h.event(TouchPhase.DOWN,h.point(500f));h.event(TouchPhase.UP,h.point(504f))
         assertTrue(h.has(GestureKind.SCENE_TAP));assertFalse(h.has(GestureKind.PAN));assertFalse(h.has(GestureKind.DRIVE))

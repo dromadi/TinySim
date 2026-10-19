@@ -1,3 +1,9 @@
+# Alpha.24 — semprot dan bersihkan excavator
+
+Lima tes WashBay ditambah dua tes gestur menguji penggalian nyata → kotor → perjalanan ke petak, proyeksi patch yang dapat disentuh, hit/miss, berhenti menyemprot saat pelepasan, hadiah sekali, save/migrasi dan penolakan save rusak. Semua tick logika baru memeriksa konservasi material. Fixture korupsi yang dibangun dari snapshot saat ini memakai v18; fixture migrasi v16/v17 tetap eksplisit.
+
+Perintah lokal `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba, namun berhenti sebelum kompilasi karena unduhan Gradle `Network is unreachable`. CI Android dan tiga pratinjau renderer wash-dirty, wash-spray, wash-clean disiapkan; hasil menunggu eksekusi. Belum diuji di HP/emulator. Tidak dibuat debug key lokal pengganti.
+
 # Alpha.23 — kota yang hidup
 
 Fitur penduduk per rumah yang benar-benar dipulihkan, permintaan taman bergambar, penanaman satu sentuhan, pertumbuhan pohon, sapaan dan perlindungan dari tornado. Save v17 memigrasikan v16 serta format lama; model renderer menggunakan salinan array milik frame.

@@ -222,7 +222,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         GL.glClear(GL.GL_COLOR_BUFFER_BIT or GL.GL_DEPTH_BUFFER_BIT)
         GL.glViewport(viewportX,viewportY,viewportW,viewportH)
         GL.glEnable(GL.GL_SCISSOR_TEST);GL.glScissor(viewportX,viewportY,viewportW,viewportH)
-        val camera=WorldCamera.spec(f.camera,f.yaw,f.pitch,f.zoom,f.panX,f.panZ)
+        val camera=if(f.wash.ready)com.dromadi.tinysim.WashBay.camera(WorldMap.worldX(f.excavatorX),f.excavatorZ,support(f,WorldMap.worldX(f.excavatorX),f.excavatorZ)) else WorldCamera.spec(f.camera,f.yaw,f.pitch,f.zoom,f.panX,f.panZ)
         Matrix.setLookAtM(view,0,camera.eye.x,camera.eye.y,camera.eye.z,camera.target.x,camera.target.y,camera.target.z,0f,1f,0f)
         Matrix.perspectiveM(projection,0,camera.fov,WorldCamera.ASPECT,.8f,260f)
         Matrix.multiplyMM(vp,0,projection,0,view,0)
@@ -259,6 +259,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         pipeSite(f)
         workYard(f)
         recoverySite(f)
+        washBay(f)
         village(f)
         serviceTruck(f,false)
         serviceTruck(f,true)
@@ -480,6 +481,16 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         for(x in floatArrayOf(5f,19f,34f,46f)) { tree(x,43f,1.3f);trafficCone(x,24f) }
     }
     /** Residents stay on their own porch/yard; storms hide them before the next rendered frame. */
+    private fun washBay(f:SceneFrame) {
+        val x=com.dromadi.tinysim.WashBay.X;val z=com.dromadi.tinysim.WashBay.Z;val y=support(f,x,z)
+        surface(x,y+.03f,z,5f,.06f,4.3f,stone,CONCRETE)
+        for(dx in floatArrayOf(-2.4f,2.4f))box(x+dx,y+.1f,z,.12f,.08f,4.3f,teal,PAINT)
+        for(k in 0..7)box(x-1.4f+k*.4f,y+.08f,z+1.7f,.2f,.04f,.13f,ink,METAL)
+        box(x-2.6f,y+.75f,z-.8f,.65f,1.5f,.6f,teal,PAINT)
+        shape(cylinder,x-2.6f,y+1.6f,z-.8f,.16f,.2f,.16f,chrome,METAL)
+        for(k in 0..5)blob(x-2.25f+k*.23f,y+.13f,z-1.1f+sin(k*.9f)*.12f,.18f,.13f,.18f,ink,MATTE)
+        if(f.wash.open)noCast { disk(x,y+.075f,z,2.4f,1.8f,rgba(116,190,205),DECAL) }
+    }
     private fun village(f:SceneFrame) {
         val v=f.village;val site=com.dromadi.tinysim.VillageLife
         for(h in 0..3) {
@@ -754,6 +765,11 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         shape(cylinder,.5f,1.65f,-.5f,.1f,.5f,.1f,darkSteel,METAL)
         beaconLight(-.6f,2.58f,0f,f.seconds)
         box(-1.24f,1.5f,.73f,.04f,.7f,.04f,ink,METAL)
+        for(i in f.wash.mud.indices)if(f.wash.mud[i]>.005f) {
+            val q=com.dromadi.tinysim.WashBay.PATCHES[i];val amount=sqrt(f.wash.mud[i])
+            if(i==7)blob(q.x,q.y,q.z,.6f*amount,.045f,.5f*amount,rgba(108,73,41),SOIL)
+            else blob(q.x,q.y,q.z,.43f*amount,.28f*amount,.06f,rgba(108,73,41),SOIL)
+        }
         pop()
         val px=WorldCamera.x(243f);val py=WorldCamera.y(412f)
         val joint=ArmRig.elbow(f.armX,f.armY)
