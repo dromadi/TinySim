@@ -3,7 +3,7 @@
 
 Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.22**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Kawasan konstruksi setelah dibangun kembali](docs/verification/alpha21/district-restored.jpg)
+![Kawasan konstruksi dengan petunjuk lima tahap](docs/verification/alpha22/district-restored.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
 

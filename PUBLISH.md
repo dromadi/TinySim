@@ -2,7 +2,7 @@
 
 `0.1.0-alpha.22` / versionCode 22. Tombol pemulihan kota satu langkah, pemilihan kendaraan otomatis, lima ikon tahap dan pergantian tornado ke kendaraan. Format save tetap v16.
 
-Artifact Actions: `TinySim-0.1.0-alpha.22-debug`. Build lokal terhalang akses unduhan Gradle; gunakan hasil Actions pada commit PR ini. Belum ada pengujian HP/emulator atau pratinjau renderer baru. Kunci debug privat versi sebelumnya tidak tersedia di workspace ini; tidak dibuat APK lokal dengan key pengganti. APK CI dapat memiliki penanda tangan berbeda dari APK lokal sebelumnya.
+Artifact Actions: `TinySim-0.1.0-alpha.22-debug`. [Build CI](https://github.com/dromadi/TinySim/actions/runs/39252253869) lulus: 156 tes, lint, APK debug dan APK instrumentation. [Unduh ZIP APK alpha.22](https://github.com/dromadi/TinySim/actions/runs/39252253869/artifacts/12184904975). Tiga pratinjau renderer lulus dan gambarnya ada di docs/verification/alpha22. Belum diuji di HP/emulator. Kunci debug privat versi sebelumnya tidak tersedia di workspace ini; tidak dibuat APK lokal dengan key pengganti. APK CI dapat memiliki penanda tangan berbeda dari APK lokal sebelumnya.
 
 # Publikasi Alpha.21
 
