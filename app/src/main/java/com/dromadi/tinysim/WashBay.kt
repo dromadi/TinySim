@@ -20,6 +20,7 @@ class WashBay {
     private val rewarded=BooleanArray(6){true}
     private val previousTravel=FloatArray(6)
     private var mask=0
+    private var waitingForBay=false
     val clean get()=mud.all { it<=.005f } && foam.all { it<=.005f }
     fun soil(v:GameState.Vehicle=GameState.Vehicle.EXCAVATOR,amount:Float=.22f) {
         if(!amount.isFinite() || amount<=0f)return
@@ -36,12 +37,20 @@ class WashBay {
     fun enter(g:GameState,v:GameState.Vehicle=g.selected) {
         g.stopMovement();g.wind.arena.leave();g.selected=v;g.pipes.active=false;vehicle=v;open=true
         // Vacate the shared bay using actual routes; rapid choices also clear older occupants.
-        for(other in GameState.Vehicle.entries)if(other!=v && g.vehicleBody(other).point.distance(VehicleNavigation.Point(X,Z))<4.5f)
+        for(other in GameState.Vehicle.entries)if(other!=v && g.vehicleBody(other).point.distance(VehicleNavigation.Point(X,Z))<VehicleNavigation.radius(v)+VehicleNavigation.radius(other)+VehicleNavigation.GAP+.2f)
             g.driveTo(other,WorldMap.gameX(-5f+other.ordinal*7f),21.5f)
-        g.driveTo(v,WorldMap.gameX(X),Z)
+        waitingForBay=true;approachWhenClear(g)
+    }
+    private fun approachWhenClear(g:GameState) {
+        if(!open || !waitingForBay)return
+        val others=GameState.Vehicle.entries.filter { it!=vehicle }.map { g.vehicleBody(it) }
+        // Do not cache a nearest-free destination beside an occupant that is still leaving.
+        if(VehicleNavigation.free(VehicleNavigation.Point(X,Z),vehicle,others)) {
+            waitingForBay=false;g.driveTo(vehicle,WorldMap.gameX(X),Z)
+        }
     }
     fun choose(tool:Tool) { stop();this.tool=tool }
-    fun leave(g:GameState) { open=false;g.stopMovement() }
+    fun leave(g:GameState) { open=false;waitingForBay=false;g.stopMovement() }
     fun stop() { spraying=false;mask=0 }
     fun targets(g:GameState):List<Pair<Float,Float>> {
         val p=g.vehicleBody(vehicle).point;val camera=camera(g)
@@ -59,6 +68,7 @@ class WashBay {
             previousTravel[v.ordinal]=travel[v.ordinal]
             if(!open && delta>0f)soil(v,delta*.008f)
         }
+        approachWhenClear(g)
         if(!ready(g)) { stop();return }
         when(vehicle) {
             GameState.Vehicle.EXCAVATOR->g.excavatorHeading=0f;GameState.Vehicle.TRUCK->g.truckHeading=0f
@@ -74,7 +84,7 @@ class WashBay {
             mud.fill(0f);foam.fill(0f);rewarded[vehicle.ordinal]=true;cycles++;g.rewardSerial++;g.celebrating=1.2f;g.greet(vehicle)
         }
     }
-    fun reset() { dirt.forEach { it.fill(0f) };bubbles.forEach { it.fill(0f) };rewarded.fill(true);previousTravel.fill(0f);cycles=0;vehicle=GameState.Vehicle.EXCAVATOR;tool=Tool.WATER;open=false;stop() }
+    fun reset() { dirt.forEach { it.fill(0f) };bubbles.forEach { it.fill(0f) };rewarded.fill(true);previousTravel.fill(0f);cycles=0;vehicle=GameState.Vehicle.EXCAVATOR;tool=Tool.WATER;open=false;waitingForBay=false;stop() }
     fun snapshot()=listOf(cycles,vehicle.ordinal,tool.ordinal).joinToString(",")+"#"+dirt.flatMap { it.toList() }.joinToString(",")+"#"+bubbles.flatMap { it.toList() }.joinToString(",")+"#"+rewarded.joinToString(","){if(it)"1" else "0"}
     fun restore(s:String) {
         val p=s.split('#');require(p.size==4);val h=p[0].split(',');require(h.size==3)
