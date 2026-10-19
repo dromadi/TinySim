@@ -418,7 +418,7 @@ class GameState {
     }
     /** The next waypoint once the current one is reached, or null at the destination. */
     private fun nextLeg(vehicle:Vehicle)=routes[vehicle.ordinal].removeFirstOrNull()
-    fun stopMovement() { wash.stop(); recovery.cancel(this);wind.halt();fleet.cancel();pipes.cancel();truckGoal=null;dozerGoal=null;excavatorGoal=null;craneGoal=null;craneTask=null;pendingCrane=null;pendingBridge=false;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() };paths.clear();deckOwner=null }
+    fun stopMovement() { wash.cancelApproach(); recovery.cancel(this);wind.halt();fleet.cancel();pipes.cancel();truckGoal=null;dozerGoal=null;excavatorGoal=null;craneGoal=null;craneTask=null;pendingCrane=null;pendingBridge=false;digTarget=null;buildClock=0f;bridgeClock=0f;routes.forEach { it.clear() };paths.clear();deckOwner=null }
     val driving get()=recovery.busy || fleet.busy || fleet.mixer.goal!=null || fleet.wrecker.goal!=null || pipes.busy || truckGoal!=null || dozerGoal!=null || excavatorGoal!=null || craneGoal!=null || craneTask!=null
     var bladeDown = true
     var dozerFacing = 1

@@ -48,6 +48,14 @@ class FleetWashTest {
         g.wash.choose(WashBay.Tool.WATER);assertFalse(g.wash.spraying);g.wash.reset()
         assertTrue(frame.wash.foam[4][0]>0f);assertTrue(frame.wash.dirt[4][0]>0f)
     }
+    @Test fun pauseCancelsQueuedArrivalUntilExplicitRetry() {
+        val g=GameState();arrive(g,GameState.Vehicle.EXCAVATOR)
+        g.wash.enter(g,GameState.Vehicle.TRUCK);assertTrue(g.driving)
+        g.stopMovement();val before=GameState.Vehicle.entries.map { g.vehicleBody(it).point }
+        tick(g,100);assertFalse(g.driving)
+        assertEquals(before,GameState.Vehicle.entries.map { g.vehicleBody(it).point })
+        arrive(g,GameState.Vehicle.TRUCK);assertTrue(g.wash.ready(g))
+    }
     @Test fun faintTravelDirtSurvivesSaveBeforeVisibleThreshold() {
         val g=GameState();g.wash.soil(GameState.Vehicle.DOZER,.0001f)
         assertTrue(g.wash.dirt[2].all { it>0f && it<.005f })

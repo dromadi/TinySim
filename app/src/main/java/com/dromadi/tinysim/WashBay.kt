@@ -52,6 +52,7 @@ class WashBay {
     fun choose(tool:Tool) { stop();this.tool=tool }
     fun leave(g:GameState) { open=false;waitingForBay=false;g.stopMovement() }
     fun stop() { spraying=false;mask=0 }
+    fun cancelApproach() { waitingForBay=false;stop() }
     fun targets(g:GameState):List<Pair<Float,Float>> {
         val p=g.vehicleBody(vehicle).point;val camera=camera(g)
         return patches(vehicle).map { q->camera.project(Vec3(p.x+q.x,g.surface(p.x,p.z)+q.y,p.z+q.z)) }
