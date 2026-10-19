@@ -1,3 +1,11 @@
+# Alpha.22 — pemulihan kota terpandu
+
+Perubahan: tombol kerja otomatis memilih kendaraan sesuai inventaris, mematikan/menetapkan tornado sebelum bekerja, menjaga pekerjaan saat ketukan berulang, dan tidak memulai cuaca lagi setelah selesai. HUD menunjukkan lima tahap.
+
+Dua tes regresi ditambahkan di RecoverySiteTest: transisi saat bagian melayang dengan ketukan berulang; serta seluruh siklus lewat satu tombol, restore dan mulai tornado secara eksplisit. Tes memeriksa konservasi tanah dan beton pada setiap tick.
+
+Perintah lokal `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba tetapi berhenti sebelum kompilasi: unduhan Gradle 8.9 gagal dengan `Network is unreachable`. `git diff --check` lulus. Hasil CI dicatat setelah workflow selesai. Tidak ada klaim uji HP/emulator, kinerja, atau screenshot renderer baru; pratinjau lokal belum dapat dijalankan karena dependensi Gradle tidak tersedia.
+
 # Verifikasi Alpha.21 — kawasan pulih-bangun
 
 Tanggal: 18 Oktober 2026. `com.dromadi.tinysim`, versionCode 21 / `0.1.0-alpha.21`. Basis `e11bc9d` (Alpha.20); tidak ada PR terbuka saat mulai dan saat pemeriksaan publikasi.
