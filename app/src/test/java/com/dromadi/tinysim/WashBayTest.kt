@@ -48,7 +48,7 @@ class WashBayTest {
     }
     @Test fun malformedDirtCannotCorruptWorldOrRecreateRewards() {
         val g=dirty()
-        for(bad in listOf("0,0#"+List(8){"NaN"}.joinToString(","),"0,1#"+List(8){"1.0"}.joinToString(","),"-1,1#"+List(8){"0.0"}.joinToString(","))) {
+        for(bad in listOf("0,0,0#"+List(48){"NaN"}.joinToString(",")+"#"+List(48){"0.0"}.joinToString(",")+"#1,1,1,1,1,1", "0,0,0#"+List(48){"1.0"}.joinToString(",")+"#"+List(48){"0.0"}.joinToString(",")+"#1,1,1,1,1,1", "-1,0,0#"+List(48){"0.0"}.joinToString(",")+"#"+List(48){"0.0"}.joinToString(",")+"#1,1,1,1,1,1")) {
             val c=GameState();c.restore(g.snapshot().substringBeforeLast(';')+";"+bad)
             assertEquals(GameState().snapshot(),c.snapshot())
         }

@@ -99,7 +99,7 @@ class TornadoArenaTest {
         for(bad in listOf(valid.replaceFirst("0,0,0#","9,0,0#"),groups.joinToString("#"),valid.replaceFirst("#0,0,","#2,0,"))) {
             try { a.restore(bad);fail("accepted malformed save") } catch(_:IllegalArgumentException) { }
         }
-        val g=GameState();val parts=g.snapshot().substringAfter('|').split(';').toMutableList();parts[12]="broken";g.restore(parts.joinToString(";",prefix="18|"));assertEquals(GameState().snapshot(),g.snapshot())
+        val g=GameState();val parts=g.snapshot().substringAfter('|').split(';').toMutableList();parts[12]="broken";g.restore(parts.joinToString(";",prefix="19|"));assertEquals(GameState().snapshot(),g.snapshot())
     }
     @Test fun randomTouchModeAndPauseSequencesStayBoundedAndNeverChangeWorldMaterial() {
         val g=GameState();val a=g.wind.arena;a.enter();val random=java.util.Random(881)

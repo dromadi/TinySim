@@ -1,3 +1,9 @@
+# Alpha.25 — seluruh armada dan busa
+
+Lima tes FleetWash ditambahkan: keenam kendaraan masuk/keluar bay yang sama, jangkauan delapan titik per model, sabun/bilas dan hadiah per kendaraan, air tanpa sabun serta larangan farming pada kendaraan bersih, snapshot busa/alat dan salinan frame, migrasi v18, serta pilihan kendaraan cepat saat selang aktif. Setiap tick tes baru memeriksa konservasi material. Tes WashBay sebelumnya tetap berjalan; fixture korupsi dibuat dalam format v19 agar memeriksa isi, bukan sekadar gagal jumlah field.
+
+Perintah lokal `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba, tetapi unduhan Gradle gagal `Network is unreachable` sebelum kompilasi. CI Android dan enam pratinjau renderer (satu per kendaraan) disiapkan; hasil menunggu eksekusi. Belum diuji di HP/emulator; tidak dibuat debug key lokal pengganti.
+
 # Alpha.24 — semprot dan bersihkan excavator
 
 Lima tes WashBay ditambah dua tes gestur menguji penggalian nyata → kotor → perjalanan ke petak, proyeksi patch yang dapat disentuh, hit/miss, berhenti menyemprot saat pelepasan, hadiah sekali, save/migrasi dan penolakan save rusak. Semua tick logika baru memeriksa konservasi material. Fixture korupsi yang dibangun dari snapshot saat ini memakai v18; fixture migrasi v16/v17 tetap eksplisit.

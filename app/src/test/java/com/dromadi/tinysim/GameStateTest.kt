@@ -71,7 +71,7 @@ class GameStateTest {
         assertEquals(GameState.START_SAND,g.totalSand);assertEquals(6,g.westSand())
         assertEquals(4,g.sand[WorldMap.cell(WorldMap.worldX(585f),1.35f)])
         assertEquals(2,g.sand[WorldMap.cell(WorldMap.worldX(615f),1.35f)])
-        assertTrue(g.snapshot().startsWith("18|"))
+        assertTrue(g.snapshot().startsWith("19|"))
     }
     @Test fun loadActionCanBringADistantTruckBackToTheExcavator() {
         val g=GameState();g.moveArm(365f,440f);settle(g);g.scoop()

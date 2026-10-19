@@ -1,11 +1,20 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.24**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.25**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
 ![Mencuci excavator dengan semprotan satu jari](docs/verification/alpha24/wash-spray.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.25: seluruh armada, sabun dan busa
+
+- Keenam kartu di tempat cuci memilih excavator, dump truck, bulldozer, crane, molen atau truk penghancur. Kendaraan lama keluar melalui rute parkir; kendaraan berikutnya berjalan ke petak yang sama, tanpa teleportasi atau menghapus muatan.
+- Dua tombol besar bergambar botol sabun dan tetesan air memilih alat. Sabun membentuk gugus busa pada bagian yang disentuh dan membantu melonggarkan lumpur. Air mengurangi lumpur serta membilas busa; boleh langsung memakai air tanpa urutan wajib.
+- Setiap kendaraan mempunyai delapan bagian dengan lumpur dan busa sendiri. Penggalian mengotori excavator, sementara perjalanan kerja menambah kotoran ringan pada kendaraan yang bergerak. Perjalanan khusus di tempat cuci tidak langsung mengotori kendaraan lagi.
+- Tangan penunjuk mengarah ke bagian yang perlu dicuci atau tombol bilas setelah busa merata. Perubahan alat/kendaraan, pelepasan sentuhan dan background mematikan semprotan. Hadiah diberikan sekali untuk kendaraan yang memang kotor; menambahkan sabun pada kendaraan bersih tidak menghasilkan hadiah baru.
+- Save v19 menyimpan seluruh 48 bagian, busa, pilihan kendaraan/alat dan siklus, serta memigrasikan v18/Alpha.24 (delapan bagian excavator dan siklus tetap utuh), v17 dan format lama. Cold restore tidak membuka tempat cuci atau menyalakan air.
+- Sikat, genangan yang bisa dimainkan dan kendaraan tambahan belum termasuk versi ini. Model busa dan ikon sabun dibuat dengan kode asli; tetap offline tanpa izin baru, iklan, login atau analytics.
 
 ## Alpha.24: cuci excavator dengan sentuhan
 

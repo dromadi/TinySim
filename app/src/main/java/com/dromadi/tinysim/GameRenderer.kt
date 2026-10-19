@@ -69,13 +69,14 @@ class GameRenderer {
     private fun washHud(c:Canvas,g:GameState,hold:Float,time:Float,hintX:Float,hintY:Float) {
         val w=g.wash
         rect(c,24f,20f,300f,70f,white,22f);drop(c,58f,53f,25f,teal)
-        for(i in w.mud.indices)circle(c,105f+i*26,55f,9f,if(w.mud[i]<=.005f)teal else col("#946B43"))
+        for(i in w.mud.indices)circle(c,105f+i*26,55f,9f,if(w.foam[i]>.005f)col("#EABDD5") else if(w.mud[i]<=.005f)teal else col("#946B43"))
         rect(c,350f,20f,100f,70f,white,22f);houseIcon(c,400f,52f)
+        if(!w.ready(g)) { rect(c,470f,20f,100f,70f,yellow,22f);arrowDown(c,520f,35f,ink) }
         rect(c,1100f,20f,76f,64f,white,20f);lock(c,1138f,52f)
         if(hold>0) { p.style=Paint.Style.STROKE;p.strokeWidth=5f;p.color=teal;c.drawArc(1104f,18f,1172f,86f,-90f,hold*360,false,p);p.style=Paint.Style.FILL }
         if(w.spraying && w.ready(g)) {
             val x=w.aimX;val y=w.aimY
-            for(k in -1..1)line(c,1100f+k*4,524f,x+k*7,y,col("#91E1F5"),3f)
+            for(k in -1..1)line(c,1100f+k*4,524f,x+k*7,y,if(w.tool==WashBay.Tool.SOAP)col("#F4CBE3") else col("#91E1F5"),3f)
             for(k in 0..13) {
                 val t=(time*2f+k/14f)%1f
                 drop(c,1100f+(x-1100f)*t+sin(k*2f)*7f,524f+(y-524f)*t,3f+3f*t,white)
@@ -83,12 +84,23 @@ class GameRenderer {
             for(k in 0..7)circle(c,x+cos(k*PI.toFloat()/4)*22f,y+sin(k*PI.toFloat()/4)*14f,3f,white)
         }
         rect(c,0f,545f,1200f,130f,col("#F9F3E4"),0f)
-        c.save();c.translate(110f,600f);c.scale(.8f,.8f);miniExcavator(c,0f,8f);c.restore()
-        drop(c,270f,601f,29f,teal)
-        if(w.clean)star(c,600f,600f,35f,yellow)
-        else if(w.ready(g)) { hand(c,600f+sin(time)*50f,602f,time);line(c,510f,605f,690f,605f,teal,4f) }
-        else { rect(c,840f,556f,340f,104f,teal,28f);truck(c,960f,628f,.45f,0,0f);arrowDown(c,1100f,585f,white) }
-        if(w.ready(g)) { line(c,1140f,646f,1080f,569f,ink,14f);line(c,1080f,569f,1100f,526f,teal,15f);drop(c,1100f,512f,14f,teal) }
+        for(v in GameState.Vehicle.entries) {
+            val x=cardCenter(v);button(c,x-54f,108f,w.vehicle==v)
+            when(v) {
+                GameState.Vehicle.EXCAVATOR->{ c.save();c.translate(x,607f);c.scale(.68f,.68f);miniExcavator(c,0f,8f);c.restore() }
+                GameState.Vehicle.TRUCK->truck(c,x,623f,.32f,2,0f)
+                GameState.Vehicle.DOZER->dozer(c,x,623f,.32f,1)
+                GameState.Vehicle.CRANE->crane(c,x,635f,.62f,false)
+                GameState.Vehicle.MIXER->mixerIcon(c,x,615f,.85f)
+                GameState.Vehicle.WRECKER->wreckerIcon(c,x,617f,.85f)
+            }
+        }
+        rect(c,840f,556f,162f,104f,if(w.tool==WashBay.Tool.SOAP)yellow else white,24f)
+        rect(c,889f,591f,51f,45f,col("#C87CAF"),10f);rect(c,903f,577f,24f,15f,ink,3f)
+        for(k in 0..2)circle(c,943f+k*9,587f-k*10,7f+k*2,col("#EABDD5"))
+        rect(c,1018f,556f,162f,104f,if(w.tool==WashBay.Tool.WATER)yellow else white,24f)
+        drop(c,1099f,608f,35f,teal)
+        if(w.clean)star(c,764f,608f,20f,teal)
         if(g.celebrating>0)for(k in 0..4)star(c,440f+k*75,140f+sin(time*3+k)*12,18f,yellow)
         if(!hintX.isNaN())hand(c,hintX,hintY,time)
     }

@@ -34,8 +34,11 @@ data class VillageFrame(val welcomed:Int=0,val planted:Int=0,val outside:Boolean
         BooleanArray(4) { g.village.outside(g,it) },g.village.arrival.copyOf(),g.village.growth.copyOf(),g.village.wave.copyOf()) }
 }
 
-data class WashFrame(val open:Boolean=false,val ready:Boolean=false,val mud:FloatArray=FloatArray(8)) {
-    companion object { fun capture(g:GameState)=WashFrame(g.wash.open,g.wash.ready(g),g.wash.mud.copyOf()) }
+data class WashFrame(val open:Boolean=false,val ready:Boolean=false,val mud:FloatArray=FloatArray(8),
+    val vehicle:Int=0,val x:Float=2f,val z:Float=14f,val base:Float=0f,
+    val dirt:Array<FloatArray> = Array(6){FloatArray(8)},val foam:Array<FloatArray> = Array(6){FloatArray(8)}) {
+    companion object { fun capture(g:GameState)=g.vehicleBody(g.wash.vehicle).point.let { p->WashFrame(g.wash.open,g.wash.ready(g),g.wash.mud.copyOf(),
+        g.wash.vehicle.ordinal,p.x,p.z,g.surface(p.x,p.z),g.wash.dirt.map { it.copyOf() }.toTypedArray(),g.wash.bubbles.map { it.copyOf() }.toTypedArray()) } }
 }
 
 /** Owned copy: the GL thread never reads or modifies the UI thread's game model. */

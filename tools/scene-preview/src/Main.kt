@@ -17,6 +17,12 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("fleet-excavator",0) { g->prepareFleetWash(g,GameState.Vehicle.EXCAVATOR) },
+        Triple("fleet-truck",0) { g->prepareFleetWash(g,GameState.Vehicle.TRUCK) },
+        Triple("fleet-dozer",0) { g->prepareFleetWash(g,GameState.Vehicle.DOZER) },
+        Triple("fleet-crane",0) { g->prepareFleetWash(g,GameState.Vehicle.CRANE) },
+        Triple("fleet-mixer",0) { g->prepareFleetWash(g,GameState.Vehicle.MIXER) },
+        Triple("fleet-wrecker",0) { g->prepareFleetWash(g,GameState.Vehicle.WRECKER) },
         Triple("wash-dirty",0) { g->prepareWash(g) },
         Triple("wash-spray",0) { g->prepareWash(g);val p=g.wash.targets(g)[0];g.wash.spray(g,p.first,p.second);repeat(8){g.update(.04f)} },
         Triple("wash-clean",0) { g->prepareWash(g);for(p in g.wash.targets(g)) { g.wash.spray(g,p.first,p.second);repeat(30){g.update(.04f)} };g.wash.stop();repeat(90){g.update(.016f)};check(g.wash.clean) },
@@ -185,4 +191,15 @@ fun prepareDistrict(g:GameState,stage:Int) {
 
 fun prepareWash(g:GameState) {
     repeat(4){g.wash.soil()};g.wash.enter(g);previewIdle(g);g.update(.04f);check(g.wash.ready(g))
+}
+
+fun prepareFleetWash(g:GameState,v:GameState.Vehicle) {
+    g.wash.soil(v,1f);g.wash.enter(g,v);previewIdle(g);g.update(.04f);check(g.wash.ready(g))
+    g.wash.choose(com.dromadi.tinysim.WashBay.Tool.SOAP)
+    for(p in g.wash.targets(g)) { g.wash.spray(g,p.first,p.second);repeat(25){g.update(.04f)} };g.wash.stop()
+    if(v in listOf(GameState.Vehicle.MIXER,GameState.Vehicle.WRECKER)) {
+        g.wash.choose(com.dromadi.tinysim.WashBay.Tool.WATER)
+        for(p in g.wash.targets(g).take(if(v==GameState.Vehicle.MIXER)3 else 8)) { g.wash.spray(g,p.first,p.second);repeat(30){g.update(.04f)} }
+        if(v==GameState.Vehicle.WRECKER) { g.wash.stop();repeat(90){g.update(.016f)};check(g.wash.clean) }
+    }
 }

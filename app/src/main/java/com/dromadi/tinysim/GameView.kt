@@ -58,10 +58,10 @@ class GameView(context: Context): FrameLayout(context) {
         worldCamera?.let { camera=it.camera;yaw=it.yaw;pitch=it.pitch;zoom=it.zoom;panX=it.x;panZ=it.z }
         worldCamera=null;saveCamera()
     }
-    private fun enterWash() {
+    private fun enterWash(v:GameState.Vehicle=game.selected) {
         if(game.wind.arena.open)leaveArena()
         if(washCamera==null)washCamera=CameraPose(camera,yaw,pitch,zoom,panX,panZ)
-        game.wash.enter(game);following=true;orbitMode=false
+        game.wash.enter(game,v);following=true;orbitMode=false
     }
     private fun leaveWash() {
         game.wash.leave(game);following=false
@@ -285,7 +285,12 @@ class GameView(context: Context): FrameLayout(context) {
         if(x in 1100f..1176f && y in 20f..84f)return "parents"
         if(game.wash.open) {
             if(x in 350f..450f && y in 20f..90f)return "washExit"
-            if(x in 840f..1180f && y in 556f..660f && !game.wash.ready(game))return "washRetry"
+            if(x in 470f..570f && y in 20f..90f && !game.wash.ready(game))return "washRetry"
+            if(y in 556f..660f) {
+                if(x in 840f..1002f)return "washSoap"
+                if(x in 1018f..1180f)return "washWater"
+                if(x in 20f..708f && (x-20f)%116f<=108f)return "washVehicle${((x-20f)/116f).toInt()}"
+            }
             return if(y in 100f..535f)"wash" else null
         }
         if(game.wind.arena.open) {
@@ -385,6 +390,7 @@ class GameView(context: Context): FrameLayout(context) {
             is Hint.Pipe -> pipeTouch(next.id)
             is Hint.Garden -> game.village.plant(game,next.house)
             is Hint.Wash -> Unit
+            Hint.Rinse -> game.wash.choose(WashBay.Tool.WATER)
             is Hint.Ground -> {
                 if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && game.digAt(next.x,next.z))return
                 game.driveTo(game.selected,WorldMap.gameX(next.x),next.z);followSelected()
@@ -397,6 +403,7 @@ class GameView(context: Context): FrameLayout(context) {
         is Hint.Card -> GameRenderer.cardCenter(next.vehicle) to 590f
         Hint.Action -> 1010f to 590f
         Hint.Blocks -> 170f to 55f
+        Hint.Rinse -> 1099f to 608f
         is Hint.Wash -> game.wash.targets(game).getOrNull(next.patch)
         is Hint.Garden -> gardenMarkers().firstOrNull { it.first==next.house }?.second
         is Hint.Pipe -> pipeMarkers().firstOrNull { it.first==next.id }?.second ?: (1010f to 590f)
@@ -406,6 +413,9 @@ class GameView(context: Context): FrameLayout(context) {
     fun activate(action: String) {
         when(action) {
             "washEnter","washRetry" -> enterWash()
+            "washSoap" -> game.wash.choose(WashBay.Tool.SOAP)
+            "washWater" -> game.wash.choose(WashBay.Tool.WATER)
+            "washVehicle0","washVehicle1","washVehicle2","washVehicle3","washVehicle4","washVehicle5" -> enterWash(GameState.Vehicle.entries[action.last().digitToInt()])
             "washExit" -> leaveWash()
             "district" -> {
                 if(game.wind.arena.open)leaveArena()

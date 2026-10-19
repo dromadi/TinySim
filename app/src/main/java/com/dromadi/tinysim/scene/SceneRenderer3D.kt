@@ -222,7 +222,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         GL.glClear(GL.GL_COLOR_BUFFER_BIT or GL.GL_DEPTH_BUFFER_BIT)
         GL.glViewport(viewportX,viewportY,viewportW,viewportH)
         GL.glEnable(GL.GL_SCISSOR_TEST);GL.glScissor(viewportX,viewportY,viewportW,viewportH)
-        val camera=if(f.wash.ready)com.dromadi.tinysim.WashBay.camera(WorldMap.worldX(f.excavatorX),f.excavatorZ,support(f,WorldMap.worldX(f.excavatorX),f.excavatorZ)) else WorldCamera.spec(f.camera,f.yaw,f.pitch,f.zoom,f.panX,f.panZ)
+        val camera=if(f.wash.ready)com.dromadi.tinysim.WashBay.camera(f.wash.x,f.wash.z,f.wash.base) else WorldCamera.spec(f.camera,f.yaw,f.pitch,f.zoom,f.panX,f.panZ)
         Matrix.setLookAtM(view,0,camera.eye.x,camera.eye.y,camera.eye.z,camera.target.x,camera.target.y,camera.target.z,0f,1f,0f)
         Matrix.perspectiveM(projection,0,camera.fov,WorldCamera.ASPECT,.8f,260f)
         Matrix.multiplyMM(vp,0,projection,0,view,0)
@@ -267,6 +267,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         crane(f)
         house(f)
         excavator(f)
+        vehicleDirt(f)
         truck(f)
         bulldozer(f)
         if(f.selected==GameState.Vehicle.EXCAVATOR)guide(f)
@@ -481,6 +482,24 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         for(x in floatArrayOf(5f,19f,34f,46f)) { tree(x,43f,1.3f);trafficCone(x,24f) }
     }
     /** Residents stay on their own porch/yard; storms hide them before the next rendered frame. */
+    private fun vehicleDirt(f:SceneFrame) {
+        val bodies=arrayOf(floatArrayOf(WorldMap.worldX(f.excavatorX),f.excavatorZ,f.excavatorHeading),
+            floatArrayOf(WorldMap.worldX(f.truckX),f.truckZ,f.truckHeading),floatArrayOf(WorldMap.worldX(f.dozerX),f.dozerZ,f.dozerHeading),
+            floatArrayOf(WorldMap.worldX(f.craneX),f.craneZ,f.craneHeading),floatArrayOf(WorldMap.worldX(f.work.mixerX),f.work.mixerZ,f.work.mixerHeading),
+            floatArrayOf(WorldMap.worldX(f.work.wreckX),f.work.wreckZ,f.work.wreckHeading))
+        for(v in GameState.Vehicle.entries) {
+            val b=bodies[v.ordinal];push();translate(b[0],support(f,b[0],b[1]),b[1]);rotate(b[2],0f,1f,0f)
+            for((i,q) in com.dromadi.tinysim.WashBay.patches(v).withIndex()) {
+                val d=f.wash.dirt[v.ordinal][i];val foam=f.wash.foam[v.ordinal][i]
+                if(d>.005f) { val a=sqrt(d);if(i==7)blob(q.x,q.y,q.z,.6f*a,.045f,.5f*a,rgba(108,73,41),SOIL) else blob(q.x,q.y,q.z,.43f*a,.28f*a,.06f,rgba(108,73,41),SOIL) }
+                if(foam>.005f)for(k in 0..4) {
+                    val dx=(k%3-1)*.15f;val dy=(k/3-.5f)*.17f;val s=(.14f+k%2*.04f)*sqrt(foam)
+                    blob(q.x+dx,q.y+(if(i==7).08f else dy),q.z+(if(i==7)dy else .08f),s,s,s,rgba(240,250,253),MATTE)
+                }
+            }
+            pop()
+        }
+    }
     private fun washBay(f:SceneFrame) {
         val x=com.dromadi.tinysim.WashBay.X;val z=com.dromadi.tinysim.WashBay.Z;val y=support(f,x,z)
         surface(x,y+.03f,z,5f,.06f,4.3f,stone,CONCRETE)
@@ -765,11 +784,6 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
         shape(cylinder,.5f,1.65f,-.5f,.1f,.5f,.1f,darkSteel,METAL)
         beaconLight(-.6f,2.58f,0f,f.seconds)
         box(-1.24f,1.5f,.73f,.04f,.7f,.04f,ink,METAL)
-        for(i in f.wash.mud.indices)if(f.wash.mud[i]>.005f) {
-            val q=com.dromadi.tinysim.WashBay.PATCHES[i];val amount=sqrt(f.wash.mud[i])
-            if(i==7)blob(q.x,q.y,q.z,.6f*amount,.045f,.5f*amount,rgba(108,73,41),SOIL)
-            else blob(q.x,q.y,q.z,.43f*amount,.28f*amount,.06f,rgba(108,73,41),SOIL)
-        }
         pop()
         val px=WorldCamera.x(243f);val py=WorldCamera.y(412f)
         val joint=ArmRig.elbow(f.armX,f.armY)
