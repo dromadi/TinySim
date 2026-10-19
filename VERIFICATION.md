@@ -2,6 +2,8 @@
 
 Fitur penduduk per rumah yang benar-benar dipulihkan, permintaan taman bergambar, penanaman satu sentuhan, pertumbuhan pohon, sapaan dan perlindungan dari tornado. Save v17 memigrasikan v16 serta format lama; model renderer menggunakan salinan array milik frame.
 
+CI pertama menemukan fallback save rusak masih mempertahankan pilihan kendaraan dari data parsial; jalur onFailure kini mengembalikan pilihan excavator dan mode bebas sesudah reset. Tes dipertahankan.
+
 Lima tes VillageLife ditambahkan: rumah awal belum dihuni; pemulihan nyata → penduduk → petunjuk → pohon/hadiah sekali; shelter/save/arena; migrasi v16; kepemilikan frame dan penolakan save rusak. Fixture tes korupsi yang dibangun dari snapshot saat ini memakai prefix v17 agar benar-benar mencapai validator konten (bukan gagal hanya karena jumlah field); fixture migrasi v16 tetap eksplisit.
 
 Perintah `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba lokal, tetapi unduhan Gradle terhalang `Network is unreachable` sebelum kompilasi. CI Android dan tiga pratinjau renderer village-welcome, village-garden, village-shelter disiapkan; hasil belum diklaim sebelum selesai. Belum diuji di HP/emulator. Tidak dibuat key debug lokal pengganti.

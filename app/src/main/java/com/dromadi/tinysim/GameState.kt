@@ -758,7 +758,7 @@ class GameState {
             require(listOf(fleet.mixer,fleet.wrecker).all { VehicleNavigation.land(VehicleNavigation.Point(WorldMap.worldX(it.x),it.z),bridgeOpen) })
             if(pipes.active)moveArm(armX,300f)
             require(totalMaterial==Terrain.INITIAL_MASS);separateVehicles();checkMission()
-        }.onFailure { reset() }
+        }.onFailure { reset();selected=Vehicle.EXCAVATOR;missionMode=false }
     }
     companion object {
         const val BRIDGE_STAGE_SECONDS=3.2f
