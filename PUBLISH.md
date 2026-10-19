@@ -1,6 +1,6 @@
 # Publikasi Alpha.23
 
-`0.1.0-alpha.23` / versionCode 23, save v17. Penduduk setelah pemulihan rumah, taman satu sentuhan dan shelter saat tornado. Artifact Actions: `TinySim-0.1.0-alpha.23-debug`. Build/test/pratinjau menunggu CI; belum diuji di HP/emulator. APK CI dapat berbeda penanda tangan dari APK lokal pengguna. Keystore privat lama belum tersedia di workspace, sehingga tidak dibuat APK lokal dengan key pengganti.
+`0.1.0-alpha.23` / versionCode 23, save v17. Penduduk setelah pemulihan rumah, taman satu sentuhan dan shelter saat tornado. Artifact Actions: `TinySim-0.1.0-alpha.23-debug`. [Build Android](https://github.com/dromadi/TinySim/actions/runs/39257796925) sukses: 161 tes lulus, lint, APK debug dan APK instrumentation. [Unduh ZIP APK alpha.23](https://github.com/dromadi/TinySim/actions/runs/39257796925/artifacts/12188296869). Ketiga pratinjau renderer lulus; gambar tersedia di docs/verification/alpha23. Belum diuji di HP/emulator; instrumentation hanya dibangun. APK CI dapat berbeda penanda tangan dari APK lokal pengguna. Keystore privat lama belum tersedia di workspace, sehingga tidak dibuat APK lokal dengan key pengganti.
 
 # Publikasi Alpha.22
 
