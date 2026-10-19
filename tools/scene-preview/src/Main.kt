@@ -69,6 +69,17 @@ fun main(args: Array<String>) {
         Triple("block-lift",0) { g-> g.selected=GameState.Vehicle.CRANE;check(g.blockAction());repeat(12000) { if(g.blocks.carried<0)g.update(.016f) };repeat(30) { g.update(.016f) } },
         Triple("block-tower",0) { g-> g.selected=GameState.Vehicle.CRANE;repeat(3) { check(g.blockAction());repeat(12000) { if(g.driving)g.update(.016f) };check(g.blockAction());repeat(12000) { if(g.driving)g.update(.016f) } };check(g.blocks.complete);repeat(220) { g.update(.016f) } },
         Triple("vehicle-life",0) { it.selected=GameState.Vehicle.TRUCK;it.driveTo(GameState.Vehicle.TRUCK,WorldMap.gameX(8f),2.2f) },
+        Triple("fleet-showroom",0) { g->showroom(g) },
+        Triple("fleet-front",0) { g->showroom(g) },
+        Triple("fleet-close-a",0) { g->showroom(g) },
+        Triple("fleet-close-b",0) { g->showroom(g) },
+        Triple("fleet-close-c",0) { g->showroom(g) },
+        Triple("macro-excavator",0) { g->showroom(g) },
+        Triple("macro-truck",0) { g->showroom(g) },
+        Triple("macro-dozer",0) { g->showroom(g) },
+        Triple("macro-crane",0) { g->showroom(g) },
+        Triple("macro-mixer",0) { g->showroom(g) },
+        Triple("macro-wrecker",0) { g->showroom(g) },
         Triple("dozer",2) { it.source=27;it.sand[WorldMap.cell(3f,2f)]=2;it.sand[WorldMap.cell(4f,2f)]=2;it.sand[WorldMap.cell(5f,2f)]=1;it.sand[WorldMap.cell(6f,2f)]=4;it.dozerX=900f;it.selected=GameState.Vehicle.DOZER }
     )
     val hud=StringBuilder()
@@ -82,6 +93,17 @@ fun main(args: Array<String>) {
                 r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
         }
         val frame=when(name) {
+            "macro-excavator"->SceneFrame.capture(g,cam,1.2f+i,-40f,3f,4.2f,3.8f,3.4f)
+            "macro-truck"->SceneFrame.capture(g,cam,1.2f+i,-15f,3f,4.2f,10.5f,3.4f)
+            "macro-dozer"->SceneFrame.capture(g,cam,1.2f+i,-15f,3f,4.2f,15.6f,3.4f)
+            "macro-crane"->SceneFrame.capture(g,cam,1.2f+i,-15f,3f,3.6f,21f,3.4f)
+            "macro-mixer"->SceneFrame.capture(g,cam,1.2f+i,-15f,3f,3.6f,26.4f,3.4f)
+            "macro-wrecker"->SceneFrame.capture(g,cam,1.2f+i,-15f,3f,3.6f,32f,3.4f)
+            "fleet-showroom"->SceneFrame.capture(g,cam,1.2f+i,-28f,9f,1.05f,15f,4f)
+            "fleet-front"->SceneFrame.capture(g,cam,1.2f+i,35f,6f,1.05f,15f,4f)
+            "fleet-close-a"->SceneFrame.capture(g,cam,1.2f+i,-30f,5f,2.1f,7f,4f)
+            "fleet-close-b"->SceneFrame.capture(g,cam,1.2f+i,-30f,5f,2.1f,17f,4f)
+            "fleet-close-c"->SceneFrame.capture(g,cam,1.2f+i,-30f,5f,2.1f,25.5f,4f)
             "district-storm"->SceneFrame.capture(g,cam,1.2f+i,-12f,12f,.95f,15f,29f)
             "district-push"->SceneFrame.capture(g,cam,1.2f+i,-18f,12f,1.2f,WorldMap.worldX(g.dozerX)+2f,g.dozerZ)
             "district-tip"->SceneFrame.capture(g,cam,1.2f+i,-20f,14f,1.1f,39f,29f)
@@ -174,4 +196,15 @@ fun prepareDistrict(g:GameState,stage:Int) {
     if(stage>=2)repeat(2){act(GameState.Vehicle.TRUCK)}
     if(stage>=3)repeat(4){act(GameState.Vehicle.MIXER)}
     if(stage>=4)repeat(16){act(GameState.Vehicle.CRANE);act(GameState.Vehicle.CRANE)}
+}
+
+/** All six machines parked in a row on open ground for a side-by-side look at their models. */
+fun showroom(g:GameState) {
+    g.excavatorX=WorldMap.gameX(4f);g.excavatorZ=3f;g.excavatorHeading=20f;g.armX=470f;g.armY=420f;g.targetX=g.armX;g.targetY=g.armY
+    g.truckX=WorldMap.gameX(9.5f);g.truckZ=3.2f;g.truckHeading=20f
+    g.dozerX=WorldMap.gameX(15f);g.dozerZ=3.2f;g.dozerHeading=20f
+    g.craneX=WorldMap.gameX(20.5f);g.craneZ=3.2f;g.craneHeading=20f;g.craneAngle=-60f;g.craneReach=5f
+    g.fleet.mixer.x=WorldMap.gameX(26f);g.fleet.mixer.z=3.2f;g.fleet.mixer.heading=20f
+    g.fleet.wrecker.x=WorldMap.gameX(31.5f);g.fleet.wrecker.z=3.2f;g.fleet.wrecker.heading=20f
+    g.selected=GameState.Vehicle.TRUCK
 }

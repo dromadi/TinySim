@@ -1,3 +1,49 @@
+# Verifikasi Alpha.22 — grafik semua kendaraan
+
+Tanggal: 19 Oktober 2026. `com.dromadi.tinysim`, versionCode 22 / `0.1.0-alpha.22`. Basis `9820d50` (Alpha.21 di `main`).
+
+## Yang berubah
+
+Hanya tampilan kendaraan. Logika permainan, kontrol, dan format save tidak disentuh.
+
+- **Mesh prosedural baru** di `Geometry.kt`:
+  - `tyre()`: dinding samping membulat dan pita kembangan berfaset dengan lug chevron serta dinding di setiap beda tinggi;
+  - `rim()`: velg cekung berbibir dengan enam mur;
+  - `trackShoe()`: pelat, grouser, dan dua telinga sambungan;
+  - `sprocket()`: hub dengan sepuluh gigi.
+- **`SceneRenderer3D`:**
+  - `wheel()` dan `tracks()` memakai mesh-mesh tersebut. Sepatu track ditempatkan sepanjang lintasan stadion (bawah, ujung depan, atas, ujung belakang) dan bergeser sesuai jarak tempuh.
+  - `cab()` mendapat spion, wiper, pelindung matahari, lampu atap, garis pintu, gagang, dan pegangan.
+  - Helper baru: `headlight()`, `hazard()` (garis 45° dengan matriks shear), `fender()`, `slab()`, `ram()`, dan `steps()`. Ini dipakai untuk menambah detail ke keenam kendaraan.
+- **Shader:** uniform `uWear` aktif hanya saat menggambar kendaraan.
+  - Lumpur/debu dihitung dari tinggi di kerangka kendaraan (`vTex.y`) dengan noise. Kilau specular berkurang di bagian kotor.
+  - Clear coat (lobe specular tajam dan pantulan langit Fresnel memakai normal geometri) hanya pada cat (`uKind` 0, specular > 0,4).
+  - Benda dunia lain tidak berubah.
+
+## Perintah dan bukti
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **BUILD SUCCESSFUL.** 155 tes lulus, 0 gagal: 154 lama ditambah `GeometryTest.vehiclePartsAreConsistentAndStayInTheirWheelEnvelope`. Tes baru memeriksa bahwa:
+  - normal satuan searah winding di keempat mesh baru;
+  - ban berada dalam diameter dan lebar satuan, dengan lug pada radius penuh dan alur di antaranya;
+  - velg berada di dalam bead ban, dan mur berada di muka velg.
+- **Lint: 0 error, 1 warning** `DiscouragedApi` landscape yang sudah ada.
+- **APK debug 67.777.594 byte.** SHA-256 `d106cdbde467604cd3fa3c260752d9fb25306e36f0be99897bc277f8c4831dc0`.
+  - Ditandatangani dengan kunci debug lingkungan Claude (sertifikat SHA-256 `63:F5:57:…:AD:21`). Kunci ini **berbeda** dari APK Alpha.21 (`f6700a05…283e`).
+  - Android menolak memasang APK ini sebagai pembaruan di atas Alpha.21 dari kunci lain. Uninstall akan menghapus save.
+- **Pratinjau renderer/HUD** (`tools/scene-preview`), semua tanpa GL error:
+  - adegan baru `fleet-showroom`, `fleet-front`, `fleet-close-a/b/c`, dan `macro-*` (enam kendaraan dijajarkan);
+  - adegan lama `district-push`, `district-lift`, `mixer-pour`, `wreck-impact`, `crane-grab`, `dump`, dan `start-cam1`.
+  - Draw call adegan showroom naik dari 3.626 menjadi 4.491.
+  - Gambar sebelum/sesudah ada di `docs/verification/alpha22/`.
+
+**Batas:** belum dijalankan di HP. Tampilan hanya diperiksa lewat pratinjau WebGL di desktop.
+
+---
+
 # Verifikasi Alpha.21 — kawasan pulih-bangun
 
 Tanggal: 18 Oktober 2026. `com.dromadi.tinysim`, versionCode 21 / `0.1.0-alpha.21`. Basis `e11bc9d` (Alpha.20); tidak ada PR terbuka saat mulai dan saat pemeriksaan publikasi.

@@ -1,11 +1,27 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.21**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.22**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Kawasan konstruksi setelah dibangun kembali](docs/verification/alpha21/district-restored.jpg)
+![Enam kendaraan TinySim setelah upgrade grafis](docs/verification/alpha22/fleet-showroom.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.22: grafik semua kendaraan
+
+Keenam kendaraan (excavator, truk, bulldozer, crane, molen, truk bola penghancur) mendapat model dan material yang lebih nyata. Gameplay, kontrol, dan save tidak berubah.
+
+- **Ban off-road sungguhan.** Ban memiliki dinding samping dan bahu yang membulat, serta kembangan chevron yang menonjol dari alurnya. Velg baja cekung memiliki bibir, hub, dan enam mur roda. Seluruh roda ikut berputar saat berjalan, jadi kembangannya terlihat menggelinding.
+- **Rantai track bersambung.** Excavator dan bulldozer kini memakai sepatu track satu per satu yang berjalan memutari sprocket bergigi di belakang dan idler di depan, di atas roller bawah dan roller atas. Sprocket ikut berputar.
+- **Kabin lebih lengkap.** Ada kaca spion bertangkai, wiper, pelindung matahari, lampu kerja di atap, garis pintu dengan gagang, dan pegangan naik. Lampu depan berbingkai krom dengan lampu sein kuning.
+- **Cat dan debu.** Cat kendaraan mendapat lapisan mengilap (clear coat) dengan kilau matahari tajam dan pantulan langit. Bagian bawah bodi, roda, dan track terlihat terkena lumpur dan bercak debu yang menipis ke atas. Debu dihitung di kerangka kendaraan, jadi ikut bergerak bersamanya.
+- **Garis peringatan hitam-kuning** dengan tepi diagonal 45° di bumper belakang, bobot penyeimbang, dan blok kait crane.
+- **Excavator:** selang hidrolik ganda di sepanjang boom dan stick, baut ring putar, pagar pengaman di atas mesin, bucket berpunggung lengkung, injakan, dan lampu kerja.
+- **Truk:** slebor depan melengkung, pelindung samping di antara as roda, tangga kabin, tangki udara, pelindung kabin di depan bak, pelat nomor, lampu belakang tiga warna, dan karet penahan lumpur.
+- **Bulldozer:** blade melengkung (moldboard) dengan pisau potong dan sudut baja, silinder angkat bercat dengan batang krom, gigi ripper, lampu, kisi samping mesin, dan pagar.
+- **Crane:** boom teleskopik bersegi dengan katrol di ujung, dua tali turun ke blok kait berkatrol, drum winch dan bobot penyeimbang bergaris, kaki outrigger hidrolik saat parkir, slebor, loker samping, dan tangga.
+- **Molen dan truk bola penghancur:** slebor depan, pelindung samping, tangga, dan bumper bergaris. Molen mendapat dudukan drum, corong pengisian, dan tangki air.
+- Semua model dibuat dengan kode TinySim sendiri (mesh prosedural, MIT). Tidak ada berkas aset baru.
 
 ## Alpha.21: terjang, bersihkan, bangun kembali
 

@@ -1,3 +1,13 @@
+# Publikasi Alpha.22
+
+`0.1.0-alpha.22` / versionCode 22. Upgrade grafis keenam kendaraan: ban berkembang dan velg bermur, rantai track bersambung, kabin berspion/wiper, lampu berbingkai krom, garis peringatan, clear coat dan lumpur pada cat, serta detail khusus tiap kendaraan. Gameplay dan save tidak berubah.
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+Artifact Actions: `TinySim-0.1.0-alpha.22-debug`. APK lokal 67.777.594 byte; SHA-256 `d106cdbde467604cd3fa3c260752d9fb25306e36f0be99897bc277f8c4831dc0`. Kunci debug lokal yang dipakai berbeda dari Alpha.21. Lihat VERIFICATION.md.
+
 # Publikasi Alpha.21
 
 `0.1.0-alpha.21` / versionCode 21. Kawasan pulih-bangun di perluasan peta utama 86 × 48 m: empat bangunan latihan/16 bagian diterjang tornado, didorong bulldozer ke tempat muat, diangkut truk ke gudang, lalu dibangun kembali dengan molen dan crane. Siklus bisa diulang tanpa reset atau isi ulang material. Save v16 memigrasikan v15 serta format lama. Kontrol sentuhan/ikon, offline, tanpa izin/iklan/login/IAP/analytics tetap dipertahankan.

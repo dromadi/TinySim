@@ -114,6 +114,103 @@ class Geometry private constructor(private val vertices: FloatArray): Mesh {
                 if(j<stacks-1)s(point(i+1,j),point(i,j+1),point(i+1,j+1))
             }
         }
+        /**
+         * Off-road tyre around the Y axis (diameter 1, width 1): rounded sidewalls and shoulders,
+         * and a faceted tread band whose chevron lugs stand proud of the grooves.
+         */
+        fun tyre(lugs: Int=18)=build {
+            // Sidewall profile (radius, |y|) from the bead out to the tread shoulder.
+            val profile=listOf(.33f to .44f,.37f to .47f,.42f to .475f,.455f to .455f,.475f to .42f,.47f to .38f)
+            fun profileNormal(k: Int): Pair<Float,Float> {
+                val a=profile[(k-1).coerceAtLeast(0)];val b=profile[(k+1).coerceAtMost(profile.lastIndex)]
+                val dr=b.first-a.first;val dy=b.second-a.second;val l=sqrt(dr*dr+dy*dy)
+                return dy/l to -dr/l
+            }
+            val around=lugs*8
+            for(side in floatArrayOf(-1f,1f))for(i in 0 until around) {
+                val a=i*2*PI/around;val b=(i+1)*2*PI/around
+                for(k in 0 until profile.lastIndex) {
+                    val (r0,y0)=profile[k];val (r1,y1)=profile[k+1]
+                    val (n0r,n0y)=profileNormal(k);val (n1r,n1y)=profileNormal(k+1)
+                    fun p(t: Double,r: Float,y: Float)=Vec3((cos(t)*r).toFloat(),y*side,(sin(t)*r).toFloat())
+                    fun n(t: Double,nr: Float,ny: Float)=Vec3((cos(t)*nr).toFloat(),ny*side,(sin(t)*nr).toFloat())
+                    smooth(p(a,r0,y0),n(a,n0r,n0y),p(b,r0,y0),n(b,n0r,n0y),p(b,r1,y1),n(b,n1r,n1y))
+                    smooth(p(a,r0,y0),n(a,n0r,n0y),p(b,r1,y1),n(b,n1r,n1y),p(a,r1,y1),n(a,n1r,n1y))
+                }
+            }
+            // Tread band: cells are lug tops or grooves; walls close every height step.
+            val across=8;val half=.38f;val groove=.47f;val top=.5f
+            fun lug(i: Int,j: Int): Boolean {
+                val v=((j+.5f)/across)*2f-1f
+                val phase=(i+.5f)/around*lugs+(if(v>0f).5f else 0f)+.45f*abs(v)
+                return abs(v)>.12f && phase-floor(phase)<.5f
+            }
+            fun radius(i: Int,j: Int)=if(j<0 || j>=across)groove else if(lug((i+around)%around,j))top else groove
+            fun q(t: Double,r: Float,y: Float)=Vec3((cos(t)*r).toFloat(),y,(sin(t)*r).toFloat())
+            for(i in 0 until around)for(j in 0 until across) {
+                val a=i*2*PI/around;val b=(i+1)*2*PI/around
+                val y0=-half+j*2*half/across;val y1=y0+2*half/across
+                val r=radius(i,j);val out=Vec3(cos((a+b)/2).toFloat(),0f,sin((a+b)/2).toFloat())
+                facing(q(a,r,y0),q(b,r,y0),q(b,r,y1),out);facing(q(a,r,y0),q(b,r,y1),q(a,r,y1),out)
+                val next=radius(i+1,j)
+                if(next!=r) {
+                    val lo=min(r,next);val hi=max(r,next);val dir=if(r>next)Vec3(-sin(b).toFloat(),0f,cos(b).toFloat()) else Vec3(sin(b).toFloat(),0f,-cos(b).toFloat())
+                    facing(q(b,lo,y0),q(b,hi,y0),q(b,hi,y1),dir);facing(q(b,lo,y0),q(b,hi,y1),q(b,lo,y1),dir)
+                }
+                val upper=radius(i,j+1)
+                if(upper!=r) {
+                    val lo=min(r,upper);val hi=max(r,upper);val dir=Vec3(0f,if(r>upper)1f else -1f,0f)
+                    facing(q(a,lo,y1),q(b,lo,y1),q(b,hi,y1),dir);facing(q(a,lo,y1),q(b,hi,y1),q(a,hi,y1),dir)
+                }
+                if(j==0 && r>groove) {
+                    facing(q(a,groove,y0),q(b,groove,y0),q(b,r,y0),Vec3(0f,-1f,0f));facing(q(a,groove,y0),q(b,r,y0),q(a,r,y0),Vec3(0f,-1f,0f))
+                }
+            }
+        }
+        /** Dished steel rim facing +Y: rolled lip, sloped dish, raised hub and six lug nuts. */
+        fun rim(nuts: Int=6)=build {
+            val profile=listOf(.345f to .40f,.35f to .46f,.33f to .49f,.30f to .47f,.22f to .36f,.16f to .34f,.15f to .40f,.11f to .44f,0f to .45f)
+            val around=40
+            for(i in 0 until around)for(k in 0 until profile.lastIndex) {
+                val a=i*2*PI/around;val b=(i+1)*2*PI/around
+                val (r0,y0)=profile[k];val (r1,y1)=profile[k+1]
+                val dr=r1-r0;val dy=y1-y0;val l=sqrt(dr*dr+dy*dy)
+                // Outward normal of the profile segment (towards +Y for the face, +R for the lip).
+                var nr=-dy/l;var ny=dr/l;if(ny<0f || (abs(ny)<1e-3f && nr<0f)) { nr=-nr;ny=-ny }
+                fun p(t: Double,r: Float,y: Float)=Vec3((cos(t)*r).toFloat(),y,(sin(t)*r).toFloat())
+                fun n(t: Double)=Vec3((cos(t)*nr).toFloat(),ny,(sin(t)*nr).toFloat())
+                smooth(p(a,r0,y0),n(a),p(b,r0,y0),n(b),p(b,r1,y1),n(b));smooth(p(a,r0,y0),n(a),p(b,r1,y1),n(b),p(a,r1,y1),n(a))
+            }
+            for(k in 0 until nuts) {
+                val t=k*2*PI/nuts;val cx=(cos(t)*.19).toFloat();val cz=(sin(t)*.19).toFloat()
+                block(cx,.375f,cz,.045f,.05f,.045f)
+            }
+        }
+        /** One track shoe along +X: plate, raised grouser bar across it and the two link lugs underneath. */
+        fun trackShoe()=build {
+            block(0f,0f,0f,1f,.4f,1f)
+            block(-.15f,.38f,0f,.28f,.42f,1f)
+            for(z in floatArrayOf(-.28f,.28f))block(.05f,-.4f,z,.75f,.45f,.14f)
+        }
+        /** Drive sprocket around the Y axis: hub disc with ten square teeth. */
+        fun sprocket(teeth: Int=10)=build {
+            val around=40
+            for(i in 0 until around) {
+                val a=i*2*PI/around;val b=(i+1)*2*PI/around
+                fun p(t: Double,r: Float,y: Float)=Vec3((cos(t)*r).toFloat(),y,(sin(t)*r).toFloat())
+                val na=Vec3(cos(a).toFloat(),0f,sin(a).toFloat());val nb=Vec3(cos(b).toFloat(),0f,sin(b).toFloat())
+                smooth(p(a,.4f,-.5f),na,p(b,.4f,-.5f),nb,p(b,.4f,.5f),nb);smooth(p(a,.4f,-.5f),na,p(b,.4f,.5f),nb,p(a,.4f,.5f),na)
+                facing(Vec3(0f,.5f,0f),p(a,.4f,.5f),p(b,.4f,.5f),Vec3(0f,1f,0f));facing(Vec3(0f,-.5f,0f),p(a,.4f,-.5f),p(b,.4f,-.5f),Vec3(0f,-1f,0f))
+            }
+            for(k in 0 until teeth) {
+                val t=k*2*PI/teeth;val c=cos(t).toFloat();val sn=sin(t).toFloat()
+                // A tooth is a block rotated to point outward: build its 8 corners explicitly.
+                val corners=ArrayList<Vec3>()
+                for(dr in floatArrayOf(.36f,.5f))for(dy in floatArrayOf(-.4f,.4f))for(dt in floatArrayOf(-.06f,.06f))
+                    corners.add(Vec3(c*dr-sn*dt,dy,sn*dr+c*dt))
+                quadBox(corners)
+            }
+        }
         /** Natural sand pile: smooth rounded dome with an uneven crest, base at y=0 and top near y=1. */
         fun mound(slices: Int=28,rings: Int=9)=build {
             fun height(r: Float)=(1f-r*r).let { it*it*.7f+it*.3f }
@@ -162,6 +259,21 @@ class Geometry private constructor(private val vertices: FloatArray): Mesh {
             if(cross.dot(cross)<1e-12f)return
             val n=cross.normalized()
             put(a,n);put(b,n);put(c,n)
+        }
+        /** Axis-aligned box with flat faces, centred at (x, y, z). */
+        fun block(x: Float,y: Float,z: Float,w: Float,h: Float,d: Float) {
+            val c=ArrayList<Vec3>()
+            for(dx in floatArrayOf(-w/2,w/2))for(dy in floatArrayOf(-h/2,h/2))for(dz in floatArrayOf(-d/2,d/2))c.add(Vec3(x+dx,y+dy,z+dz))
+            quadBox(c)
+        }
+        /** Hexahedron from 8 corners indexed by (x-ish, y, z-ish) bits: 4*i+2*j+k. */
+        fun quadBox(c: List<Vec3>) {
+            var centre=Vec3(0f,0f,0f);for(p in c)centre=centre+p;centre=centre*(1f/8f)
+            fun quad(a: Int,b: Int,d: Int,e: Int) {
+                val mid=(c[a]+c[b]+c[d]+c[e])*.25f;val out=mid-centre
+                facing(c[a],c[b],c[d],out);facing(c[a],c[d],c[e],out)
+            }
+            quad(0,1,3,2);quad(4,5,7,6);quad(0,1,5,4);quad(2,3,7,6);quad(0,2,6,4);quad(1,3,7,5)
         }
         /** Flat triangle wound counter-clockwise when seen from the outward side. */
         fun facing(a:Vec3,b:Vec3,c:Vec3,outward:Vec3) { if((b-a).cross(c-a).dot(outward)>=0f)triangle(a,b,c) else triangle(a,c,b) }

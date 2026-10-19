@@ -43,3 +43,5 @@ Alpha.18 adds `mixer-pour,wreck-impact,yard-finished,keeper-open`. Real model ac
 Alpha.20 adds `arena-wind,arena-sand,arena-ice,arena-duo`. They enter real arenas, grow using actual touch targets, freeze/lift training props, and run the offline helper. Original world material is checked before capture. HUD and both shadow/colour passes are recorded; these remain desktop renderer previews, not phone gameplay tests.
 
 Alpha.21 adds `district-storm,district-push,district-tip,district-pour,district-lift,district-restored`. Fixtures run actual tornado, bulldozer/truck jobs, pouring and crane tasks. The sixteen conserved parts move through one main-world district; the enlarged heightfield is uploaded for every fixture. These remain desktop previews, not Android/phone tests.
+
+Alpha.22 adds `fleet-showroom`, `fleet-front`, `fleet-close-a/b/c` and `macro-*`: all six machines parked in a row on open ground (`showroom()` in `src/Main.kt`) for side-by-side checks of vehicle models, tyres, tracks and paint.
