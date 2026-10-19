@@ -1,11 +1,20 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.21**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.22**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Kawasan konstruksi setelah dibangun kembali](docs/verification/alpha21/district-restored.jpg)
+![Kawasan konstruksi dengan petunjuk lima tahap](docs/verification/alpha22/district-restored.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.22: satu tombol untuk memulihkan kota
+
+- Di kawasan rumah, tombol **bulldozer + rumah** di atas berpindah dari tornado ke pekerjaan. Angin dan bagian yang melayang langsung berhenti dengan inventaris tetap utuh.
+- Tombol aksi besar memilih kendaraan yang tepat lalu menjalankan satu pekerjaan: bersihkan → angkut → cor fondasi → bangun dengan crane. Ketukan berulang saat kendaraan bekerja tidak membatalkan perjalanan.
+- Lima ikon pada kartu progres menunjukkan urutan tornado, bulldozer, truk, molen, rumah; tahap aktif berwarna kuning dan tahap sebelumnya diberi centang.
+- Sesudah kota selesai, tombol kerja tidak memulai tornado baru. Sentuh tombol awan secara sengaja untuk bermain tornado lagi.
+- Save tetap v16: tahap petunjuk diturunkan dari inventaris yang sudah disimpan, tanpa mengubah format atau mereset progres anak.
+- Status verifikasi dan batas pengujian dicatat di VERIFICATION.md.
 
 ## Alpha.21: terjang, bersihkan, bangun kembali
 

@@ -78,6 +78,10 @@ class GameRenderer {
         rect(c,350f,20f,100f,70f,if(g.wind.active)teal else yellow,22f)
         c.save();c.translate(397f,43f);c.scale(.42f,.42f);cloud(c,0f,0f);c.restore()
         for(i in 0..2)line(c,380f+i*5,65f+i*6,420f-i*6,65f+i*6,if(g.wind.active)white else ink,3f)
+        if(g.recovery.engaged) {
+            rect(c,714f,20f,140f,70f,if(g.wind.active)white else yellow,22f)
+            dozer(c,758f,76f,.3f,1);houseIcon(c,824f,53f)
+        }
         for((id,point) in targets) {
             val (x,y)=point
             circle(c,x,y,25f,white);circle(c,x,y,21f,if(g.pipes.busy || g.craneBusy)yellow else teal)
@@ -120,7 +124,8 @@ class GameRenderer {
         }
         if(advanced) { rect(c,712f,557f,100f,98f,white,24f);rect(c,745f,585f,34f,34f,ink,6f) }
         rect(c,840f,556f,340f,104f,teal,28f)
-        if(g.wind.active) { circle(c,1010f,608f,31f,white);rect(c,996f,594f,28f,28f,teal,5f) } else actionIcon(c,g,1010f,608f)
+        if(g.recovery.engaged)actionIcon(c,g,1010f,608f)
+        else if(g.wind.active) { circle(c,1010f,608f,31f,white);rect(c,996f,594f,28f,28f,teal,5f) } else actionIcon(c,g,1010f,608f)
         if(g.celebrating>0) {
             star(c,600f,250f,70f+sin(time*6)*6,yellow)
             for(i in 0..7) star(c,380f+i*65,360f+sin(time*2+i)*16,14f,yellow)
@@ -160,10 +165,27 @@ class GameRenderer {
     private fun blockIcon(c:Canvas,x:Float,y:Float) {
         for(i in 0..2)rect(c,x-19f,y+17f-i*17f,38f,15f,listOf(orange,teal,yellow)[i],4f)
     }
+    /** Five pictograms show the whole loop; the yellow marker is the current task. */
+    private fun recoveryProgress(c:Canvas,g:GameState) {
+        val phase=if(g.wind.active)0 else g.recovery.step.ordinal
+        for(i in 0..4) {
+            val x=62f+i*55f
+            circle(c,x,47f,23f,if(i==phase)yellow else col("#EEF1E7"))
+            when(i) {
+                0->stormIcon(c,x,47f,0,.58f)
+                1->dozer(c,x,61f,.18f,1)
+                2->truck(c,x,61f,.18f,2,0f)
+                3->mixerIcon(c,x,48f,.48f)
+                4->{ c.save();c.translate(x,47f);c.scale(.55f,.55f);houseIcon(c,0f,0f);c.restore() }
+            }
+            if(phase>i) { line(c,x-6f,78f,x-1f,83f,teal,3f);line(c,x-1f,83f,x+8f,73f,teal,3f) }
+            else circle(c,x,78f,4f,if(i==phase)orange else col("#DDE5DC"))
+        }
+    }
     private fun progressCard(c:Canvas,g:GameState) {
         rect(c,24f,20f,300f,70f,white,22f)
         val dots:Int;val done:Int
-        if(g.recovery.engaged) { houseIcon(c,72f,51f);dots=4;done=(0..3).count { h->(h*4 until h*4+4).all { g.recovery.state[it]==0 } } }
+        if(g.recovery.engaged) { recoveryProgress(c,g);return }
         else if(g.selected==GameState.Vehicle.MIXER) { mixerIcon(c,72f,53f,.65f);dots=8;done=g.fleet.pad }
         else if(g.selected==GameState.Vehicle.WRECKER) { wreckerIcon(c,72f,53f,.65f);dots=3;done=g.fleet.hits }
         else if(g.pipes.active || g.selected==GameState.Vehicle.EXCAVATOR || g.selected==GameState.Vehicle.DOZER) {
@@ -187,8 +209,8 @@ class GameRenderer {
     /** The single big action, drawn as what will happen next. */
     private fun actionIcon(c:Canvas,g:GameState,x:Float,y:Float) {
         if(g.recovery.engaged) {
-            if(g.recovery.damaged==0) { stormIcon(c,x-55,y,0,1f);houseIcon(c,x+65,y) }
-            else when(g.selected) {
+            if(g.recovery.damaged==0) { houseIcon(c,x,y);if(g.recovery.cycles>0)star(c,x+80,y,20f,yellow) }
+            else when(g.recovery.nextVehicle()) {
                 GameState.Vehicle.DOZER->{ dozer(c,x-45,y+32,.55f,1);blockIcon(c,x+70,y) }
                 GameState.Vehicle.TRUCK->{ truck(c,x-30,y+34,.5f,3,if(g.recovery.cargo>0)-32f else 0f);blockIcon(c,x+100,y) }
                 GameState.Vehicle.MIXER->{ mixerIcon(c,x-35,y,1.2f);arrowDown(c,x+95,y-15,white) }

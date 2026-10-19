@@ -22,6 +22,26 @@ class RecoverySite {
     val level get()=1+listOf(3,8,12).count { Integer.bitCount(damaged)>=it }
     val size get()=.5f+level*.25f
     val complete get()=state.all { it==0 }
+    /** Derived from the saved inventory, so old saves need no new mode or migration. */
+    enum class Step { STORM, CLEAN, HAUL, POUR, BUILD, COMPLETE }
+    val step get()=when {
+        damaged==0->if(cycles>0)Step.COMPLETE else Step.STORM
+        held>=0->Step.BUILD
+        state.any { it in 1..2 }->Step.CLEAN
+        state.any { it==3 || it==4 }->Step.HAUL
+        state.indices.any { state[it]==5 && pads[it/4]<4 }->Step.POUR
+        else->Step.BUILD
+    }
+    /** A single child-facing work button: settle weather, select the right machine, start one job.
+     * Repeated taps during travel must not cancel or restart that job. A new storm is explicit. */
+    fun work(g:GameState) {
+        if(!engaged)return
+        if(g.wind.active || g.wind.strength>0f)g.stopMovement()
+        if(g.driving)return
+        val v=nextVehicle() ?: return
+        g.selected=v
+        action(g,v)
+    }
     fun enter(g:GameState) { g.stopMovement();g.pipes.active=false;engaged=true;g.wind.place(12f,28f) }
     fun cancel(g:GameState) {
         if(piece>=0 && job==GameState.Vehicle.DOZER && stage==1) { state[piece]=2;y[piece]=0f }

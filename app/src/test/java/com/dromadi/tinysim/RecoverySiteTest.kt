@@ -5,6 +5,34 @@ import org.junit.Test
 import com.dromadi.tinysim.scene.SceneFrame
 
 class RecoverySiteTest {
+    @Test fun workButtonSettlesStormSelectsMachineAndIgnoresRepeatedTapsWhileMoving() {
+        val g=GameState();g.recovery.enter(g)
+        g.recovery.work(g)
+        assertFalse(g.wind.active);assertEquals(RecoverySite.Step.STORM,g.recovery.step)
+        g.wind.toggle(g);repeat(90){tick(g)}
+        assertTrue(g.recovery.state.any { it==1 })
+        g.recovery.work(g)
+        assertFalse(g.wind.active);assertEquals(0f,g.wind.strength,0f)
+        assertFalse(g.recovery.state.any { it==1 })
+        assertEquals(GameState.Vehicle.DOZER,g.selected);assertTrue(g.driving)
+        repeat(30){g.recovery.work(g);tick(g)}
+        idle(g);assertEquals(1,g.recovery.state.count { it==3 })
+    }
+    @Test fun oneWorkButtonCompletesDistrictAndDoesNotRestartStormAfterReward() {
+        val g=GameState();storm(g)
+        assertEquals(RecoverySite.Step.CLEAN,g.recovery.step)
+        val seen=mutableSetOf<RecoverySite.Step>()
+        repeat(100) {
+            seen+=g.recovery.step
+            g.recovery.work(g);idle(g)
+        }
+        assertTrue(seen.containsAll(listOf(RecoverySite.Step.CLEAN,RecoverySite.Step.HAUL,RecoverySite.Step.POUR,RecoverySite.Step.BUILD,RecoverySite.Step.COMPLETE)))
+        assertEquals(1,g.recovery.cycles);assertTrue(g.recovery.complete);assertFalse(g.wind.active)
+        val restored=GameState();restored.restore(g.snapshot())
+        assertEquals(RecoverySite.Step.COMPLETE,restored.recovery.step)
+        restored.recovery.work(restored);assertFalse(restored.wind.active)
+        restored.wind.toggle(restored);assertTrue(restored.wind.active)
+    }
     private fun tick(g:GameState) {
         g.update(.04f)
         assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)

@@ -1,0 +1,23 @@
+[
+  {
+    "name": "district-storm",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3692,
+    "triangles": 857052
+  },
+  {
+    "name": "district-push",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3658,
+    "triangles": 828996
+  },
+  {
+    "name": "district-restored",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3731,
+    "triangles": 863156
+  }
+]

@@ -103,11 +103,11 @@ class GameView(context: Context): FrameLayout(context) {
         val ground=groundAt(x,y)
         if(game.recovery.engaged && ground!=null && ground.x in 5f..44f && ground.z in 25f..40f) {
             val unit=vehicleAt(x,y)
-            if(unit!=null) { if(unit==game.selected)game.action() else selectUnit(unit);return }
+            if(unit!=null) { if(unit==game.selected)game.recovery.work(game) else selectUnit(unit);return }
             // Broad touch targets: a building, loose part, loading pile or depot starts the pictured step.
             if(game.recovery.damaged==0 || (0 until RecoverySite.COUNT).any { i->
                 kotlin.math.hypot(ground.x-game.recovery.x[i],ground.z-game.recovery.z[i])<2.2f
-            } || ground.x>31f) { game.recovery.nextVehicle()?.let { game.selected=it };game.action();return }
+            } || ground.x>31f) { game.recovery.work(game);return }
             driveAt(x,y);return
         }
         if(!game.pipes.active && game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
@@ -275,6 +275,7 @@ class GameView(context: Context): FrameLayout(context) {
         if(x in 350f..450f && y in 20f..90f)return "windToggle"
         if(x in 470f..570f && y in 20f..90f)return "arena"
         if(x in 590f..690f && y in 20f..90f)return "district"
+        if(game.recovery.engaged && x in 714f..854f && y in 20f..90f)return "districtWork"
         if(game.recovery.engaged && x in 24f..324f && y in 20f..90f)return "action"
         if(advanced) {
             if(x in 1000f..1070f && y in 20f..84f)return "sound"
@@ -345,7 +346,7 @@ class GameView(context: Context): FrameLayout(context) {
     private fun perform(next:Hint) {
         when(next) {
             is Hint.Card -> selectUnit(next.vehicle)
-            Hint.Action -> game.action()
+            Hint.Action -> if(game.recovery.engaged)game.recovery.work(game) else game.action()
             Hint.Blocks -> activate("blocks")
             is Hint.Pipe -> pipeTouch(next.id)
             is Hint.Ground -> {
@@ -373,6 +374,7 @@ class GameView(context: Context): FrameLayout(context) {
                 following=false;orbitMode=false;camera=0;settings.camera=0;yaw=-12f;pitch=12f;zoom=.7f;panX=23f;panZ=32f;saveCamera()
             }
             "arena" -> enterArena()
+            "districtWork" -> { game.recovery.work(game);following=false;orbitMode=false }
             "arenaExit" -> leaveArena()
             "arenaReplay" -> { game.wind.arena.replay();enterArena() }
             "arenaBuddy" -> game.wind.arena.toggleBuddy()
@@ -403,7 +405,7 @@ class GameView(context: Context): FrameLayout(context) {
                 camera=0;settings.camera=0;yaw=-12f;pitch=8f;zoom=1.2f;panX=13f;panZ=5.8f;following=false;orbitMode=false;saveCamera()
             }
             "blocks" -> { game.stopMovement();game.blockAction();following=false;panX=27f;panZ=3f;zoom=1.05f }
-            "action" -> if(game.wind.active)game.wind.toggle(game) else game.action()
+            "action" -> if(game.recovery.engaged)game.recovery.work(game) else if(game.wind.active)game.wind.toggle(game) else game.action()
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")
                 .setMessage("Pasir dan kendaraan kembali ke posisi awal.")
