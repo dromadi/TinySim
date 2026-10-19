@@ -92,7 +92,7 @@ class WorkFleetTest {
     @Test fun malformedFleetSavesCannotCreateConcreteOrPlaceVehiclesInTheRiver() {
         val g=GameState();val values=g.snapshot().substringAfter('|').split(';')
         for(bad in listOf("NaN,19,0,3000,19,0,8,0,0,0","1200,19,0,3000,19,0,8,8,0,0","3720,19,0,3000,19,0,8,0,0,0")) {
-            val a=values.toMutableList();a[10]=bad;g.restore(a.joinToString(";",prefix="18|"));assertEquals(GameState().snapshot(),g.snapshot())
+            val a=values.toMutableList();a[10]=bad;g.restore(a.joinToString(";",prefix="19|"));assertEquals(GameState().snapshot(),g.snapshot())
         }
     }
     @Test fun newVehiclesCanExploreTheExtraTenMetresAndPictureHintsFinishTheirJobs() {

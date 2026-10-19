@@ -47,3 +47,5 @@ Alpha.21 adds `district-storm,district-push,district-tip,district-pour,district-
 Alpha.23 adds `village-welcome,village-garden,village-shelter`: real house recovery unlocks residents, actual planting fills gardens, and active weather hides all residents. New household frames own their arrays; these remain JVM/WebGL renderer previews rather than phone tests.
 
 Alpha.24 adds `wash-dirty,wash-spray,wash-clean`, using real travel to the wash bay, shared close-up camera/picking, held spray and per-patch cleanliness. The water stream is recorded from the actual HUD and dirt from the 3D model. These remain desktop renderer previews, not phone input tests.
+
+Alpha.25 adds `fleet-excavator,fleet-truck,fleet-dozer,fleet-crane,fleet-mixer,fleet-wrecker`: actual routes to the bay, per-model soap clusters, partial rinse and fully clean state. These use the same projected patch coordinates and close-up camera as Android.

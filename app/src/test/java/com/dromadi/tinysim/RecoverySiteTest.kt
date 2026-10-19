@@ -136,7 +136,7 @@ class RecoverySiteTest {
             val p=g.snapshot().substringAfter('|').split(';').toMutableList()
             val a=p[13].split('#').toMutableList();val cells=a[2].split(':').toMutableList()
             val cell=cells[0].split(',').toMutableList();cell[1]=bad;cells[0]=cell.joinToString(",");a[2]=cells.joinToString(":");p[13]=a.joinToString("#")
-            val copy=GameState();copy.restore("18|"+p.joinToString(";"));assertEquals(GameState().snapshot(),copy.snapshot())
+            val copy=GameState();copy.restore("19|"+p.joinToString(";"));assertEquals(GameState().snapshot(),copy.snapshot())
         }
     }
 

@@ -48,7 +48,7 @@ class WindPlayTest {
         val g=GameState();g.wind.toggle(g);tick(g);g.reset();assertEquals(GameState().snapshot(),g.snapshot())
         for(s in listOf("1,NaN,0","1,52,0","2,24,0","1,24,99")) {
             val parts=g.snapshot().substringAfter('|').split(';').toMutableList();parts[11]=s
-            g.restore(parts.joinToString(";",prefix="18|"));assertEquals(GameState().snapshot(),g.snapshot())
+            g.restore(parts.joinToString(";",prefix="19|"));assertEquals(GameState().snapshot(),g.snapshot())
         }
     }
     @Test fun arbitraryDragAndBadTimestepsRemainFiniteConservativeAndOnDryLand() {

@@ -1,0 +1,23 @@
+{
+  "version": "0.1.0-alpha.25",
+  "code_commit": "c3fddbd50bc2b65ae49967f3e43cc2a897c42ba9",
+  "android_run": 39264575240,
+  "preview_run": 39264575183,
+  "tests": 175,
+  "failures": 0,
+  "ignored": 0,
+  "commands": [
+    "testDebugUnitTest",
+    "lintDebug",
+    "assembleDebug",
+    "assembleDebugAndroidTest"
+  ],
+  "apk_bytes": 67787878,
+  "apk_artifact": 12192920868,
+  "preview_artifact": 12193046223,
+  "preview_scenes": 6,
+  "gl_errors": 0,
+  "device_tested": false,
+  "instrumentation_executed": false,
+  "signing": "GitHub Actions debug key; may differ from previous local builds"
+}
