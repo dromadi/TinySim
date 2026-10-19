@@ -1327,8 +1327,10 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
             val u=(t+.025f).coerceAtMost(1f)
             rod3(x,y,z,pivotX+(tipX-pivotX)*u,pivotY+(tipY-pivotY)*u,pivotZ+(tipZ-pivotZ)*u,if(t<.6f).28f else .20f,darkSteel,METAL)
         }
-        rod3(pivotX-.3f,pivotY+.7f,pivotZ,tipX,tipY+.1f,tipZ,.018f,metal,METAL)
-        wheelDisc(tipX,tipY,tipZ,.19f,.2f,darkSteel,METAL)
+        val winchX=pivotX-cos(angle)*.45f;val winchZ=pivotZ-sin(angle)*.45f
+        rod3(winchX,pivotY+.42f,winchZ,tipX,tipY+.1f,tipZ,.018f,metal,METAL)
+        val sideX=-sin(angle)*.10f;val sideZ=cos(angle)*.10f
+        rod3(tipX-sideX,tipY,tipZ-sideZ,tipX+sideX,tipY,tipZ+sideZ,.19f,darkSteel,METAL)
         rod3(tipX,tipY,tipZ,hx,hookY+.45f,hz,.02f,ink,METAL)
         box(hx,hookY+.4f,hz,.22f,.18f,.18f,yellow,PAINT)
         if(building) {
@@ -1510,7 +1512,7 @@ class SceneRenderer3D(uploader:TextureUploader?=null): GLSurfaceView.Renderer {
             panel(x,bottom-.1f,z+side*.09f,width*.8f,.07f,.22f,darkSteel)
             for(i in 0..5)box(x-width*.32f+i*width*.125f,bottom-.06f,z+side*.09f,.026f,.014f,.18f,chrome,METAL)
             rod3(x-width*.45f,bottom+.1f,z+side*.065f,x-width*.45f,glassBottom+.12f,z+side*.065f,.022f,chrome,METAL)
-            workLamp(x+width*.4f,top+.055f,side*length*.32f)
+            workLamp(x+width*.4f,top+.16f,side*length*.32f)
         }
         val front=x+width/2+.012f
         rod3(front,glassBottom+.04f,-length*.25f,front,glassBottom+h*.6f,length*.08f,.012f,ink,RUBBER)
