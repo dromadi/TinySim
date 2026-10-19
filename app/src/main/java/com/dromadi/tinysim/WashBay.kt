@@ -51,7 +51,7 @@ class WashBay {
     }
     companion object {
         const val X=2f;const val Z=14f
-        val PATCHES=listOf(Vec3(-1.05f,.4f,1.03f),Vec3(-.35f,.4f,1.03f),Vec3(.4f,.4f,1.03f),Vec3(1.1f,.4f,1.03f),
+        val PATCHES=listOf(Vec3(-1.05f,.47f,1.2f),Vec3(-.35f,.47f,1.2f),Vec3(.4f,.47f,1.2f),Vec3(1.1f,.47f,1.2f),
             Vec3(-.95f,1.65f,.79f),Vec3(-.4f,2.08f,.79f),Vec3(.87f,1.5f,.84f),Vec3(-.6f,2.54f,.25f))
         fun camera(g:GameState)=camera(WorldMap.worldX(g.excavatorX),g.excavatorZ,g.excavatorHeight)
         fun camera(x:Float,z:Float,y:Float)=CameraSpec(Vec3(x+4.8f,y+4f,z+7f),Vec3(x+.6f,y+1.25f,z))
