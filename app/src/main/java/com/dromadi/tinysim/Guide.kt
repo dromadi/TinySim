@@ -8,6 +8,7 @@ sealed class Hint {
     object Action:Hint()
     object Blocks:Hint()
     data class Pipe(val id:Int):Hint()
+    data class Garden(val house:Int):Hint()
     /** A spot on the ground (world metres) for the selected vehicle. */
     data class Ground(val x:Float,val z:Float):Hint()
 }
@@ -25,6 +26,7 @@ object Guide {
     const val YARD_X=46f;const val YARD_Z=4.5f
     fun next(g:GameState):Hint {
         if(g.recovery.engaged) {
+            if(g.recovery.complete)g.village.nextGarden(g).takeIf { it>=0 }?.let { return Hint.Garden(it) }
             val v=g.recovery.nextVehicle()
             return if(v==null || g.selected==v)Hint.Action else Hint.Card(v)
         }

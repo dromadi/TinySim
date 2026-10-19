@@ -101,6 +101,7 @@ class RecoverySite {
         else if(drop && held==id && pads[id/4]==4) {
             state[id]=0;x[id]=homeX(id);z[id]=homeZ(id);y[id]=homeY(id)
             g.rewardSerial++;g.celebrating=.7f
+            g.village.welcome(g,id/4)
             if(complete && damaged!=0) { cycles++;damaged=0;g.celebrating=3f }
         } else return
         g.transferKind=6;g.transferSerial++

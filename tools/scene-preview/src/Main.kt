@@ -17,6 +17,9 @@ fun main(args: Array<String>) {
     r.onSurfaceCreated(null,null);r.onSurfaceChanged(null,1200,675)
     out.append("\"init\":[").append(GLES20.ops).append("],\"frames\":{");GLES20.ops.setLength(0)
     val scenes=listOf<Triple<String,Int,(GameState)->Unit>>(
+        Triple("village-welcome",0) { g->prepareDistrict(g,4);repeat(180){g.update(.016f)};check(g.village.welcomed==15) },
+        Triple("village-garden",0) { g->prepareDistrict(g,4);repeat(4){check(g.village.plant(g,it))};repeat(180){g.update(.016f)};check(g.village.planted==15) },
+        Triple("village-shelter",0) { g->prepareDistrict(g,4);check(g.village.plant(g,0));g.wind.toggle(g);repeat(80){g.update(.016f)};check((0..3).none { g.village.outside(g,it) }) },
         Triple("district-storm",0) { g->g.recovery.enter(g);g.wind.toggle(g);repeat(160){g.update(.04f)};check(g.recovery.state.any { it==1 }) },
         Triple("district-push",0) { g->prepareDistrict(g,0);g.selected=GameState.Vehicle.DOZER;val old=g.recovery.x.copyOf();g.action();repeat(3000){if(g.recovery.x.contentEquals(old))g.update(.04f)};repeat(25){g.update(.04f)} },
         Triple("district-tip",0) { g->prepareDistrict(g,1);g.selected=GameState.Vehicle.TRUCK;g.action();repeat(6000){if(g.bedAngle> -32f)g.update(.04f)};check(g.recovery.cargo>0 && g.tipping) },
@@ -82,6 +85,7 @@ fun main(args: Array<String>) {
                 r.submit(SceneFrame.capture(g,cam,t,-40f,2f,1.8f,-6.2f,.6f));r.onDrawFrame(null);GLES20.ops.setLength(0);t+=.016f }
         }
         val frame=when(name) {
+            "village-welcome","village-garden","village-shelter"->SceneFrame.capture(g,cam,1.2f+i,-12f,12f,1.15f,16f,31f)
             "district-storm"->SceneFrame.capture(g,cam,1.2f+i,-12f,12f,.95f,15f,29f)
             "district-push"->SceneFrame.capture(g,cam,1.2f+i,-18f,12f,1.2f,WorldMap.worldX(g.dozerX)+2f,g.dozerZ)
             "district-tip"->SceneFrame.capture(g,cam,1.2f+i,-20f,14f,1.1f,39f,29f)
@@ -119,7 +123,7 @@ fun main(args: Array<String>) {
         (terrainField.get(r) as TerrainMesh).apply { contextLost();update(g.earth,g.sand);upload() }
         r.submit(frame)
         r.onDrawFrame(null)
-        val canvas=Canvas();GameRenderer().draw(canvas,g,true,false,0f,frame.seconds,cam,advanced=false,orbitMode=false,zoom=frame.zoom,panX=frame.panX,panZ=frame.panZ,hintX=if(name=="start-cam1")1010f else Float.NaN,hintY=590f,targets=GameRenderer.pipeTargets(g,WorldCamera.spec(cam,frame.yaw,frame.pitch,frame.zoom,frame.panX,frame.panZ)))
+        val canvas=Canvas();GameRenderer().draw(canvas,g,true,false,0f,frame.seconds,cam,advanced=false,orbitMode=false,zoom=frame.zoom,panX=frame.panX,panZ=frame.panZ,hintX=if(name=="start-cam1")1010f else Float.NaN,hintY=590f,targets=GameRenderer.pipeTargets(g,WorldCamera.spec(cam,frame.yaw,frame.pitch,frame.zoom,frame.panX,frame.panZ)),gardens=GameRenderer.gardenTargets(g,WorldCamera.spec(cam,frame.yaw,frame.pitch,frame.zoom,frame.panX,frame.panZ)))
         if(i>0)hud.append(',');hud.append('"').append(name).append("\":[").append(canvas.ops).append(']')
         if(i>0)out.append(',');out.append('"').append(name).append("\":[").append(GLES20.ops).append(']');GLES20.ops.setLength(0)
     }

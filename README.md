@@ -1,11 +1,19 @@
 # TinySim 3D
 **Dunia kecil, imajinasi besar.**
 
-Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.22**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
+Permainan konstruksi offline untuk anak usia 2–6 tahun. Versi **0.1.0-alpha.23**, package `com.dromadi.tinysim`, Android 8.0+ / OpenGL ES 2.0. Tanpa login, iklan, pembelian dalam aplikasi, analytics, backend, pengumpulan data pribadi, atau Android permission. Save dan pengaturan hanya berada di perangkat; backup/transfer aplikasi dinonaktifkan.
 
-![Kawasan konstruksi dengan petunjuk lima tahap](docs/verification/alpha22/district-restored.jpg)
+![Penduduk dan taman setelah kota dipulihkan](docs/verification/alpha23/village-garden.jpg)
 
 Pratinjau di atas menjalankan kode renderer dan HUD asli melalui JVM/WebGL/Canvas browser. Ini bukan screenshot HP; bentuk font dapat berbeda dari Android.
+
+## Alpha.23: penduduk dan taman kecil
+
+- Rumah kawasan yang dipulihkan memunculkan satu penduduk. Ia berjalan dari rumah ke halaman, melambaikan tangan dan meminta pohon melalui gelembung bergambar. Rumah latihan yang belum pernah dipulihkan tidak langsung dihuni.
+- Sentuh ikon bibit hijau pada petak halaman untuk menanam pohon. Pohon tumbuh, bunga muncul dan penduduk melambai. Sesudah seluruh kawasan pulih, tombol aksi juga menanam pada halaman berikutnya; tangan penunjuk menunjuk ikon taman.
+- Sentuh penduduk untuk menyapa. Saat tornado aktif, angin belum reda, rumah rusak atau arena tornado dibuka, penduduk berlindung/tidak ditampilkan. Kebun yang sudah ditanam tetap dimiliki dan kembali terlihat setelah cuaca reda; tidak ada orang yang diterbangkan.
+- Save v17 menyimpan rumah yang sudah dihuni serta pohon yang ditanam, dan memigrasikan v16/Alpha.22 serta semua format lama. Untuk distrik yang sudah pernah selesai pada save lama, keempat rumah mendapatkan akses taman. Animasi berjalan/melambai bersifat sementara; pohon yang telah ditanam tidak bisa menggandakan hadiah melalui ketukan berulang.
+- Model penduduk, petak halaman, gelembung permintaan, pohon/bunga dan ikon dibuat dengan kode asli; tetap offline tanpa login, iklan, analytics atau izin baru.
 
 ## Alpha.22: satu tombol untuk memulihkan kota
 

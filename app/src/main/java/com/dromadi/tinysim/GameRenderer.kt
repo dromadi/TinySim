@@ -70,7 +70,7 @@ class GameRenderer {
      * no words to read. Zoom, camera, minimap and stop appear only when a parent enables them.
      * hintX/hintY place the pointing hand (NaN hides it).
      */
-    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN,targets:List<Pair<Int,Pair<Float,Float>>> = emptyList()) {
+    fun draw(c:Canvas,g:GameState,sound:Boolean,parents:Boolean,hold:Float,time:Float,camera:Int,advanced:Boolean=false,orbitMode:Boolean=false,zoom:Float=1f,panX:Float=0f,panZ:Float=0f,hintX:Float=Float.NaN,hintY:Float=Float.NaN,targets:List<Pair<Int,Pair<Float,Float>>> = emptyList(),gardens:List<Pair<Int,Pair<Float,Float>>> = emptyList()) {
         if(g.wind.arena.open && !parents) { arenaHud(c,g.wind.arena,hold,time,hintX,hintY);return }
         rect(c,470f,20f,100f,70f,white,22f);stormIcon(c,520f,54f,0,.7f)
         rect(c,590f,20f,100f,70f,if(g.recovery.engaged)yellow else white,22f);houseIcon(c,640f,53f)
@@ -81,6 +81,10 @@ class GameRenderer {
         if(g.recovery.engaged) {
             rect(c,714f,20f,140f,70f,if(g.wind.active)white else yellow,22f)
             dozer(c,758f,76f,.3f,1);houseIcon(c,824f,53f)
+        }
+        for((_,point) in gardens) {
+            val (x,y)=point;circle(c,x,y,30f,white);circle(c,x,y,25f,teal)
+            sapling(c,x,y)
         }
         for((id,point) in targets) {
             val (x,y)=point
@@ -166,6 +170,10 @@ class GameRenderer {
         for(i in 0..2)rect(c,x-19f,y+17f-i*17f,38f,15f,listOf(orange,teal,yellow)[i],4f)
     }
     /** Five pictograms show the whole loop; the yellow marker is the current task. */
+    private fun sapling(c:Canvas,x:Float,y:Float) {
+        line(c,x,y+16f,x,y-4f,yellow,5f)
+        circle(c,x-8f,y-5f,10f,white);circle(c,x+8f,y-9f,11f,white);circle(c,x,y-15f,11f,white)
+    }
     private fun recoveryProgress(c:Canvas,g:GameState) {
         val phase=if(g.wind.active)0 else g.recovery.step.ordinal
         for(i in 0..4) {
@@ -209,6 +217,7 @@ class GameRenderer {
     /** The single big action, drawn as what will happen next. */
     private fun actionIcon(c:Canvas,g:GameState,x:Float,y:Float) {
         if(g.recovery.engaged) {
+            if(g.recovery.complete && g.village.nextGarden(g)>=0) { sapling(c,x,y);return }
             if(g.recovery.damaged==0) { houseIcon(c,x,y);if(g.recovery.cycles>0)star(c,x+80,y,20f,yellow) }
             else when(g.recovery.nextVehicle()) {
                 GameState.Vehicle.DOZER->{ dozer(c,x-45,y+32,.55f,1);blockIcon(c,x+70,y) }
@@ -308,6 +317,13 @@ class GameRenderer {
         text(c,"Pasir     •     Konstruksi     •     Bangun",128f,411f,9f,ink)
     }
     companion object {
+        fun gardenTargets(g:GameState,camera:com.dromadi.tinysim.scene.CameraSpec):List<Pair<Int,Pair<Float,Float>>> {
+            if(!g.recovery.engaged)return emptyList()
+            return (0..3).filter { g.village.wantsTree(g,it) }.map { h->
+                val x=VillageLife.gardenX(h);val z=VillageLife.gardenZ(h)
+                h to camera.project(com.dromadi.tinysim.scene.Vec3(x,g.surface(x,z)+.7f,z))
+            }.filter { it.second.first in 45f..1155f && it.second.second in 130f..505f }
+        }
         fun pipeTargets(g:GameState,camera:com.dromadi.tinysim.scene.CameraSpec):List<Pair<Int,Pair<Float,Float>>> {
             if(!g.pipes.active || g.pipes.complete)return emptyList()
             val ids=if(!g.pipes.open(g) && g.pipes.installed!=7)(0..5).filter { !g.pipes.dug(g,it) && !g.pipes.hasPipe(it/2) }

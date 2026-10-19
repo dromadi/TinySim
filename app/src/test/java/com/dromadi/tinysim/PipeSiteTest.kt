@@ -84,7 +84,7 @@ class PipeSiteTest {
     @Test fun malformedSavesAndParentResetCannotCreatePipesOrSoil() {
         val g=GameState()
         for(s in listOf("1,1,7,-1","1,8,0,-1","1,1,0,0","1,0,0,4","NaN")) {
-            g.restore(g.snapshot().substringAfter('|').split(';').toMutableList().also { it[9]=s }.joinToString(";",prefix="16|"));assertEquals(GameState().snapshot(),g.snapshot())
+            g.restore(g.snapshot().substringAfter('|').split(';').toMutableList().also { it[9]=s }.joinToString(";",prefix="17|"));assertEquals(GameState().snapshot(),g.snapshot())
         }
         g.startPipes();dig(g);install(g);g.reset();assertEquals(0,g.pipes.installed);assertFalse(g.pipes.active);assertEquals(Terrain.INITIAL_MASS,g.totalMaterial)
     }

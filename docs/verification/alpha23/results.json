@@ -1,0 +1,23 @@
+[
+  {
+    "name": "village-welcome",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3852,
+    "triangles": 878092
+  },
+  {
+    "name": "village-garden",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3952,
+    "triangles": 913708
+  },
+  {
+    "name": "village-shelter",
+    "status": "PASS",
+    "glError": 0,
+    "drawCalls": 3799,
+    "triangles": 872620
+  }
+]

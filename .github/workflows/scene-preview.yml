@@ -20,7 +20,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Record actual district renderer and HUD
         env:
-          TINYSIM_PREVIEW_SCENES: district-storm,district-push,district-restored
+          TINYSIM_PREVIEW_SCENES: village-welcome,village-garden,village-shelter
         run: ./gradlew --no-daemon -p tools/scene-preview run --args="$GITHUB_WORKSPACE/tools/scene-preview/frames.json"
       - name: Install preview browser
         working-directory: tools/scene-preview
@@ -30,10 +30,10 @@ jobs:
       - name: Replay renderer and capture pictogram HUD
         env:
           PREVIEW_FORMAT: jpeg
-        run: node tools/scene-preview/shoot.js tools/scene-preview/frames.json docs/verification/alpha22
+        run: node tools/scene-preview/shoot.js tools/scene-preview/frames.json docs/verification/alpha23
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: TinySim-alpha22-renderer-preview
-          path: docs/verification/alpha22/
+          name: TinySim-alpha23-renderer-preview
+          path: docs/verification/alpha23/
           if-no-files-found: error

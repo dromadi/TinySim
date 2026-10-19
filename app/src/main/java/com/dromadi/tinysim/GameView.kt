@@ -85,7 +85,18 @@ class GameView(context: Context): FrameLayout(context) {
         if(point.x !in WorldMap.MIN_X..WorldMap.MAX_X || point.z !in WorldMap.MIN_Z..WorldMap.MAX_Z)return
         following=false;game.driveTo(game.selected,WorldMap.gameX(point.x),point.z)
     }
+    private fun districtWork() {
+        val garden=if(game.recovery.complete)game.village.nextGarden(game) else -1
+        if(garden>=0)game.village.plant(game,garden) else game.recovery.work(game)
+    }
+    private fun gardenMarkers()=GameRenderer.gardenTargets(game,cameraSpec())
     fun sceneTap(x:Float,y:Float) {
+        val garden=gardenMarkers().firstOrNull { kotlin.math.hypot(x-it.second.first,y-it.second.second)<46f }
+        if(garden!=null) { game.village.plant(game,garden.first);return }
+        if(game.recovery.engaged && !game.wind.active)for(h in 0..3)if(game.village.outside(game,h)) {
+            val p=cameraSpec().project(com.dromadi.tinysim.scene.Vec3(VillageLife.residentX(h,game.village.arrival[h]),1f,VillageLife.residentZ(h,game.village.arrival[h])))
+            if(kotlin.math.hypot(x-p.first,y-p.second)<32f) { game.village.greet(game,h);return }
+        }
         // A dumped pile lies close to the truck: prioritize the intended digging surface
         // over the forgiving vehicle hit radius when the excavator is selected.
         // With an empty bucket the excavator digs wherever the child touches, driving there if needed.
@@ -103,11 +114,11 @@ class GameView(context: Context): FrameLayout(context) {
         val ground=groundAt(x,y)
         if(game.recovery.engaged && ground!=null && ground.x in 5f..44f && ground.z in 25f..40f) {
             val unit=vehicleAt(x,y)
-            if(unit!=null) { if(unit==game.selected)game.recovery.work(game) else selectUnit(unit);return }
+            if(unit!=null) { if(unit==game.selected)districtWork() else selectUnit(unit);return }
             // Broad touch targets: a building, loose part, loading pile or depot starts the pictured step.
             if(game.recovery.damaged==0 || (0 until RecoverySite.COUNT).any { i->
                 kotlin.math.hypot(ground.x-game.recovery.x[i],ground.z-game.recovery.z[i])<2.2f
-            } || ground.x>31f) { game.recovery.work(game);return }
+            } || ground.x>31f) { districtWork();return }
             driveAt(x,y);return
         }
         if(!game.pipes.active && game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && ground!=null && game.digAt(ground.x,ground.z))return
@@ -247,7 +258,7 @@ class GameView(context: Context): FrameLayout(context) {
         val mark=if(game.wind.arena.open && helpEnabled && now-lastTouch>HINT_AFTER_MS)game.wind.arena.hintTarget()?.let {
             cameraSpec().project(com.dromadi.tinysim.scene.Vec3(it.first,.7f,it.second))
         }?.takeIf { it.first in 40f..1160f && it.second in 110f..520f } else hintPoint()
-        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,advanced,orbitMode,zoom,panX,panZ,mark?.first ?: Float.NaN,mark?.second ?: Float.NaN,targets=pipeMarkers())
+        hudRenderer.draw(canvas,game,settings.sound,parents,holdProgress,now/1000f,camera,advanced,orbitMode,zoom,panX,panZ,mark?.first ?: Float.NaN,mark?.second ?: Float.NaN,targets=pipeMarkers(),gardens=gardenMarkers())
         canvas.restore()
         if(running)hud.postInvalidateOnAnimation()
     }
@@ -300,6 +311,7 @@ class GameView(context: Context): FrameLayout(context) {
         }
         if(y in 100f..535f) {
             if(game.wind.active)return "wind"
+            if(gardenMarkers().any { kotlin.math.hypot(x-it.second.first,y-it.second.second)<46f })return "garden${gardenMarkers().first { kotlin.math.hypot(x-it.second.first,y-it.second.second)<46f }.first}"
             if(game.pipes.active && pipeMarkers().any { kotlin.math.hypot(x-it.second.first,y-it.second.second)<40f })return "scene"
             if(orbitMode && advanced)return "orbit"
             if(game.selected==GameState.Vehicle.EXCAVATOR) {
@@ -329,7 +341,7 @@ class GameView(context: Context): FrameLayout(context) {
     }
     /** House stages assemble by themselves once the foundation and materials are ready. */
     private fun houseAndHelp(now:Long) {
-        if(game.wind.arena.open || game.wind.active || game.wind.strength>0f || (game.recovery.engaged && game.recovery.damaged==0)) { hint=null;return }
+        if(game.wind.arena.open || game.wind.active || game.wind.strength>0f || (game.recovery.engaged && game.recovery.damaged==0 && game.village.nextGarden(game)<0)) { hint=null;return }
         if(!game.recovery.engaged && game.houseReady && game.houseFill>=8 && game.houseStage<3 && game.buildClock==0f && game.buildHouse()) {
             following=false;panX=36.3f;panZ=7f
         }
@@ -346,9 +358,10 @@ class GameView(context: Context): FrameLayout(context) {
     private fun perform(next:Hint) {
         when(next) {
             is Hint.Card -> selectUnit(next.vehicle)
-            Hint.Action -> if(game.recovery.engaged)game.recovery.work(game) else game.action()
+            Hint.Action -> if(game.recovery.engaged)districtWork() else game.action()
             Hint.Blocks -> activate("blocks")
             is Hint.Pipe -> pipeTouch(next.id)
+            is Hint.Garden -> game.village.plant(game,next.house)
             is Hint.Ground -> {
                 if(game.selected==GameState.Vehicle.EXCAVATOR && game.bucket==0 && game.digAt(next.x,next.z))return
                 game.driveTo(game.selected,WorldMap.gameX(next.x),next.z);followSelected()
@@ -361,6 +374,7 @@ class GameView(context: Context): FrameLayout(context) {
         is Hint.Card -> GameRenderer.cardCenter(next.vehicle) to 590f
         Hint.Action -> 1010f to 590f
         Hint.Blocks -> 170f to 55f
+        is Hint.Garden -> gardenMarkers().firstOrNull { it.first==next.house }?.second
         is Hint.Pipe -> pipeMarkers().firstOrNull { it.first==next.id }?.second ?: (1010f to 590f)
         is Hint.Ground -> runCatching { cameraSpec().project(com.dromadi.tinysim.scene.Vec3(next.x,game.surface(next.x,next.z),next.z)) }.getOrNull()
             ?.takeIf { it.first in 40f..1160f && it.second in 110f..520f }
@@ -374,7 +388,8 @@ class GameView(context: Context): FrameLayout(context) {
                 following=false;orbitMode=false;camera=0;settings.camera=0;yaw=-12f;pitch=12f;zoom=.7f;panX=23f;panZ=32f;saveCamera()
             }
             "arena" -> enterArena()
-            "districtWork" -> { game.recovery.work(game);following=false;orbitMode=false }
+            "garden0","garden1","garden2","garden3" -> game.village.plant(game,action.last().digitToInt())
+            "districtWork" -> { districtWork();following=false;orbitMode=false }
             "arenaExit" -> leaveArena()
             "arenaReplay" -> { game.wind.arena.replay();enterArena() }
             "arenaBuddy" -> game.wind.arena.toggleBuddy()
@@ -405,7 +420,7 @@ class GameView(context: Context): FrameLayout(context) {
                 camera=0;settings.camera=0;yaw=-12f;pitch=8f;zoom=1.2f;panX=13f;panZ=5.8f;following=false;orbitMode=false;saveCamera()
             }
             "blocks" -> { game.stopMovement();game.blockAction();following=false;panX=27f;panZ=3f;zoom=1.05f }
-            "action" -> if(game.recovery.engaged)game.recovery.work(game) else if(game.wind.active)game.wind.toggle(game) else game.action()
+            "action" -> if(game.recovery.engaged)districtWork() else if(game.wind.active)game.wind.toggle(game) else game.action()
             "mode" -> game.toggleMode()
             "reset" -> AlertDialog.Builder(context).setTitle("Mulai dunia baru?")
                 .setMessage("Pasir dan kendaraan kembali ke posisi awal.")

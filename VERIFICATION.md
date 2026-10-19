@@ -1,3 +1,13 @@
+# Alpha.23 — kota yang hidup
+
+Fitur penduduk per rumah yang benar-benar dipulihkan, permintaan taman bergambar, penanaman satu sentuhan, pertumbuhan pohon, sapaan dan perlindungan dari tornado. Save v17 memigrasikan v16 serta format lama; model renderer menggunakan salinan array milik frame.
+
+CI pertama menemukan fallback save rusak masih mempertahankan pilihan kendaraan dari data parsial; jalur onFailure kini mengembalikan pilihan excavator dan mode bebas sesudah reset. Tes dipertahankan.
+
+Lima tes VillageLife ditambahkan: rumah awal belum dihuni; pemulihan nyata → penduduk → petunjuk → pohon/hadiah sekali; shelter/save/arena; migrasi v16; kepemilikan frame dan penolakan save rusak. Fixture tes korupsi yang dibangun dari snapshot saat ini memakai prefix v17 agar benar-benar mencapai validator konten (bukan gagal hanya karena jumlah field); fixture migrasi v16 tetap eksplisit.
+
+Perintah `./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` dicoba lokal, tetapi unduhan Gradle terhalang `Network is unreachable` sebelum kompilasi. [CI Android commit f0770e87346403b9d6713dffe1b08967a621aeed](https://github.com/dromadi/TinySim/actions/runs/39257796925) sukses: **161 tes, 0 gagal, 0 diabaikan**, lintDebug, assembleDebug dan assembleDebugAndroidTest. [Pratinjau renderer](https://github.com/dromadi/TinySim/actions/runs/39257796706) sukses untuk village-welcome, village-garden, village-shelter dengan GL error 0. Screenshot di docs/verification/alpha23 berasal dari run renderer pertama (39257123017); perbaikan berikutnya hanya menyentuh fallback restore, renderer sama dan telah diuji ulang. Gambar diperiksa: penduduk dan petak kebun terlihat, ikon bibit tidak menutupi kontrol bawah, dan penduduk tidak muncul saat tornado aktif. Belum diuji di HP/emulator. Tidak dibuat key debug lokal pengganti.
+
 # Alpha.22 — pemulihan kota terpandu
 
 Perubahan: tombol kerja otomatis memilih kendaraan sesuai inventaris, mematikan/menetapkan tornado sebelum bekerja, menjaga pekerjaan saat ketukan berulang, dan tidak memulai cuaca lagi setelah selesai. HUD menunjukkan lima tahap.
